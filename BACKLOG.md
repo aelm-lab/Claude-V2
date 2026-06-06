@@ -4,22 +4,40 @@
 
 ---
 
-## 📋 Kanban — état initial
+## 📋 Kanban — état actuel (fin de session 1, Phase 1 close à 100 %)
 
 ### ✅ Done
-- _(rien encore)_
+- [US-001] Scaffold Vue 3 + TS + Vite (US-001b *App.vue + index.html* **absorbée** dedans)
+- [US-002] tsconfig strict + ESLint flat config + arborescence (9 dossiers)
+- [US-003] Types de base (`anime.ts`, `recs.ts`, `persistence.ts`)
+- [US-004] `utils/jst.ts` (+ test) — conversion JST→local
+- [US-005] `utils/normalize.ts` (+ test) — `normalizeAnime`
+- [US-006a] `utils/episodeInfo.ts` (+ test) — `getAnimeEpisodeInfo` / `getCardStatus` / `isOnHiatus`
+- [US-006b] `utils/helpers.ts` (+ test) — `escapeHTML` / `getWeekNumber` / `fetchWithRetry`
+- [US-007] `utils/idb.ts` — wrapper IndexedDB
+- [US-008-types] Extension du contrat de types pour le moteur de recs
+- [US-008a] `utils/recEngine.ts` passe 1 — RelationMemory, buildTasteProfile, assignBadge, extractBecauseYouWatched, buildNextBatch
+- [US-008b] `utils/recEngine.ts` passe 2 — scorePool + helpers de matching
+- [US-009] `utils/ics.ts` — `buildICSContent` (partie **pure** uniquement)
+- [US-010] `utils/malImport.ts` — `parseMalXml` (partie **pure** uniquement)
+
+> **~50 tests Vitest, zéro `any`, comportement vanilla reproduit fidèlement (bizarreries comprises).**
 
 ### 🔄 In Progress
-- _(rien encore)_
+- _(rien — handoff vers nouvelle conversation pour Phase 2)_
 
-### 📝 To Do — Sprint 1 (Phase 0 + début Phase 1)
-- [US-001] Scaffold du projet Vue 3 + TS + Vite
-- [US-002] Configuration ESLint + tsconfig strict + structure de dossiers
-- [US-003] Définir les types de base dans `src/types/`
+### 📝 To Do — Sprint 3 (Phase 2 : Store Pinia + composables services)
+Ordre recommandé (voir `HANDOFF_PHASE2.md` pour le détail) :
+- [US-011] Store Pinia `stores/anime.ts`
+- [US-012] `useFirebaseAuth.ts`
+- [US-013] `useFirestore.ts`
+- [US-014] `usePersistence.ts`
+- [US-015] `useJikanApi.ts` (probablement à scinder)
+- [US-016] `useSync.ts`
+- [US-017] `useRecommendations.ts` (probablement à scinder)
+- [US-018] petits composables : `useEpisodeInfo`, `useToast`, `useTheme`, `useICS` (download), `useMalImport`
 
 ### 🗂️ Backlog (epics par phase)
-- [PHASE-1] Logique pure : utils, normalize, recEngine, idb, ics, malImport
-- [PHASE-2] Store Pinia + composables services
 - [PHASE-3] Router + layouts
 - [PHASE-4] Composants atomiques ui/
 - [PHASE-5] Pages
@@ -28,85 +46,18 @@
 
 ---
 
-## Découpage détaillé des US (sprints 1 à 3)
-
-> Les US ci-dessous sont **pré-rédigées en version courte**. Claude doit les **développer au format complet** (template du PROMPT) au moment de les attaquer, en y injectant les interfaces depuis `TYPES_CONTRACT.md` et une section « anti-patterns ».
-
-### PHASE 0 — Scaffold
-
-**[US-001] Scaffold Vue 3 + TS + Vite**
-- Fichiers : `package.json`, `vite.config.ts`, `index.html`
-- But : retirer React, ajouter `vue`/`vue-router`/`pinia`/`@vueuse/core`/`@vitejs/plugin-vue`, monter une app Vue minimale qui affiche « Hello Vue ».
-- Acceptance : `npm run dev` démarre, page blanche avec composant racine, aucune erreur console, plus aucune réf à React.
-
-**[US-002] tsconfig strict + ESLint + arborescence**
-- Fichiers : `tsconfig.json`, `.eslintrc.*`, création des dossiers vides `src/{components,composables,stores,utils,router,types}`.
-- Acceptance : `tsc --noEmit` passe, ESLint configuré pour Vue+TS, `strict: true`, `noImplicitAny: true`.
-
-### PHASE 1 — Logique pure
-
-**[US-003] Types de base**
-- Fichiers : `src/types/anime.ts`, `src/types/recs.ts`
-- But : porter toutes les interfaces de `TYPES_CONTRACT.md`.
-- Acceptance : `AnimeEntry`, `AnimeState`, `AnimeStatus`, `CardStatus`, `AnimeEpisodeInfo`, `TasteProfile`, `RecBadge`, `RecSignal` exportés et compilent.
-
-**[US-004] `utils/jst.ts` (+ test)**
-- Source : `parseJSTToLocal` de `src/utils.js`.
-- Acceptance : reproduit la conversion JST→local à l'identique (date de référence 1970). Tests : « Mondays 23:00 » et un cas sans heure.
-
-**[US-005] `utils/normalize.ts` (+ test)**
-- Source : `src/normalize.js`.
-- Acceptance : rejette « Unknown Studio », mappe genres/themes/demographics en `string[]`, gère les covers, renvoie `AnimeEntry`.
-
-**[US-006] `utils/helpers.ts`**
-- Source : `getAnimeEpisodeInfo`, `getCardStatus`, `isOnHiatus`, `getWeekNumber`, `fetchWithRetry` de `src/utils.js`.
-- Acceptance : `getAnimeEpisodeInfo` couvert par ≥ 4 tests (avant diffusion, en cours, terminé, override).
-
-**[US-007] `utils/idb.ts`**
-- Source : `src/idb.js`. Acceptance : `idbGet`/`idbSet` typés, stores `relations`/`recommendations`.
-
-**[US-008] `utils/recEngine.ts` (+ tests)**
-- Source : `src/rec-engine.js`. Acceptance : `RelationMemory`, `buildTasteProfile`, `scorePool`, `assignBadge`, `buildNextBatch`, `extractBecauseYouWatched`, `applyPreset` portés et typés.
-
-**[US-009] `utils/ics.ts`**
-- Source : `src/ics.js`. Acceptance : génère un `.ics` valide pour les animes `state==='calendar'`.
-
-**[US-010] `utils/malImport.ts` (+ test)**
-- Source : `parseMalXml` de `src/ui/mal-import.js` (partie pure). Acceptance : parse un XML MAL, mappe les statuts → states, compte les skipped.
-
-### PHASE 2 — Store + composables services
-
-**[US-011] Store Pinia `stores/anime.ts`**
-- Acceptance : state + `addAnime`/`addAnimeSilent`/`removeAnime`/`setDate`. **Aucun `dispatchEvent`.** Logique d'upsert + auto-vault reproduite.
-
-**[US-012] `useFirebaseAuth.ts`**
-- Source : `firebase.js` + `login.js`. Acceptance : `sendSignInLink`, `completeSignIn`, état réactif `currentUser`.
-
-**[US-013] `useFirestore.ts`**
-- Acceptance : `loadSchedule`/`saveSchedule` sur `schedules/{uid}`, try/catch + état d'erreur.
-
-**[US-014] `usePersistence.ts`**
-- Source : `persistence.js`. Acceptance : load Firestore + fallback localStorage ; le bandeau « > 1 mois » devient `staleDataWarning: ref<boolean>` (pas de DOM).
-
-**[US-015] `useJikanApi.ts`**
-- Source : `api.js`. Acceptance : tous les endpoints du tableau API, `fetchWithRetry`, gestion 429.
-
-**[US-016] `useSync.ts`**
-- Source : `api.js` (`syncAnimeUpdates`, `startBackgroundRelationFetch`). Acceptance : batch de 2 / 2 s, throttle 1,1 s reproduits.
-
-**[US-017] `useRecommendations.ts`**
-- Source : `recs.js`. Acceptance : pools, `getNextBatch`, `reScorePool`, BYW, slot-fill.
-
-**[US-018] `useEpisodeInfo.ts`, `useToast.ts`, `useTheme.ts`**
-- (à découper en 3 US si > 3 fichiers). Acceptance : composables réactifs sans DOM direct.
+## Reports / dette ouverte (à traiter dans une phase ultérieure)
+- **`useICS.ts` (Phase 2)** : le **téléchargement** ICS (Blob, lien `<a>`, cas iOS via data-URI) + le toast « rien à exporter » NE sont PAS encore portés. `buildICSContent` (pur) existe ; le composable l'appellera puis gérera le download.
+- **`useMalImport.ts` (Phase 2)** : la partie impure de `mal-import.js` (input fichier, FileReader, `addAnimeSilent`, toast) reste à porter. `parseMalXml` (pur) existe déjà.
+- **Bug studios inerte (Décision E)** : `scorePool` lit `item.studios` (pluriel) que `normalize` ne produit jamais → scoring studio inerte. **Reproduit tel quel.** Réparation = US métier dédiée APRÈS la migration.
+- **Dette UX boot (Phase 4)** : prévoir un `LoadingOverlay` piloté par état réactif au démarrage (auth + load Firestore) pour éviter le flash blanc.
+- **`jsdom` pin à vérifier** : pin `^29.1.1` accepté en US-010 ; confirmer qu'un `npm install` propre le résout.
 
 ---
 
 ## Règles de tenue du backlog
-
 - **Une seule US `In Progress` à la fois.** On ne démarre pas la suivante sans `MERGE`.
 - Quand une US passe `MERGE` → Claude la déplace en `Done` et remonte la suivante en `In Progress`.
 - Si une US dépasse 3 fichiers → Claude la **scinde** et ajoute les sous-US ici.
 - Les **anti-patterns récurrents** détectés en review sont consignés dans `ANTIPATTERNS.md` et réinjectés dans les US suivantes.
--  Fixtures de test typées via helper Partial — interdit as any / as unknown as T.
-
+- **Zéro confiance** : chaque US livrée doit fournir le **code (contenu ou diff)** ET la **sortie brute des commandes** (`vitest`, `vue-tsc`, `eslint`). Une sortie verte sans code ne suffit pas à un MERGE.

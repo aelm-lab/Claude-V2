@@ -3,6 +3,8 @@
 > **Où mettre ce fichier :** dans la **Knowledge** du projet Claude Chat.
 >
 > **Règle absolue :** Gemini **n'invente JAMAIS un type**. Toute interface utilisée dans une US provient d'ici. Si un type manque, on crée d'abord une US « types » pour l'ajouter à ce fichier, **puis** on l'utilise. Ces interfaces sont déduites du code vanilla existant (`normalize.js`, `utils.js`, `rec-engine.js`, `store.js`).
+>
+> **⚠️ Ce fichier reflète l'état APRÈS US-008-types (mergée).** Les ajouts du moteur de recs sont intégrés ci-dessous.
 
 ---
 
@@ -36,10 +38,11 @@ export type RecencyBucket = 'recent' | 'mid' | 'old';
 
 ## 2. Entité principale : `AnimeEntry`
 
-Forme canonique renvoyée par `normalizeAnime`, enrichie des champs runtime utilisés par les vues.
+Forme canonique renvoyée par `normalizeAnime`, enrichie des champs runtime utilisés par les vues et le moteur de recs.
 
 ```ts
 // src/types/anime.ts
+import type { RecBadge, RecSignal } from './recs';
 
 export interface AnimeEntry {
   // Identité (toujours numériques après normalisation)
@@ -83,6 +86,12 @@ export interface AnimeEntry {
   _signals?: RecSignal[];
   _extractedByBYW?: boolean;
   _triggerTitle?: string;
+
+  // ── Ajoutés en US-008-types (moteur de recs) ──
+  studios?: string[];              // pluriel — lu par scorePool (souvent undefined, cf. bug Décision E)
+  popularityScore?: number;        // fallback popularité quand historyCount < 5
+  _relevanceScore?: number;        // produit par scorePool
+  _presetScore?: number;           // produit par applyPreset
 }
 ```
 
@@ -119,6 +128,7 @@ export interface JstParseResult {
 
 ```ts
 // src/types/recs.ts
+import type { RecencyBucket } from './anime';   // import type-only (circulaire sans danger)
 
 export interface TasteProfile {
   genres: Map<string, number>;
@@ -143,6 +153,8 @@ export interface HistoryItem {
   demographics?: string[];
   studios?: string[];
   title?: string;
+  completedAt?: string;            // ── ajouté US-008-types (getRecencyWeight) ──
+  recencyBucket?: RecencyBucket;   // ── ajouté US-008-types (getRecencyWeight) ──
 }
 
 export interface RecBadge {
@@ -151,7 +163,11 @@ export interface RecBadge {
   label: string;
 }
 
+// ── ajouté US-008-types ──
+export type RecSignalKind = 'relation' | 'studio' | 'genre' | 'theme' | 'score';
+
 export interface RecSignal {
+  kind?: RecSignalKind;            // ── ajouté US-008-types ──
   icon?: string;
   label: string;
 }
@@ -169,6 +185,7 @@ export type RecPreset =
 
 ```ts
 // src/types/persistence.ts
+import type { AnimeEntry } from './anime';
 
 export interface ScheduleDocument {
   timestamp: number;
@@ -180,7 +197,16 @@ export type IdbStoreName = 'relations' | 'recommendations';
 
 ---
 
-## 6. Signatures clés des composables (contrat d'API)
+## 6. Types locaux (NON dans le contrat — pour mémoire)
+
+Ces types sont **locaux à un fichier util** et NE doivent PAS être déplacés ici (ce sont des DTO de plomberie, pas des types métier) :
+- `RawAnime` (+ `RawNamed`, `RawListItem`, `RawImages`) → local non exporté dans `utils/normalize.ts`.
+- `MalImportEntry` → local non exporté dans `utils/malImport.ts`.
+- `MalImportResult` → **exporté** depuis `utils/malImport.ts` (pas un type métier partagé, reste près de sa fonction).
+
+---
+
+## 7. Signatures clés des composables (contrat d'API — Phase 2, à implémenter)
 
 > Les valeurs retournées exposées vers l'extérieur sont **`readonly`** ou des `computed`.
 
@@ -211,7 +237,7 @@ reScorePool(): void
 getBecauseYouWatchedBatch(type: RecContext): AnimeEntry[]
 getSlotFillSuggestions(list: AnimeEntry[]): Partial<Record<WeekDay, AnimeEntry>>
 
-// useEpisodeInfo (pur)
+// useEpisodeInfo (pur — wrappe utils/episodeInfo.ts)
 getAnimeEpisodeInfo(anime: AnimeEntry, targetDate?: Date): AnimeEpisodeInfo
 getCardStatus(anime: AnimeEntry): CardStatus
 isOnHiatus(anime: AnimeEntry): boolean
@@ -223,3 +249,5 @@ showToast(message: string, isHtml?: boolean, durationMs?: number): void
 isDark: Readonly<Ref<boolean>>
 toggleDarkMode(): void
 ```
+
+> ⚠️ **Note signature `getAnimeEpisodeInfo`** : l'util porté (US-006a) impose `targetDate: Date` **obligatoire** (signature stricte, pas de défaut `= new Date()`). Si `useEpisodeInfo` veut exposer un `targetDate?` optionnel, il devra fournir lui-même `new Date()` au moment de l'appel — décision à prendre en Phase 2.
