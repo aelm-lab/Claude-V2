@@ -108,3 +108,5 @@
 - Quand une US passe `MERGE` → Claude la déplace en `Done` et remonte la suivante en `In Progress`.
 - Si une US dépasse 3 fichiers → Claude la **scinde** et ajoute les sous-US ici.
 - Les **anti-patterns récurrents** détectés en review sont consignés dans `ANTIPATTERNS.md` et réinjectés dans les US suivantes.
+-  Fixtures de test typées via helper Partial — interdit as any / as unknown as T.
+
