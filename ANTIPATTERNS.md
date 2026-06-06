@@ -19,6 +19,10 @@
 - ❌ `any` (implicite ou explicite), `as any`, `@ts-ignore` → typer correctement depuis `TYPES_CONTRACT.md`.
 - ❌ **Inventer** une interface alors qu'elle existe déjà dans `TYPES_CONTRACT.md`.
 - ❌ Champs optionnels traités comme garantis (oublier `?.` ou les `null`).
+- ❌ as unknown as <Type> pour fabriquer des fixtures de test → contourne le typage comme as any. Utiliser un helper make<Entity>(over: Partial<Entity>): Entity centralisé. Réinjecté dans toutes les US à fichier .spec à partir d'ici.
+
+
+
 
 ### Gestion d'erreur
 - ❌ `async` sans `try/catch` → chaque appel réseau/IO doit gérer l'échec et exposer un état d'erreur.
