@@ -100,3 +100,37 @@
 - **[DEC-25] Option 2 pour l'orchestration sync.** Les stubs `_syncAnimeUpdates`/`_startBackgroundRelationFetch` dans `usePersistence` restent des no-ops permanents. `App.vue` séquence `loadFromDatabase()` puis `syncAnimeUpdates()` directement. Pas de dépendance circulaire.
 
 - **[DEC-26] `watch → saveToDatabase` dans `usePersistence`, pas dans le store.** Le store reste sans I/O. `usePersistence` porte le `watchDebounced` avec flag `suppressPersist`. Frontière propre.
+
+---
+
+## Décisions de session 3 (Phase 3 + Phase 4)
+
+### Router
+
+- **[DEC-27] Double bloc `<script>` + `<script setup>` pour exporter un Symbol depuis App.vue.** En Vue 3.3+, `<script setup>` interdit les exports nommés. `isBootingKey: InjectionKey<Ref<boolean>>` est exporté depuis un bloc `<script lang="ts">` standard, la logique setup reste dans `<script setup lang="ts">`. Pattern validé par vue-tsc + vite build.
+
+- **[DEC-28] Guard auth utilise `auth` singleton (Option A).** `auth` importé depuis `@/lib/firebase` dans le guard `beforeEach`. `useFirebaseAuth()` non appelé dans le guard (hors contexte `setup`). `await auth.authStateReady()` obligatoire avant toute lecture de `auth.currentUser` pour éviter la race au premier load.
+
+- **[DEC-29] Placeholders inline dans router/index.ts.** Les routes pointent vers `defineComponent` inline jusqu'à Phase 5. Évite les `TS2307` sur des fichiers inexistants. Substitution de tous les placeholders en une passe Phase 5.
+
+- **[DEC-30] `lastCalendarView/RadarView/VaultView` reporté en Phase 4 (PrimaryNav).** Ces clés vivent dans `nav.js`, pas dans le router. Mettre des lectures localStorage dans les guards = concern qui fuit. Route `/` → `/week` statique jusqu'à Phase 4.
+
+### Boot / layouts
+
+- **[DEC-31] `isBooting` fourni via `provide/inject`, pas en prop.** Évite le prop-drilling jusqu'à `LoadingOverlay`. `isBootingKey: InjectionKey<Ref<boolean>>` exporté depuis `App.vue`. `LoadingOverlay` injecte avec fallback `ref(false)` obligatoire.
+
+- **[DEC-32] `syncAnimeUpdates()` et `startBackgroundRelationFetch()` fire-and-forget dans `App.vue onMounted`.** Ni `await` ni `void` — appel direct. Le commentaire `// fire-and-forget` documente l'intention. Conforme DEC-25.
+
+- **[DEC-33] `ToastNotification` dans `AppLayout` uniquement (routes auth).** Les toasts de boot se déclenchent après `loadFromDatabase`, quand l'utilisateur est authentifié et `AppLayout` déjà monté. Si toast sur `/login` requis un jour → migration vers `App.vue` = dette Phase 7.
+
+### Composants atomiques
+
+- **[DEC-34] Lazy-load image via `<img style="display:none" @load @error>`.** Remplace `new Image()` vanilla. Zéro DOM direct, comportement identique. `imgState` initialisé à `'loading'` même si `cover_url` est null — passage à `'error'` impossible sans `<img>` monté → `:class` doit traiter `!cover_url` explicitement comme `card-fallback-bg` (bug initial US-025, corrigé).
+
+- **[DEC-35] `SeasonNudgeCard` dismiss via `<Transition @after-leave>`.** Remplace `card.addEventListener('transitionend')` vanilla. Le parent écrit localStorage après réception de l'emit `dismiss`. Zéro `setTimeout`.
+
+- **[DEC-36] `ChipsStrip` : chip 'all' émet `null` (pas la string 'all').** `RecPreset` ne contient pas `'all'`. Le parent reçoit `RecPreset | null`, `null` = pas de preset actif.
+
+- **[DEC-37] `WeekAnimeItem` reçoit `info: AnimeEpisodeInfo` en prop.** Le parent (CalendarWeekPage, Phase 5) calcule `getAnimeEpisodeInfo(anime, targetDate)` et passe le résultat. Le composant ne recalcule pas.
+
+- **[DEC-38] `MonthDayCell` reçoit `animes: MonthAnimeItem[]` pré-filtrés en prop.** Le filtrage par jour + état appartient à `CalendarMonthPage`. Composant dumb.
