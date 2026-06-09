@@ -58,18 +58,29 @@
 ## Features à ajouter post-migration
 
 ### [P8-06] `LoadingOverlay` réactif au boot
-**Description :** Au démarrage, l'app charge auth + Firestore avant le premier rendu → risque de flash blanc ou d'état vide visible. Prévoir un `LoadingOverlay` piloté par `ref<boolean> isBooting` dans `App.vue`, posé à `false` après `loadFromDatabase()`.
-**Note :** en Phase 3, `App.vue` posera déjà ce `isBooting` — l'overlay sera rendu en Phase 4.
+**Description :** Au démarrage, l'app charge auth + Firestore avant le premier rendu → risque de flash blanc ou d'état vide visible. `App.vue` expose déjà `isBooting` via `provide/inject` (DEC-31). `LoadingOverlay` est câblé et injecte `isBootingKey`. Fonctionnel dès Phase 4.
+**Statut :** implémenté (US-022 + US-023). Surveiller le comportement au boot en Phase 5.
 **Origine :** DEC-17 (session 1)
 
 ### [P8-07] `hideToast()` sur clic utilisateur
-**Description :** `useToast` expose `hideToast()` mais le vanilla ne permettait pas de fermer le toast manuellement. Cette amélioration peut être connectée dans `ToastNotification.vue` (Phase 4) : clic sur le toast = fermeture immédiate.
+**Description :** `useToast` expose `hideToast()`. `ToastNotification.vue` branche déjà `@click="hideToast"` (US-023). Amélioration disponible dès Phase 4.
+**Statut :** implémenté en US-023.
 **Origine :** US-018a cadrage (session 2)
 
 ### [P8-08] Clés localStorage incohérentes — harmonisation
 **Description :** Les clés localStorage actuelles sont hétérogènes (`backlog_recs_v1`, `recs_incoming_v3`, `recs_library_v2`, `seasons_now_v1`, `seasons_upcoming_v1`, `anime_sync_ts_v1`, `animeCalendar`, `lastCalendarView`, etc.). À harmoniser en Phase 7 avec une convention `aanime_*`.
 **Contrainte :** migration des données existantes ou reset accepté (à décider avec le PO).
 **Origine :** AUDIT.md + PLAN_MIGRATION.md Phase 7
+
+### [P8-09] Redirect post-login vers la route d'origine
+**Description :** Après `completeSignIn()`, l'app redirige toujours vers `/week`. Si l'utilisateur tentait d'accéder à `/library/completed` avant d'être renvoyé sur `/login`, il perd ce contexte.
+**Correction à faire :** implémenter un `redirect` query param (`/login?redirect=/library/completed`) sauvegardé dans le guard `beforeEach`, lu dans `LoginPage.vue` après auth réussie.
+**Origine :** décision PO US-021 (session 3) — fidélité vanilla prioritaire sur UX.
+
+### [P8-10] SyncIndicator — couverture complète des fetches Jikan
+**Description :** `SyncIndicator` réagit uniquement à `useSync().isSyncing` (batch sync). Le vanilla monkey-patchait `window.fetch` pour détecter TOUS les fetches vers `api.jikan.moe` (search, fetchById, season…). Les fetches ponctuels ne déclenchent pas l'indicateur dans la version Vue.
+**Correction à faire :** ajouter un `ref<number> jikanInFlight` dans `useJikanApi`, incrémenté/décrémenté autour de chaque fetch. Exposer `isJikanBusy: ComputedRef<boolean>`. `SyncIndicator` combinerait `isSyncing || isJikanBusy`.
+**Origine :** décision PO US-023 (session 3).
 
 ---
 
@@ -83,3 +94,6 @@ Le commentaire `// Toasts promotions (showToast stub dans usePersistence jusqu'�
 
 ### `getAnimeEpisodeInfo` — signature stricte `targetDate: Date`
 L'util sous-jacent exige `targetDate` obligatoire. `useEpisodeInfo` fournit `new Date()` si omis. Ne pas modifier la signature de l'util — c'est voulu pour la testabilité.
+
+### Toast sur `/login` — migration future
+`ToastNotification` est dans `AppLayout` (routes auth uniquement). Si un toast doit apparaître sur `/login`, déplacer vers `App.vue`. Dette Phase 7 (DEC-33).
