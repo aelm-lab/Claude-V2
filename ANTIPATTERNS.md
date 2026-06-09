@@ -19,18 +19,32 @@
 - ❌ Mettre `initializeApp`/`getAuth` dans un composable → réinit à chaque appel. Singleton dans `lib/firebase.ts`.
 - ❌ Brancher `onAuthStateChanged` dans la fonction `useXxx()` → listeners empilés. Au niveau module.
 - ❌ Brancher `watchDebounced` dans le corps du composable sans flag → listeners empilés. Flag niveau module (`watchInitialized`).
+- ❌ Appeler `useFirebaseAuth()` dans un guard Vue Router → hors contexte `setup`. Utiliser le singleton `auth` depuis `@/lib/firebase` + `await auth.authStateReady()`.
+- ❌ Lire `auth.currentUser` avant `await auth.authStateReady()` → `currentUser` est `null` pendant l'init même si l'utilisateur est connecté.
+- ❌ Importer un composant `.vue` de page/layout inexistant dans le router → `TS2307`. Utiliser des placeholders inline (`defineComponent`) jusqu'à Phase 5.
 
 ### TypeScript
 - ❌ `any` (implicite ou explicite), `as any`, `@ts-ignore` → typer depuis TYPES_CONTRACT.md.
 - ❌ Inventer une interface qui existe déjà dans TYPES_CONTRACT.md.
 - ❌ Champs optionnels traités comme garantis (oublier `?.` ou les `null`).
 - ❌ Fixtures de test via `as unknown as AnimeEntry` → factory `createAnime(Partial<AnimeEntry>)`.
+- ❌ `inject(key)` sans fallback quand la clé est typée → TypeScript exige un fallback. Ex : `inject(isBootingKey, ref(false))`.
+- ❌ Export nommé depuis `<script setup>` → impossible en Vue 3. Utiliser un double bloc `<script lang="ts">` + `<script setup lang="ts">` (DEC-27).
 
 ### Gestion d'erreur
 - ❌ `async` sans `try/catch` → chaque appel réseau/IO doit gérer l'échec.
 - ❌ Avaler une erreur en silence (`catch {}`) sans log ni état.
 - ❌ Oublier la gestion du 429 (rate limit Jikan) et du retry/backoff.
 - ❌ Laisser remonter le `throw` de `handleFirestoreError` → attraper localement, exposer `error` réactif.
+
+### Composants
+- ❌ `new Image()` pour le lazy-load image → `<img style="display:none" @load @error>` uniquement.
+- ❌ `imgState` initialisé à `'loaded'` quand `cover_url` est null → toujours `'loading'`, passer à `'error'` via `@error`. Traiter `!cover_url` explicitement dans `:class` → `card-fallback-bg`.
+- ❌ `setTimeout` pour les animations de dismiss → `<Transition @after-leave>` uniquement.
+- ❌ Écrire `localStorage` dans un composant UI → la logique appartient au parent ou au composable.
+- ❌ `router.push` au lieu de `router.replace` après auth → crée un retour arrière vers `/login`.
+- ❌ `<form @submit.prevent>` → `@click` sur le bouton uniquement (règle cohérence Vue).
+- ❌ `v-html` inconditionnel → toujours derrière `v-if="isHtml"` (XSS).
 
 ### Périmètre & process
 - ❌ Toucher des fichiers non listés dans l'US.
@@ -55,16 +69,18 @@
 - **[US-006a]** ❌ `as unknown as <Type>` pour les fixtures → helper `makeAnime(Partial<AnimeEntry>)`.
 - **[US-011]** ❌ Install firebase hors périmètre US. La déps firebase appartient à US-012.
 - **[US-016]** ❌ Import `buildRelationMemory` depuis `@/utils/recEngine` alors qu'elle est dans `recs.js` (useRecommendations). Spec de Claude fautive — cf. DEC-21.
-- **[US-017a]** ❌ `void extractBecauseYouWatched` + `void saveToDatabase` pour silencer les unused → ne pas utiliser `void` sur des imports. Retirer l'import et le réintroduire dans la passe où il est utilisé.
+- **[US-017a]** ❌ `void extractBecauseYouWatched` + `void saveToDatabase` pour silencer les unused → ne pas utiliser `void` sur des imports. Retirer l'import inutilisé et le réintroduire dans la passe où il est utilisé.
+- **[US-025]** ❌ (erreur de spec Claude + Gemini) : `imgState` initialisé à `'loading'`, mais `card-fallback-bg` non appliqué quand `cover_url === null`. Fix : `'card-fallback-bg': imgState === 'error' || !anime.cover_url`. Toujours traiter le cas `null` explicitement dans le `:class`.
 
 ---
 
 ## Règles process permanentes
 
 - ✅ **Zéro confiance, y compris sur le code de Claude.** Tout snippet est faillible → prouver par l'exécution.
-- ✅ **Sortie de commande = session terminale littérale.** Prompt `$` + commande + sortie réelle (même vide). `# Command completed successfully` ou tout résumé = review suspendue d'office sans exception à partir de Phase 3. Aucune tolérance supplémentaire.
+- ✅ **Sortie de commande = session terminale littérale.** Prompt `$` + commande + sortie réelle (même vide). `# Command completed successfully` ou tout résumé = review suspendue d'office sans exception. Aucune tolérance.
+- ✅ **Livraison = contenu intégral des fichiers créés/modifiés.** `show all diff` ou récap Gemini sans contenu = review suspendue. Coller chaque fichier du premier au dernier caractère.
 - ✅ **Gemini n'a PAS accès à la Knowledge.** Chaque US est 100 % autoportante.
 - ✅ **Fixtures de test typées** via helper `Partial` ou factory complet — interdit `as any`/`as unknown as T`.
 - ✅ `npx <outil>` accepté comme équivalent de `npm run <script>`.
-- ✅ **`eslint-disable-next-line` ne silencieux PAS TypeScript.** `TS6133` (unused variable) est un diagnostic compilateur — seul le retrait de la variable ou le préfixe `_` le résout. Ne jamais injecter un disable ESLint pour corriger une erreur `vue-tsc`. Solution : retirer l'import inutilisé, le réintroduire dans l'US où il est utilisé.
-- ✅ **Livraison = code brut intégral + sorties brutes, jamais un résumé.** Un récap en prose du code ne vaut pas livraison. Si l'US crée/modifie des fichiers, coller leur contenu complet du premier au dernier caractère.
+- ✅ **`eslint-disable-next-line` ne silencieux PAS TypeScript.** `TS6133` (unused variable) est un diagnostic compilateur — seul le retrait de la variable ou le préfixe `_` le résout.
+- ✅ **Max 3 fichiers par US.** Si débordement → scinder + prévenir le PO avant de livrer.
