@@ -4,7 +4,7 @@
 
 ---
 
-## 📋 Kanban — état actuel (fin de session 2, Phase 2 close à 100 %)
+## 📋 Kanban — état actuel (fin de session 3, Phase 3 + Phase 4 closes à 100 %)
 
 ### ✅ Done — Phase 0 + Phase 1
 - [US-001] Scaffold Vue 3 + TS + Vite (US-001b absorbée)
@@ -35,36 +35,45 @@
 - [US-018b] useICS.ts (download Blob + iOS) + useMalImport.ts (FileReader + suppressPersist)
 - [US-018c] Câblage stubs — remplacement _showToast par useToast dans usePersistence + useSync
 
+### ✅ Done — Phase 3
+- [US-019] Router Vue Router 4 — routes, guards auth/guest, redirections
+- [US-020] App.vue orchestration boot + AppLayout.vue coquille
+- [US-021] AuthLayout.vue + LoginPage.vue (câblage useFirebaseAuth)
+
+### ✅ Done — Phase 4
+- [US-022] EmptyState + SkeletonCard + LoadingOverlay
+- [US-023] ToastNotification + SyncIndicator + branchement AppLayout
+- [US-024] ChipsStrip + SeasonNudgeCard
+- [US-025] AnimeCard + RecCard
+- [US-026] WeekAnimeItem + WeekSuggestionCard + MonthDayCell
+
 > **~50 tests Vitest (Phase 1), zéro any, tous composables Phase 2 livrés.**
+> **Phase 3 : router + layouts + login câblés.**
+> **Phase 4 : 12 composants atomiques livrés.**
 
 ### 🔄 In Progress
-- _(rien — handoff vers Phase 3)_
+- _(rien — handoff vers Phase 5)_
 
-### 📝 To Do — Sprint 4 (Phase 3 : Router + layouts)
-- [US-019] Router Vue Router 4 (routes, guards auth, redirections)
-- [US-020] App.vue + AppLayout.vue coquille (header placeholder, nav placeholder, router-view)
-- [US-021] AuthLayout.vue + LoginPage.vue coquille (câblage useFirebaseAuth)
+### 📝 To Do — Sprint 6 (Phase 5 : Pages)
+- [US-027] LoginPage substituée dans le router + AppLayout complet (header placeholder remplacé)
+- [US-028] CalendarWeekPage — vue semaine + navigation date
+- [US-029] CalendarMonthPage — grille 42 cellules + navigation date
+- [US-030] DiscoverExplorePage — recs perso + chips + BYW + infinite scroll
+- [US-031] DiscoverSeasonPage — catalogue saison courante
+- [US-032] DiscoverComingUpPage — liste radar utilisateur
+- [US-033] LibraryExplorePage — recs « missed » + BYW
+- [US-034] LibraryPlanToWatchPage — watchlist triée
+- [US-035] LibraryCompletedPage — vault trié
 
 ### 🗂️ Backlog (epics par phase)
-- [PHASE-4] Composants atomiques ui/
-- [PHASE-5] Pages
-- [PHASE-6] Modals & sheets
+- [PHASE-6] Modals & sheets (AnimeModal, RecencySheet, EpOverridePanel)
 - [PHASE-7] Branchement final + nettoyage
 - [PHASE-8] Post-migration : dette technique + features → voir PHASE8_DEBT.md
 
 ---
 
 ## Reports / dette ouverte
-Voir **PHASE8_DEBT.md** pour le détail complet (P8-01 à P8-05).
-
-Résumé rapide :
-- Bug studios inerte (DEC-11) — scorePool lit item.studios que normalize ne produit pas.
-- Auto-vault silencieux (P8-02) — toast informatif au premier ajout d'une série terminée.
-- window.prompt() re-saisie email (P8-03) — remplacer par UI propre en LoginPage.
-- fetchTopFinishedAnime inline (DEC-22 / P8-04) — à migrer dans useJikanApi.
-- Mapping MAL Dropped→vault discutable (P8-05).
-- Commentaire résiduel useSync.ts:177 — nettoyage Phase 7.
-- DEC-23 : classe dark sur html vs body — surveiller Phase 7.
+Voir **PHASE8_DEBT.md** pour le détail complet (P8-01 à P8-10).
 
 ---
 
@@ -74,3 +83,4 @@ Résumé rapide :
 - Si une US dépasse 3 fichiers → scinder + prévenir le PO.
 - **Zéro confiance** : chaque US livrée fournit code brut intégral + sorties terminales brutes.
   `# Command completed successfully` n'est pas une sortie brute → review suspendue.
+- **Livraison = contenu intégral** des fichiers créés/modifiés — `show all diff` sans contenu = review suspendue.
