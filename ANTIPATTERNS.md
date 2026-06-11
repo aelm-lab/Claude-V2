@@ -61,6 +61,20 @@
 
 ---
 
+## Anti-patterns d'orchestration runtime (leçons de l'audit post-migration, session 6)
+
+> Ces 4 bugs ont passé `vue-tsc` + tous les tests unitaires + le build **au vert**.
+> Ils ne se voient QUE en lisant la chaîne d'appels runtime. D'où les règles R1/R2/R3.
+
+- ❌ **Stub no-op câblé à vide en croyant que l'orchestration est faite ailleurs.** `useSync` appelait `_buildRelationMemory`/`_reScorePool` (stubs vides) ; `App.vue` n'importait même pas `useRecommendations`. Résultat : moteur de reco mort. → **Toujours vérifier que le VRAI appel existe quelque part** (grep le nom de la vraie fonction, pas du stub). [US-102]
+- ❌ **Throttle / `setTimeout` / sleep inconditionnel après un appel qui peut taper le cache.** Le worker dormait 1,1 s même sur un cache hit IDB → ~11 min de boot. → **Conditionner l'attente à un flag `fromNetwork`** retourné par la fonction. Ne jamais throttler une lecture cache. [US-106]
+- ❌ **Dupliquer une règle métier à deux endroits avec deux seuils différents.** Hiatus calculé à 14 j dans `episodeInfo.ts` (lu) ET à 21 j dans `useSync.ts` (écrit dans un champ jamais lu). → **Une seule source de vérité computed**, supprimer les calculs concurrents. [US-107]
+- ❌ **Écrire un champ que personne ne lit.** `anime.onHiatus` était écrit par la synchro mais aucun composant/composable ne le lisait (grep : 0 lecteur vivant). → Code mort coûteux : supprimer l'écriture, dériver à l'affichage. [US-107]
+- ❌ **Valider une migration sur le seul tooling vert.** `vue-tsc` + tests + build OK ≠ app fonctionnelle : 4 bugs runtime vivaient dessous. → **R3 : un audit lit le CODE**, pas seulement les indicateurs. [audit croisé]
+- ❌ **Livrer une US d'orchestration/store/câblage sans test runtime.** → **R2 : smoke/unit test obligatoire** qui prouve la séquence d'appels (cf. `App.spec.ts`). [US-109]
+
+---
+
 ## Récidives détectées en cours de projet
 
 - **[US-001]** ❌ Réintroduction de dépendances parasites non demandées + conservation du DOM vanilla dans `index.html`. → Règle : pas de déps hors liste, `<body>` doit être nu.
@@ -69,18 +83,23 @@
 - **[US-006a]** ❌ `as unknown as <Type>` pour les fixtures → helper `makeAnime(Partial<AnimeEntry>)`.
 - **[US-011]** ❌ Install firebase hors périmètre US. La déps firebase appartient à US-012.
 - **[US-016]** ❌ Import `buildRelationMemory` depuis `@/utils/recEngine` alors qu'elle est dans `recs.js` (useRecommendations). Spec de Claude fautive — cf. DEC-21.
-- **[US-017a]** ❌ `void extractBecauseYouWatched` + `void saveToDatabase` pour silencer les unused → ne pas utiliser `void` sur des imports. Retirer l'import inutilisé et le réintroduire dans la passe où il est utilisé.
-- **[US-025]** ❌ (erreur de spec Claude + Gemini) : `imgState` initialisé à `'loading'`, mais `card-fallback-bg` non appliqué quand `cover_url === null`. Fix : `'card-fallback-bg': imgState === 'error' || !anime.cover_url`. Toujours traiter le cas `null` explicitement dans le `:class`.
+- **[US-017a]** ❌ `void extractBecauseYouWatched` + `void saveToDatabase` pour silencer les unused → ne pas utiliser `void` sur des imports. Retirer l'import inutilisé.
+- **[US-025]** ❌ (erreur de spec Claude + Gemini) : `imgState` initialisé à `'loading'`, mais `card-fallback-bg` non appliqué quand `cover_url === null`. Fix : `'card-fallback-bg': imgState === 'error' || !anime.cover_url`.
+- **[Audit session 6]** ⚠️ Gemini a parfois **paraphrasé** une sortie de commande (`grep` résumé en prose) au lieu de coller le terminal brut. → Exiger systématiquement la sortie littérale ; une paraphrase de preuve = vérification rejetée.
+- **[Audit session 6]** ⚠️ Gemini a **renvoyé une US déjà mergée** au lieu d'exécuter la commande demandée. → Vérifier que la livraison répond exactement à la demande courante.
 
 ---
 
-## Règles process permanentes
+## Règles process permanentes (gravées dans AGENTS.md)
 
+- ✅ **R1 — Triple preuve verte (CI).** `vue-tsc --noEmit` + `vitest run` + `build`, sorties brutes, pour tout MERGE. Rejouées par `.github/workflows/ci.yml` à chaque push.
+- ✅ **R2 — Test obligatoire sur l'orchestration.** Toute US touchant le boot, un store, ou le câblage entre composables livre/maj un test runtime.
+- ✅ **R3 — Un audit lit le code.** Pas seulement les indicateurs verts.
 - ✅ **Zéro confiance, y compris sur le code de Claude.** Tout snippet est faillible → prouver par l'exécution.
-- ✅ **Sortie de commande = session terminale littérale.** Prompt `$` + commande + sortie réelle (même vide). `# Command completed successfully` ou tout résumé = review suspendue d'office sans exception. Aucune tolérance.
-- ✅ **Livraison = contenu intégral des fichiers créés/modifiés.** `show all diff` ou récap Gemini sans contenu = review suspendue. Coller chaque fichier du premier au dernier caractère.
-- ✅ **Gemini n'a PAS accès à la Knowledge.** Chaque US est 100 % autoportante.
+- ✅ **Sortie de commande = session terminale littérale.** Prompt `$` + commande + sortie réelle (même vide). `# Command completed successfully` ou tout résumé = review suspendue d'office.
+- ✅ **Livraison = contenu intégral des fichiers créés/modifiés.** `show all diff` ou récap sans contenu = review suspendue. (Exception très gros fichier : diff exact + `grep -c` prouvant 0 occurrence résiduelle.)
+- ✅ **Gemini n'a PAS accès à la Knowledge.** Chaque US est 100 % autoportante. Sa gouvernance permanente vit dans `AGENTS.md` (racine, lu automatiquement).
 - ✅ **Fixtures de test typées** via helper `Partial` ou factory complet — interdit `as any`/`as unknown as T`.
 - ✅ `npx <outil>` accepté comme équivalent de `npm run <script>`.
-- ✅ **`eslint-disable-next-line` ne silencieux PAS TypeScript.** `TS6133` (unused variable) est un diagnostic compilateur — seul le retrait de la variable ou le préfixe `_` le résout.
-- ✅ **Max 3 fichiers par US.** Si débordement → scinder + prévenir le PO avant de livrer.
+- ✅ **`eslint-disable-next-line` ne silencie PAS TypeScript.** `TS6133` (unused) → retrait de la variable ou préfixe `_`.
+- ✅ **Max 3 fichiers par US.** Si débordement → scinder + prévenir le PO (sauf suppression pure prouvée).
