@@ -134,3 +134,16 @@
 - **[DEC-37] `WeekAnimeItem` reçoit `info: AnimeEpisodeInfo` en prop.** Le parent (CalendarWeekPage, Phase 5) calcule `getAnimeEpisodeInfo(anime, targetDate)` et passe le résultat. Le composant ne recalcule pas.
 
 - **[DEC-38] `MonthDayCell` reçoit `animes: MonthAnimeItem[]` pré-filtrés en prop.** Le filtrage par jour + état appartient à `CalendarMonthPage`. Composant dumb.
+
+## Décisions de session 4 (Phases 5+6+7)
+
+- **[DEC-39]** Substitution des placeholders router au fil des US de page (pas de passe dédiée).
+- **[DEC-40]** Pattern stub `console.warn` uniforme en Phase 5, câblage batché en US-041.
+- **[DEC-41]** `stores/ui.ts` pilote tous les overlays (modal, ep-override, recency). Remplace `activeWindowClickHandler` et `modal.style.display`.
+- **[DEC-42]** `modalContext` : `libraryRec` prioritaire (dernière affectation vanilla = priorité en computed).
+- **[DEC-43]** `removeAnimeWithUndo` simplifié en `store.removeAnime` (undo toast = dette US-121).
+- **[DEC-44]** Prefetch covers relations abandonné (contournement DOM impératif) — fallback @error suffit (US-129).
+- **[DEC-45]** `useEpisodeInfo` expose `getEpisodeInfo`/`getStatus`/`checkIsOnHiatus` ; `useICS` expose `downloadICS`. Contrat §7 corrigé a posteriori.
+- **[DEC-46]** CalendarNavControls = composant connecté route-aware (pas props/emits) — duplication temporaire avec les pages (US-105).
+- **[DEC-47]** `synopsis?: string` ajouté à AnimeEntry (US-048c).
+- **[DEC-48]** ROADMAP.md remplace PHASE8_DEBT.md ; BACKLOG.md aminci (Kanban + règles uniquement).
