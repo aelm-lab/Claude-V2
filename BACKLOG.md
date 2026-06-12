@@ -1,55 +1,57 @@
 # BACKLOG.md — Kanban vivant
 
 > **Où mettre ce fichier :** dans la Knowledge du projet Claude Chat.
-> **Epics & estimations →** voir ROADMAP.md.
-> **État de référence : fin de session 6 (EPIC-1 clos, prêt pour tag `v2-stable`).**
+> **Epics & estimations →** ROADMAP.md. **Audit UX →** AUDIT_UX_SESSION7.md.
+> **État de référence : session 7 — EPIC P0 (correctifs UX) en cours.**
 
 ---
 
 ## 📋 Kanban
 
-### ✅ Done — Migration complète (Phases 0→7)
-- Phases 0-4 : scaffold, utils purs (~50 tests), store+composables, router+layouts, 12 composants atomiques
-- Phase 5 : 9 pages (US-028→035) + WeekDayStrip + BecauseYouWatched
-- Phase 6 : stores/ui.ts, AnimeModal (shell+2 tops+2 strips), EpOverridePanel, RecencySheet, câblage 9 pages (US-036→041)
-- Phase 7 : LoginPage routé, PrimaryNav/SecondaryNav/AppHeader/SearchInput/CalendarNavControls, entry point unique, nettoyage (US-042→048c)
+### ✅ Done — Migration (Phases 0→7) + EPIC-1 (remédiation post-audit)
+- Voir HANDOFF_SESSION6.md (archivé). Migration close, 4 bugs runtime corrigés, tag v2-stable.
 
-### ✅ Done — EPIC-1 : remédiation post-audit (session 6)
-- [US-109] Filet de sécurité : `ci.yml` (vue-tsc + vitest + build) + `App.spec.ts` (smoke test boot) — *absorbe la CI/CD initialement planifiée US-110*
-- [US-102] 🔴 P0 — Moteur de reco rebranché au boot (App.vue orchestre, stubs morts supprimés de useSync) — DEC-50
-- [US-106] 🟠 P1 — Throttle Jikan conditionnel au réseau réel (pattern `*WithMeta`/`fromNetwork`) — DEC-51
-- [US-107] 🟠 P1 — Hiatus source unique 14j (suppression écriture morte 21j dans useSync) — DEC-52
-- [US-101] Suppression des 31 fichiers vanilla morts (grappe fermée prouvée par inventaire)
-- [US-104] Dark mode : `body.dark-mode` → `html.dark` (66 occurrences)
-- [US-105] Déduplication des contrôles de navigation date (Prev/Next retirés des pages)
-- [US-110] `AGENTS.md` musclé = gouvernance permanente Gemini (DEC-53) — *réversion : ce fichier devait être supprimé, il est finalement conservé*
-
-> **US-103 SUPPRIMÉE** : pas de bug timezone. 66/66 tests réels (les « 2 échecs » de l'audit Claude Code étaient un artefact de son conteneur). Avec le smoke test US-109 : **69/69**.
+### ✅ Done — Session 7
+- [US-113a] Lazy-loading des pages (router) — EPIC-2 (démarré puis EPIC-2 mis en pause au profit de l'UX)
+- [P0.0] Socle Playwright + auth de test mockée (bypass `import.meta.env`, mort en prod, `grep -c=0` prouvé) — DEC-56
+- [P0.0-bis] Isolation runners : `tests/e2e` exclu de Vitest, `smoke.spec.ts` nettoyé
+- [P0.1] 🔴🔴 Modal morte réparée (event `click` vs `@open-modal` désaligné) + test E2E R4 (rouge→vert) — DEC-57
 
 ### 🔄 In Progress
-- _(rien — EPIC-1 clos, prêt pour tag `v2-stable`)_
+- _(rien — prochaine : P0.2)_
 
-### 📝 To Do — prochain sprint (EPIC-2, voir ROADMAP.md)
-- [US-111] Tests E2E Playwright (3 parcours critiques)
-- [US-112] Monitoring erreurs production (Sentry)
-- [US-113] Code-splitting + fix warning chunking `idb.ts` (bundle 749 kb)
-- [US-114] File Jikan globale (anti-429 navigation rapide) *(issu audit B)*
-- [US-115] `useScrollKeeper` (dédup scroll restore) *(issu audit B)*
+### 📝 To Do — EPIC P0 (correctifs UX bloquants, issus de l'audit live)
+- [P0.2] LoadingOverlay réellement visible au boot (F2)
+- [P0.3] Dédup pools par `mal_id` — Discover For You/Season + suggestions recherche (F5)
+- [P0.4] Feedback d'ajout (toast) + auto-vault annoncé (F6 / US-121)
+- [P0.5] Sous-nav On Air (Week/Month/List) → /month accessible (F3)
+- [P0.6] Layout Month cassé : en-tête grille + titres dans cellules (F4)
+- [P0.7] /login stylé : AuthLayout + branding + explication flow (F7 / US-122)
 
-### 🧹 Ménage repo (avant tag)
-- Supprimer `PHASE8_DEBT.md` (remplacé par ROADMAP.md)
-- Supprimer `HANDOFF_SESSION5.md` (remplacé par HANDOFF_SESSION6.md)
+### 📝 Backlog UX (post-P0)
+- [US-143] Signaux recos visibles sur carte (`_signals`/`_triggerTitle` existent) (F16)
+- [US-141] Marquer-vu en 1 tap depuis le calendrier
+- [US-144] États vides actionnables (jours vides muets) (F10)
+- [US-150] Snap-to-today (F11)
+- [US-116] Libellé de période dupliqué (F12)
+- [US-145] Recherche enrichie (année/score/+) (F13)
+- Nouveaux (sans US) : F8 dark contraste sous-nav, F9 état actif onglets, F14 skeletons inutilisés, F15 hiérarchie typo + section BYW vide
 
-### 🗂️ Epics
-→ ROADMAP.md (EPIC-1 à EPIC-5)
+### 🗂️ En standby (repris après EPIC P0)
+- EPIC-2 : US-117 (défer Firestore, ROI 1er chargement), US-113b/c, US-114, US-111, US-112
+- EPIC-3/4/5 : ROADMAP.md
 
 ---
 
 ## Règles de tenue du backlog
-- **Une seule US In Progress à la fois.** Pas de MERGE, pas de suite.
-- Quand une US passe MERGE → Done, remonter la suivante.
+- **Une seule US In Progress.** Pas de MERGE, pas de suite.
 - US > 3 fichiers → scinder + prévenir le PO (sauf suppression pure prouvée).
-- **Zéro confiance** : code brut intégral + sortie terminale brute obligatoires.
-- **Triple preuve verte (R1)** : `vue-tsc` + `vitest run` + `build` pour tout MERGE.
-- **Test obligatoire (R2)** sur toute US touchant boot / store / câblage de composables.
+- **Zéro confiance** : code brut intégral + sortie terminale brute.
+- **R1** triple preuve verte (vue-tsc + vitest run + build) pour tout MERGE.
+- **R2** test runtime sur boot/store/câblage de composables.
+- **R3** un audit lit le code.
+- **R4** (session 7) : tout correctif UX / feature touchant l'écran livre un test E2E
+  Playwright qui reproduit le geste utilisateur et asserte le DOM visible. ROUGE sur le
+  bug, VERT après le fix, sans modification.
+- **Diagnostic avant spec** : grep lecture seule, décision sur preuve.
 - Livraison sans contenu intégral = review suspendue.
