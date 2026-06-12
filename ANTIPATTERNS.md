@@ -103,3 +103,32 @@
 - ✅ `npx <outil>` accepté comme équivalent de `npm run <script>`.
 - ✅ **`eslint-disable-next-line` ne silencie PAS TypeScript.** `TS6133` (unused) → retrait de la variable ou préfixe `_`.
 - ✅ **Max 3 fichiers par US.** Si débordement → scinder + prévenir le PO (sauf suppression pure prouvée).
+## Anti-patterns UX & test E2E (leçons de l'audit live, session 7)
+
+> Ces bugs ont passé vue-tsc + 72 tests + 2 audits de code. Ils ne se voient qu'en
+> CLIQUANT dans l'app. D'où R4 (test E2E qui reproduit le geste).
+
+- ❌ **Émettre un event sous un nom et l'écouter sous un autre.** `WeekAnimeItem` émet
+  `click`, la page écoutait `@open-modal` → handler jamais déclenché, 0 erreur console.
+  → Le composant définit son contrat d'emit ; les pages s'y conforment. Vérifier le nom
+  exact des deux côtés. [P0.1]
+- ❌ **Asserter l'état interne (store) au lieu de la visibilité DOM dans un test E2E.**
+  R4 vérifie ce que l'UTILISATEUR voit (`.modal-backdrop` visible), pas `ui.modalOpen`.
+- ❌ **Livrer un test E2E « réparateur » sans la sortie ROUGE pré-fix.** Un test qui n'a
+  jamais échoué ne prouve pas qu'il capture le bug. Fournir rouge PUIS vert, test inchangé.
+- ❌ **Bypass de test lu en variable runtime** (`process.env`, condition dynamique) →
+  survit dans le bundle prod = trou de sécurité. Obligatoirement `import.meta.env.*`
+  (statique, tree-shakée). Prouver par `grep -c` = 0 sur les chunks prod.
+- ❌ **Deviner une clé localStorage/Firestore dans un seed de test.** `modal-open.spec.ts`
+  seede `'animeCalendar'` (deviné). Vérifier la vraie clé de `usePersistence` avant de
+  s'appuyer dessus, sinon le test passe pour une mauvaise raison.
+- ❌ **App muette.** Action utilisateur (boot, ajout, auto-vault, onglet actif, jour vide)
+  sans aucun feedback visible = indistinguable de « rien ». Toute action doit produire un
+  retour visuel (spinner, toast, état actif, highlight). [fil rouge audit UX]
+
+## Récidive process (session 7)
+- **[P0.1 diagnostic]** ⚠️ Claude a affirmé « `modalOpen` n'existe pas dans le store »
+  AVANT de lire le grep — c'était faux (5ᵉ spec/diagnostic fautif après DEC-11/16/21/24).
+  → Règle confirmée : diagnostic = grep lecture seule D'ABORD, affirmation ENSUITE. La
+  règle zéro-confiance s'applique à Claude lui-même.
+  
