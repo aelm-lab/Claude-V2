@@ -167,3 +167,25 @@
 - **[DEC-54] Filet de sécurité avant correctifs (US-109).** Décision PO : installer le filet **avant** de corriger les bugs. `.github/workflows/ci.yml` (vue-tsc + vitest + build sur push/PR) + `src/App.spec.ts` (smoke test d'orchestration boot). Le 3ᵉ test, volontairement **rouge**, encodait le contrat du bug P0 ; il est passé **vert sans modification** après US-102 → preuve que le filet fonctionne de bout en bout. Cette US a livré la CI/CD initialement planifiée comme US-110 dans EPIC-2.
 
 - **[DEC-55] Deux nouveaux documents d'architecture.** `ARCHITECTURE_TECHNIQUE.md` (couches, modules, boot, flux, réseau) et `ARCHITECTURE_FONCTIONNELLE.md` (parcours utilisateur + pont fonctionnel↔technique). Référence centrale pour cadrer le périmètre réel d'une US avant de toucher une fonctionnalité.
+## Décisions de session 7 (audit UX live + EPIC P0)
+
+- **[DEC-56] Socle E2E Playwright + bypass auth mort en prod (P0.0).** Test E2E via
+  Playwright (build+preview). Auth des écrans protégés contournée en mode test par
+  `import.meta.env.VITE_E2E_AUTH_BYPASS === 'true'` dans le guard `beforeEach`. Lu
+  STATIQUEMENT → branche éliminée du bundle prod (prouvé `grep -c "VITE_E2E_AUTH_BYPASS"
+  dist/assets/*.js` = 0 partout). Jamais en variable runtime. `tests/e2e/**` exclu de
+  Vitest (`vite.config.ts` test.exclude) → deux runners séparés (72 unit + E2E).
+
+- **[DEC-57] R4 — test E2E obligatoire sur tout correctif UX / écran (P0.1).** Jumeau UX
+  de R2. La modal morte (P0.1) a passé vue-tsc + 72 tests + 2 audits de code ; un seul
+  clic l'a révélée. Désormais : tout correctif issu de l'audit UX et toute feature
+  touchant l'écran livre un test Playwright qui reproduit le geste et asserte le DOM
+  VISIBLE (pas l'état du store). Méthode US-109 : ROUGE sur le bug, VERT après le fix,
+  sans modifier le test (preuve que le filet capture le bug).
+
+- **[DEC-58] Cause racine modal morte = désalignement de nom d'event (P0.1).**
+  `WeekAnimeItem` émet `click`/`ep-chip-click` (contrat source de vérité du composant) ;
+  `CalendarWeekPage` écoutait `@open-modal`/`@open-ep-override` → emit dans le vide →
+  `ui.openModal` jamais appelé → `modalOpen` reste false → modal jamais rendue, 0 erreur
+  console. Fix côté PAGE (aligner les listeners), jamais renommer les emits du composant.
+  Vérifier le même piège sur `AnimeCard` (émet `click`) ↔ pages Discover/Library.
