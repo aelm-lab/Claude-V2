@@ -163,3 +163,5 @@ Transitions automatiques :
 | `ANTIPATTERNS.md` | Pièges Gemini récurrents |
 | `AGENTS.md` | Gouvernance permanente Gemini (racine dépôt) |
 | `HANDOFF_SESSION6.md` | Reprise de contexte pour la session suivante |
+| `AUDIT_UX_SESSION7.md` | Audit UX live (16 findings F1→F16, walkthrough navigateur) |
+| `HANDOFF_SESSION7.md` | Reprise de contexte session 8 (EPIC P0 en cours) |
