@@ -17,17 +17,7 @@
 
 - **[DEC-01] US-001b absorbée dans US-001.** App.vue + index.html ne rentraient pas dans la limite 3 fichiers. Gemini a tout fait en une passe (5 fichiers, signalé et autorisé). → US-001b n'existe plus.
 
-- **[DEC-02] ESLint = flat config + `@vue/eslint-config-typescript@^14`.** Le v13 est l'ancien format eslintrc, incompatible avec la flat config. Config retenue :
-```js
-  import pluginVue from 'eslint-plugin-vue';
-  import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
-  export default defineConfigWithVueTs(
-    pluginVue.configs['flat/essential'],
-    vueTsConfigs.recommended,
-    { rules: { '@typescript-eslint/no-explicit-any': 'error' } },
-  );
-```
-  → Impact : `no-explicit-any` est en erreur (prouvé en US-002).
+- **[DEC-02] ESLint = flat config + `@vue/eslint-config-typescript@^14`.** Le v13 est l'ancien format eslintrc, incompatible avec la flat config. → Impact : `no-explicit-any` est en erreur (prouvé en US-002).
 
 - **[DEC-03] `tsconfig.node.json` séparé** pour isoler `vite.config.ts` (`composite: true`, `types: ['node']`).
 
@@ -47,21 +37,21 @@
 
 ### Fidélité fonctionnelle (rec-engine)
 
-- **[DEC-10] Branches mortes simplifiées.** Après `normalize`, `genres`/`themes`/`studios` sont toujours `string[]` → branche `.name` injoignable. Simplifiée en `const display = x;`. Comportement identique.
+- **[DEC-10] Branches mortes simplifiées.** Après `normalize`, `genres`/`themes`/`studios` sont toujours `string[]` → branche `.name` injoignable. Simplifiée. Comportement identique.
 
-- **[DEC-11] Bug `item.studios` reproduit tel quel.** `scorePool` lit `item.studios` (pluriel) que `normalize` ne produit jamais (il produit `studio` singulier) → scoring studio inerte. On ne corrige pas. Réparation = P8-01 / US-120.
+- **[DEC-11] Bug `item.studios` reproduit tel quel.** `scorePool` lit `item.studios` (pluriel) que `normalize` ne produit jamais (il produit `studio` singulier) → scoring studio inerte. Réparation = P8-01 / US-120.
 
-- **[DEC-12] `decayMultiplier = 0.2` conservé** dans `buildTasteProfile`. Poids trait = `2.0 × 1.0 × 0.2 = 0.4` pour heart+recent sans completedAt.
+- **[DEC-12] `decayMultiplier = 0.2` conservé** dans `buildTasteProfile`.
 
-- **[DEC-13] `priority` du tri des signaux typé `Record<RecSignalKind, number>` avec `score: 0`.** Correction de typage, pas de comportement.
+- **[DEC-13] `priority` du tri des signaux typé `Record<RecSignalKind, number>` avec `score: 0`.**
 
 - **[DEC-14] `extractBecauseYouWatched` : param `profile` inutilisé → préfixé `_profile`.** Signature publique préservée.
 
 ### Découpage ICS / MAL
 
-- **[DEC-15] `generateICSFile` scindé.** Génération de texte (`buildICSContent`, pure) dans `utils/ics.ts`. Téléchargement + toast → `useICS.ts`.
+- **[DEC-15] `generateICSFile` scindé.** `buildICSContent` (pure) dans `utils/ics.ts`. Téléchargement + toast → `useICS.ts`.
 
-- **[DEC-16] `openMalImport` reporté.** `parseMalXml` (pur) dans `utils/malImport.ts`. Partie impure (FileReader, `addAnimeSilent`, toast) → `useMalImport.ts`.
+- **[DEC-16] `openMalImport` reporté.** `parseMalXml` (pur) dans `utils/malImport.ts`. Partie impure → `useMalImport.ts`.
 
 ### UX
 
@@ -71,121 +61,94 @@
 
 ## Décisions de session 2 (Phase 2)
 
-### Store
+- **[DEC-18] Upsert du store : garder `if ('state' in input)`.** Ne jamais recalculer `state` inconditionnellement en branche merge, sinon clobber. Spec de Claude fautive, corrigée par Gemini.
 
-- **[DEC-18] Upsert du store : garder `if ('state' in input)`.** Ne jamais recalculer `state` inconditionnellement en branche merge, sinon clobber de l'état existant. Reproduit le `Object.assign` partiel du vanilla. La spec de Claude était fautive, corrigée par Gemini (2ᵉ preuve que la règle zéro-confiance paie).
+- **[DEC-19] `needsBroadcastSync` dans `usePersistence`.** Mutation réactive → déclenche le watchDebounced. Déviation mineure plus correcte. Conservé.
 
-- **[DEC-19] `needsBroadcastSync` dans `usePersistence`.** Le forEach qui force `status:'Continuing'` mute les items réactifs → déclenche le watchDebounced → sauvegarde différée 1 000 ms. Dans le vanilla, cette mutation ne déclenchait pas `store:changed`. Déviation mineure plus correcte. Conservé tel quel.
+- **[DEC-20] bg worker : `fetchAnimeRelations` retourne `[]` aussi bien sur « pas en cache » que « anime sans relations ».** Idempotent.
 
-### Architecture composables
+- **[DEC-21] `buildRelationMemory` provient de `recs.js`, pas de `rec-engine.js`.** Dans `useSync`, stubbée `_buildRelationMemory`. Spec de Claude fautive.
 
-- **[DEC-20] bg worker : `fetchAnimeRelations` retourne `[]` aussi bien sur « pas en cache » que sur « anime sans relations ».** `shouldRescore` levé plus conservateur que le vanilla. Idempotent, sans effet de bord.
+- **[DEC-22] `fetchTopFinishedAnime` inline dans `useRecommendations.fetchRecPool('library')`.** Fidèle au vanilla. Migration = P8-04 / US-123.
 
-- **[DEC-21] `buildRelationMemory` provient de `recs.js`, pas de `rec-engine.js`.** Dans la migration, elle appartient à `useRecommendations` (US-017). Dans `useSync`, stubbée comme `_buildRelationMemory`. Spec de Claude fautive (3ᵉ preuve).
+- **[DEC-23] `useTheme` : `useDark()` applique la classe `dark` sur `<html>`.** Divergence vanilla (`<body>`) résolue en US-104.
 
-- **[DEC-22] `fetchTopFinishedAnime` inline dans `useRecommendations.fetchRecPool('library')`.** Mentionné dans TYPES_CONTRACT.md §7 comme méthode de useJikanApi mais absent de `api.js`. Fetch `/anime?min_score=7.5…` inline, fidèle au vanilla. Migration vers useJikanApi = P8-04 / US-123.
-
-### Thème / styles
-
-- **[DEC-23] `useTheme` : `useDark()` de `@vueuse/core` applique la classe `dark` sur `<html>`.** Le vanilla l'appliquait sur `<body>`. Divergence résolue en US-104 (CSS aligné sur `html.dark`).
-
-### Import MAL
-
-- **[DEC-24] `MalImportResult` expose `imported` (tableau d'entrées), pas `entries`.** Erreur dans la spec US-018b, corrigée par Gemini qui a lu le vrai type. 4ᵉ preuve que vue-tsc est indispensable.
-
----
+- **[DEC-24] `MalImportResult` expose `imported`, pas `entries`.** Spec US-018b corrigée par Gemini.
 
 ## Décisions d'orchestration Phase 2→3
 
-- **[DEC-25] Option 2 pour l'orchestration sync.** Les stubs `_syncAnimeUpdates`/`_startBackgroundRelationFetch` dans `usePersistence` restent des no-ops permanents. `App.vue` séquence `loadFromDatabase()` puis `syncAnimeUpdates()` directement. Pas de dépendance circulaire. *(Trou révélé en session 6 : l'orchestration des recos avait été oubliée → corrigé DEC-50.)*
+- **[DEC-25] Option 2 pour l'orchestration sync.** Stubs no-ops permanents dans `usePersistence`. `App.vue` séquence directement. *(Trou révélé session 6 → DEC-50.)*
 
-- **[DEC-26] `watch → saveToDatabase` dans `usePersistence`, pas dans le store.** Le store reste sans I/O. `usePersistence` porte le `watchDebounced` avec flag `suppressPersist`. Frontière propre.
+- **[DEC-26] `watch → saveToDatabase` dans `usePersistence`, pas dans le store.** Store sans I/O.
 
 ---
 
 ## Décisions de session 3 (Phase 3 + Phase 4)
 
-### Router
-
-- **[DEC-27] Double bloc `<script>` + `<script setup>` pour exporter un Symbol depuis App.vue.** En Vue 3.3+, `<script setup>` interdit les exports nommés. `isBootingKey: InjectionKey<Ref<boolean>>` est exporté depuis un bloc `<script lang="ts">` standard, la logique setup reste dans `<script setup lang="ts">`. Pattern validé par vue-tsc + vite build.
-
-- **[DEC-28] Guard auth utilise `auth` singleton (Option A).** `auth` importé depuis `@/lib/firebase` dans le guard `beforeEach`. `useFirebaseAuth()` non appelé dans le guard (hors contexte `setup`). `await auth.authStateReady()` obligatoire avant toute lecture de `auth.currentUser` pour éviter la race au premier load.
-
-- **[DEC-29] Placeholders inline dans router/index.ts.** Les routes pointent vers `defineComponent` inline jusqu'à Phase 5. Évite les `TS2307` sur des fichiers inexistants.
-
-- **[DEC-30] `lastCalendarView/RadarView/VaultView` reporté en Phase 4 (PrimaryNav).** Ces clés vivent dans `nav.js`, pas dans le router. Mettre des lectures localStorage dans les guards = concern qui fuit. Route `/` → `/week` statique jusqu'à Phase 4.
-
-### Boot / layouts
-
-- **[DEC-31] `isBooting` fourni via `provide/inject`, pas en prop.** Évite le prop-drilling jusqu'à `LoadingOverlay`. `isBootingKey: InjectionKey<Ref<boolean>>` exporté depuis `App.vue`. `LoadingOverlay` injecte avec fallback `ref(false)` obligatoire.
-
-- **[DEC-32] `syncAnimeUpdates()` et `startBackgroundRelationFetch()` fire-and-forget dans `App.vue onMounted`.** *Ajusté en session 6 (DEC-50) : `syncAnimeUpdates` passe en `await` car le re-score en dépend ; seul `startBackgroundRelationFetch` reste fire-and-forget.*
-
-- **[DEC-33] `ToastNotification` dans `AppLayout` uniquement (routes auth).** Si toast sur `/login` requis un jour → migration vers `App.vue` = dette.
-
-### Composants atomiques
-
-- **[DEC-34] Lazy-load image via `<img style="display:none" @load @error>`.** Remplace `new Image()` vanilla. `imgState` initialisé à `'loading'` même si `cover_url` est null → `:class` traite `!cover_url` explicitement comme `card-fallback-bg` (bug US-025 corrigé).
-
-- **[DEC-35] `SeasonNudgeCard` dismiss via `<Transition @after-leave>`.** Remplace `addEventListener('transitionend')`. Zéro `setTimeout`.
-
-- **[DEC-36] `ChipsStrip` : chip 'all' émet `null` (pas la string 'all').** `RecPreset` ne contient pas `'all'`. `null` = pas de preset actif.
-
-- **[DEC-37] `WeekAnimeItem` reçoit `info: AnimeEpisodeInfo` en prop.** Le parent calcule, le composant ne recalcule pas.
-
-- **[DEC-38] `MonthDayCell` reçoit `animes: MonthAnimeItem[]` pré-filtrés en prop.** Composant dumb.
+- **[DEC-27] Double bloc `<script>` + `<script setup>` pour exporter un Symbol depuis App.vue.**
+- **[DEC-28] Guard auth utilise `auth` singleton + `await auth.authStateReady()`.**
+- **[DEC-29] Placeholders inline dans router/index.ts jusqu'à Phase 5.**
+- **[DEC-30] `lastCalendarView/...` reporté Phase 4.**
+- **[DEC-31] `isBooting` via `provide/inject`, fallback `ref(false)` obligatoire.**
+- **[DEC-32] `syncAnimeUpdates()`/`startBackgroundRelationFetch()` fire-and-forget.** *Ajusté DEC-50.*
+- **[DEC-33] `ToastNotification` dans `AppLayout` uniquement.**
+- **[DEC-34] Lazy-load image via `<img style="display:none">`.**
+- **[DEC-35] `SeasonNudgeCard` dismiss via `<Transition @after-leave>`.**
+- **[DEC-36] `ChipsStrip` : chip 'all' émet `null`.**
+- **[DEC-37] `WeekAnimeItem` reçoit `info` en prop.**
+- **[DEC-38] `MonthDayCell` reçoit `animes` pré-filtrés.**
 
 ---
 
 ## Décisions de session 4 (Phases 5+6+7)
 
-- **[DEC-39]** Substitution des placeholders router au fil des US de page (pas de passe dédiée).
-- **[DEC-40]** Pattern stub `console.warn` uniforme en Phase 5, câblage batché en US-041.
-- **[DEC-41]** `stores/ui.ts` pilote tous les overlays (modal, ep-override, recency). Remplace `activeWindowClickHandler` et `modal.style.display`.
-- **[DEC-42]** `modalContext` : `libraryRec` prioritaire (dernière affectation vanilla = priorité en computed).
-- **[DEC-43]** `removeAnimeWithUndo` simplifié en `store.removeAnime` (undo toast = dette US-121).
-- **[DEC-44]** Prefetch covers relations abandonné (contournement DOM impératif) — fallback @error suffit (US-129).
-- **[DEC-45]** `useEpisodeInfo` expose `getEpisodeInfo`/`getStatus`/`checkIsOnHiatus` ; `useICS` expose `downloadICS`. Contrat §7 corrigé a posteriori.
-- **[DEC-46]** CalendarNavControls = composant connecté route-aware (pas props/emits) — duplication temporaire avec les pages (résorbée US-105).
-- **[DEC-47]** `synopsis?: string` ajouté à AnimeEntry (US-048c).
-- **[DEC-48]** ROADMAP.md remplace PHASE8_DEBT.md ; BACKLOG.md aminci (Kanban + règles uniquement).
+- **[DEC-39]** Substitution des placeholders router au fil des US.
+- **[DEC-40]** Pattern stub `console.warn` Phase 5, câblage batché US-041.
+- **[DEC-41]** `stores/ui.ts` pilote tous les overlays.
+- **[DEC-42]** `modalContext` : `libraryRec` prioritaire.
+- **[DEC-43]** `removeAnimeWithUndo` simplifié (undo = dette US-121).
+- **[DEC-44]** Prefetch covers abandonné (fallback @error).
+- **[DEC-45]** `useEpisodeInfo`/`useICS` signatures corrigées a posteriori.
+- **[DEC-46]** CalendarNavControls route-aware (résorbé US-105).
+- **[DEC-47]** `synopsis?` ajouté à AnimeEntry.
+- **[DEC-48]** ROADMAP.md remplace PHASE8_DEBT.md.
 
 ---
 
 ## Décisions de session 6 (Audit croisé + EPIC-1)
 
-- **[DEC-49] Audit croisé : Gemini > Claude Code.** Deux audits indépendants menés en parallèle. Claude Code a validé « migration saine » en ratant **4 bugs runtime**. Gemini (prompt UX+tech) les a tous trouvés, confirmés par preuve brute (grep ligne par ligne). **Leçon → règle R3 :** type-check + tests + build verts ≠ application fonctionnelle ; un audit doit lire la **chaîne d'orchestration runtime**, pas seulement les indicateurs. US-103 (fix tests timezone) supprimée : 66/66 réels, faux positif de l'audit A.
+- **[DEC-49] Audit croisé : Gemini > Claude Code.** Claude Code a raté 4 bugs runtime. → règle R3.
+- **[DEC-50] Orchestration boot complète dans `App.vue` (US-102, P0).** `load → await sync → await buildRelationMemory → reScorePool → bg fetch`. Couvert par `App.spec.ts`.
+- **[DEC-51] Pattern `*WithMeta` pour le throttle conditionnel (US-106).** Throttle 1,1s seulement si `fromNetwork`.
+- **[DEC-52] Hiatus = source unique computed 14j (US-107).** Suppression de l'écriture morte 21j.
+- **[DEC-53] `AGENTS.md` conservé et musclé (US-110).** Gouvernance permanente Gemini.
+- **[DEC-54] Filet de sécurité avant correctifs (US-109).** CI + smoke test ; 3ᵉ test rouge encodant le bug P0.
+- **[DEC-55] Deux documents d'architecture** (TECHNIQUE + FONCTIONNELLE).
 
-- **[DEC-50] Orchestration boot complète dans `App.vue` (US-102, P0).** `App.vue` importe `useRecommendations` et séquence : `loadFromDatabase()` → `await syncAnimeUpdates()` → `await buildRelationMemory()` → `reScorePool()` → `startBackgroundRelationFetch()` (fire-and-forget). `syncAnimeUpdates` passe en **`await`** (ajuste DEC-32) car le re-score travaille sur des données synchronisées. Les stubs morts `_buildRelationMemory`/`_reScorePool` sont supprimés de `useSync`. Couvert par le smoke test `App.spec.ts`.
-
-- **[DEC-51] Pattern `*WithMeta` pour le throttle conditionnel (US-106, P1).** `fetchAnimeRelationsWithMeta` / `fetchAnimeRecommendationsWithMeta` retournent `{ data, fromNetwork }`. Le worker n'applique le throttle 1,1s **que si `fromNetwork === true`** (vrai appel réseau) — un cache hit IDB ne déclenche plus de sleep. Les méthodes publiques (`fetchAnimeRelations`/`fetchAnimeRecommendations`) délèguent et jettent le flag → signature `Promise<unknown[]>` inchangée, appelants existants intacts. Impact : 300 animes en cache = boot quasi instantané (avant : ~11 min).
-
-- **[DEC-52] Hiatus = source unique computed 14j (US-107, P1).** Suppression du bloc d'écriture `anime.onHiatus` (seuil 21j) dans `useSync` — un champ que **personne ne lisait** (grep : 0 lecteur vivant). `isOnHiatus()` (14j, `episodeInfo.ts`) devient l'unique source, dérivée à l'affichage. La déclaration `const broadcast` est **conservée** (réutilisée pour la mise à jour JST en aval). Le type `onHiatus?` reste (retrait cosmétique = EPIC-3).
-
-- **[DEC-53] `AGENTS.md` conservé et musclé (US-110).** **Réversion du plan initial** (US-101 prévoyait sa suppression comme « parasite »). `AGENTS.md` est en réalité le fichier lu automatiquement par Gemini AI Studio → il devient la **gouvernance permanente** : R-LIVRAISON 1-3, R-SCOPE 1-3, R-CODE 1-6, zéro-confiance. Les règles ne sont plus répétées dans chaque US.
-
-- **[DEC-54] Filet de sécurité avant correctifs (US-109).** Décision PO : installer le filet **avant** de corriger les bugs. `.github/workflows/ci.yml` (vue-tsc + vitest + build sur push/PR) + `src/App.spec.ts` (smoke test d'orchestration boot). Le 3ᵉ test, volontairement **rouge**, encodait le contrat du bug P0 ; il est passé **vert sans modification** après US-102 → preuve que le filet fonctionne de bout en bout. Cette US a livré la CI/CD initialement planifiée comme US-110 dans EPIC-2.
-
-- **[DEC-55] Deux nouveaux documents d'architecture.** `ARCHITECTURE_TECHNIQUE.md` (couches, modules, boot, flux, réseau) et `ARCHITECTURE_FONCTIONNELLE.md` (parcours utilisateur + pont fonctionnel↔technique). Référence centrale pour cadrer le périmètre réel d'une US avant de toucher une fonctionnalité.
 ## Décisions de session 7 (audit UX live + EPIC P0)
 
-- **[DEC-56] Socle E2E Playwright + bypass auth mort en prod (P0.0).** Test E2E via
-  Playwright (build+preview). Auth des écrans protégés contournée en mode test par
-  `import.meta.env.VITE_E2E_AUTH_BYPASS === 'true'` dans le guard `beforeEach`. Lu
-  STATIQUEMENT → branche éliminée du bundle prod (prouvé `grep -c "VITE_E2E_AUTH_BYPASS"
-  dist/assets/*.js` = 0 partout). Jamais en variable runtime. `tests/e2e/**` exclu de
-  Vitest (`vite.config.ts` test.exclude) → deux runners séparés (72 unit + E2E).
+- **[DEC-56] Socle E2E Playwright + bypass auth mort en prod (P0.0).** `import.meta.env.VITE_E2E_AUTH_BYPASS` statique, branche éliminée du bundle (prouvé `grep -c=0`). `tests/e2e/**` exclu de Vitest.
+- **[DEC-57] R4 — test E2E obligatoire sur tout correctif UX / écran.** Reproduit le geste, asserte le DOM VISIBLE. ROUGE puis VERT sans modifier le test.
+- **[DEC-58] Cause racine modal morte = désalignement de nom d'event (P0.1).** `WeekAnimeItem` émet `click`, la page écoutait `@open-modal`. Fix côté PAGE (aligner les listeners), jamais renommer les emits du composant.
 
-- **[DEC-57] R4 — test E2E obligatoire sur tout correctif UX / écran (P0.1).** Jumeau UX
-  de R2. La modal morte (P0.1) a passé vue-tsc + 72 tests + 2 audits de code ; un seul
-  clic l'a révélée. Désormais : tout correctif issu de l'audit UX et toute feature
-  touchant l'écran livre un test Playwright qui reproduit le geste et asserte le DOM
-  VISIBLE (pas l'état du store). Méthode US-109 : ROUGE sur le bug, VERT après le fix,
-  sans modifier le test (preuve que le filet capture le bug).
+---
 
-- **[DEC-58] Cause racine modal morte = désalignement de nom d'event (P0.1).**
-  `WeekAnimeItem` émet `click`/`ep-chip-click` (contrat source de vérité du composant) ;
-  `CalendarWeekPage` écoutait `@open-modal`/`@open-ep-override` → emit dans le vide →
-  `ui.openModal` jamais appelé → `modalOpen` reste false → modal jamais rendue, 0 erreur
-  console. Fix côté PAGE (aligner les listeners), jamais renommer les emits du composant.
-  Vérifier le même piège sur `AnimeCard` (émet `click`) ↔ pages Discover/Library.
+## Décisions de session 8 (suite EPIC P0 — correctifs UX)
+
+- **[DEC-59] Boot loader en deux phases (P0.2, finding F2).** Le boot a deux fenêtres d'écran vide distinctes : **Phase 1 pré-mount** (bundle 715 kb pas encore parsé → aucun composant Vue ne peut s'afficher) et **Phase 2** (Vue monté mais `route.meta` encore vide pendant la résolution auth → `AppLayout`, donc `LoadingOverlay`, pas monté car gaté par `v-if="route.meta.requiresAuth"`). Fix : (1) loader statique HTML/CSS inline dans `index.html`, **à l'intérieur de `<div id="app">`** → Vue l'écrase au `mount()`, disparaît sans JS ; (2) `<LoadingOverlay>` remonté au **niveau racine de `App.vue`** (hors gate auth) + retiré de `AppLayout`. La séquence `onMounted` (DEC-50) est **strictement intouchée**. Couvert par `boot-loader.spec.ts`. **Correction d'un faux diagnostic de Claude :** l'`inject(isBootingKey, ref(false))` n'était PAS en cause (fallback jamais touché) — c'était un problème de **placement** (overlay piégé sous le gate auth), pas d'injection. P0.2 traite la **visibilité**, pas la **vitesse** (la durée reste = US-117 défer Firestore).
+
+- **[DEC-60] Helper pur `dedupeByMalId` = source unique de dédup (P0.3a/c, finding F5).** F5 (doublons) avait **3 chemins indépendants**, pas un seul bug : This Season (`fetchCurrentSeason` concatène les pages sans dédup), recherche (`searchAnime` sans dédup, aggravé par `:key="mal_id"` dupliquée dans `SearchInput`), et For You (voir DEC à venir P0.3b). Décision : un helper pur générique `dedupeByMalId<T extends { mal_id?: unknown }>(items): T[]` dans `utils/helpers.ts`, **clé `mal_id` seule** (pas de fallback `id` : sur le brut Jikan seul `mal_id` existe), garde la 1ʳᵉ occurrence, items sans `mal_id` finite **conservés** (ne pas masquer un trou de données). Appliqué **avant `writeLocalCache`** (la correction persiste dans le cache 24h) dans `fetchCurrentSeason`/`fetchUpcomingSeason`, et avant tri dans `searchAnime`. Le helper est la **digue unique** : tout futur pool le réutilise.
+
+- **[DEC-61] Contrat d'event = le composant ; les consommateurs s'alignent (P0.8a/b, application de DEC-58).** `RecCard` émet `add`/`skip`/`click`/`not-interested`/`more-like-this` ; les 3 consommateurs (DiscoverExplorePage ×2, BecauseYouWatched wrapper, LibraryExplorePage) écoutaient `@heart` (mort) et n'écoutaient ni `@click` ni `@not-interested`. Conséquence : **bouton Add mort partout + clic carte mort + « pas intéressé » mort** — tout le cœur action du moteur de reco inopérant, 0 erreur console. Fix : aligner les listeners (`@add`, `@click`→`ui.openModal`, `@not-interested`→`recommendations.dismissRec`) sur le contrat de `RecCard`, **sans jamais renommer ses emits**. Emit orphelin `open-modal` de DiscoverExplorePage (vestige d'une intention abandonnée, écouté par personne) **supprimé**. `BecauseYouWatched` (wrapper de RecCard) propage le même vocabulaire (`add` pas `heart`).
+
+- **[DEC-62] `@more-like-this` reporté (P0.8c) — décision produit, pas technique.** `stores/ui.ts` n'a **aucun** flag `moreLikeThis` ; `openModal(anime, { info?, seasonCtx?, libraryRec? })` ne le supporte pas. Deux options réelles : modal simple (gratuit — `ModalMoreLikeThis` est déjà une section de la modal, accessible en scrollant) vs scroll-to-section (vraie feature, ajout flag store). Tranché plus tard avec le PO.
+
+- **[DEC-63] Toasts de feedback = « destination visible exacte » (P0.4, finding F6).** Les libellés nomment l'**onglet où l'utilisateur retrouvera l'anime**, pas le jargon interne : `calendar`→« On Air », `radar`→« Coming Soon », `watchlist`→« Plan to Watch », `vault`→« Completed ». P0.4 = ajout des toasts sur `onAdd`/`onStartWatching` de `AnimeModal` (qui en manquaient ; chemin réel de la recherche : `SearchInput.onSelect`→`openModal`→bouton Add→`onAdd`). **Hors P0.4 (→ P0.4-bis) :** harmonisation des libellés jargonneux existants (`onMarkDone` « Vault », `DiscoverExplorePage` « Radar »). **Hors P0.4 (→ US-121) :** auto-vault muet au boot (`usePersistence`, chemin différent).
+
+- **[DEC-64] Clé localStorage confirmée = `'animeCalendar'` (dette P0.1 levée).** `usePersistence.saveToDatabase` écrit `localStorage.setItem('animeCalendar', …)`. La clé devinée par Gemini dans `modal-open.spec.ts` (session 7) **était la bonne** — le test E2E modal repose sur une vraie clé, pas un hasard. Plus rien à vérifier.
+
+- **[DEC-65] Stratégie de test E2E affinée → `AGENTS_E2E.md` (R5).** Pendant un epic, chaque US ne livre qu'un E2E **ciblé** sur ce qu'elle impacte (rouge→vert sur le bug précis). À la **fin de l'epic**, un **grand check E2E complet** rejoue toute la suite (`npx playwright test` sans filtre) = régression globale. Les tests E2E sont **cumulatifs** dans `tests/e2e/`, jamais supprimés — c'est ce qui rend le grand check possible.
+
+> **Note transverse session 8 (audit event-name) :** un balayage `defineEmits` vs `@listener` sur **tout** `src/components/` a confirmé que le **seul foyer de désalignement 🔴 est `RecCard`** (résolu P0.8a/b). Tout le reste (calendar, AnimeCard, chips, nudges, tous les `Modal*`) est aligné. `open-recency` est bien émis par `ModalCalendarTop` (ligne 70) et écouté par `AnimeModal` (pas un handler fantôme). La dette event-name (P0.1 + RecCard) est donc **cartographiée et close**.
+
+> **Note de capacité (session 8) :** l'audit UX **live** (walkthrough navigateur) n'a pas pu être refait par Claude dans cette session — pas d'outil de navigateur interactif disponible, et l'app déployée est derrière l'auth AI Studio (cookie de sécurité). Les correctifs session 8 sont validés par **code + E2E** (R1/R4), pas par observation visuelle. Un audit live reste à refaire (par le PO pilotant le navigateur) avant de clore l'EPIC P0.
