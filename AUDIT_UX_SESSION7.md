@@ -2,79 +2,83 @@
 
 > **Où mettre ce fichier :** dans la Knowledge du projet Claude Chat.
 > **Origine :** audit UX mené en session 7 par Claude pilotant un vrai navigateur
-> Chrome sur l'app déployée (compte PO authentifié), écran par écran, en comptant
-> les taps et en capturant chaque friction.
-> **Pourquoi il est unique :** ces constats ne viennent NI du code NI des docs — ils
-> viennent de l'observation visuelle réelle. Ils ne sont pas re-dérivables sans
-> refaire un walkthrough live. C'est la mémoire de ce que l'utilisateur VOIT.
+> Chrome sur l'app déployée (compte PO authentifié), écran par écran.
+> **Pourquoi il est unique :** ces constats viennent de l'observation visuelle réelle ;
+> ils ne sont pas re-dérivables sans refaire un walkthrough live.
 >
-> **Leçon transverse de l'audit (le fil rouge) :** l'app ne parle jamais à
-> l'utilisateur. Boot muet, ajout muet, auto-vault muet, onglet actif muet, jour
-> vide muet, clic carte muet. Chaque action réussie ou échouée est indistinguable
-> de « rien ». Le sprint UX qui change tout n'est pas une feature : c'est **rendre
-> chaque action visible**.
+> **Statuts mis à jour fin session 8** (colonne Statut). ⚠️ Les correctifs session 8 sont
+> validés par **code + E2E**, PAS par un nouvel audit visuel (Claude n'a pas pu refaire le
+> walkthrough en session 8 — pas de navigateur interactif + app derrière auth AI Studio).
+> Un re-audit live est nécessaire pour confirmer visuellement F2/F5/F6/event-name.
+>
+> **Leçon transverse (fil rouge) :** l'app ne parle jamais à l'utilisateur. Le sprint UX
+> qui change tout n'est pas une feature : c'est **rendre chaque action visible**.
 
 ---
 
 ## Méthode
 
-Navigateur Chrome piloté → app déployée (`/week`, `/month`, `/discover`,
-`/discover/season`, `/library`, `/library/plan`, `/library/completed`, recherche).
-Clics réels, captures à chaque écran, comptage d'interactions. Auth = compte PO
-(magic link saisi par le PO, jamais par Claude).
+Navigateur Chrome piloté → app déployée, clics réels, captures, comptage d'interactions.
+Auth = compte PO (magic link saisi par le PO, jamais par Claude).
 
-**Constat fondateur (jumeau UX de la leçon session 6) :** « tooling vert ≠ app qui
-marche » a un frère : « ça compile ≠ c'est utilisable ». Un bug P0 (modal morte) a
-passé `vue-tsc` + 72 tests + 2 audits de code. Il a suffi d'UN clic pour le voir.
-→ D'où la règle **R4** (test E2E qui clique et regarde l'écran).
+**Constat fondateur (jumeau de la leçon session 6) :** « ça compile ≠ c'est utilisable ».
+Un bug P0 (modal morte) a passé `vue-tsc` + 72 tests + 2 audits de code. UN clic l'a révélé.
+→ règle **R4**. La session 8 a confirmé que ce n'était pas isolé : la même classe de bug
+(event-name désaligné) frappait aussi tout le composant `RecCard`.
 
 ---
 
 ## Tableau des findings (F1→F16)
 
-| # | Zone | Constat (observé à l'écran) | Preuve | Gravité | US cible | Statut |
-|---|---|---|---|---|---|---|
-| **F1** | Calendar Week + Discover | **Modal morte** : cliquer une carte n'ouvre RIEN (testé 4 fois, 2 pages). Cause : `WeekAnimeItem` émet `click`/`ep-chip-click`, la page écoutait `@open-modal`/`@open-ep-override` → emit dans le vide. Tout Phase 6 inaccessible (relations, override, recency, **suppression**). | clics live, 0 erreur console | 🔴🔴 P0 | **P0.1** | ✅ CORRIGÉ (R4) |
-| **F2** | Boot | **Écran beige vide 5-9 s sans aucun spinner** au 1er chargement (`/month` à froid). LoadingOverlay invisible. = la « lenteur 1ère charge » ressentie : bundle lourd + zéro feedback = sensation de site mort. | navigation /month à froid | 🔴 | **P0.2** | ⬜ À faire |
-| **F3** | On Air | **`/month` inatteignable depuis l'UI** : pas de sous-nav Week/Month/List sur On Air (Discover et Library ont leur sous-nav, On Air non). Accès uniquement par URL directe. | captures /week | 🔴 | **P0.5** | ⬜ À faire |
-| **F4** | Calendar Month | **Layout cassé** : libellés Mon→Sun empilés VERTICALEMENT à gauche au lieu d'en-tête de grille ; cellules = pills d'heures **sans titre** (on ne sait pas quoi diffuse). | capture /month | 🔴 | **P0.6** | ⬜ À faire |
-| **F5** | Discover (For You + Season), Recherche | **Doublons partout** : « Dr. Stone Part 3 » ×2 côte à côte (This Season), 1ʳᵉ et 3ᵉ carte identiques (For You), « Frieren Ougonkyou-hen » ×2 (suggestions). Dédup absente sur tous les pools. | 3 écrans | 🔴 | **P0.3** | ⬜ À faire |
-| **F6** | Recherche / ajout | **Ajout 100 % silencieux** : clic suggestion → dropdown se ferme, rien d'autre. Anime auto-vaulté sans toast, sans highlight, sans redirection. L'utilisateur ne sait ni si ça a marché ni où c'est parti. | test add live (Frieren) | 🔴 | **P0.4** (+US-121) | ⬜ À faire |
-| **F7** | Login | **`/login` = HTML brut** : input + bouton « Send magic link » collés coin haut-gauche, zéro style, zéro branding, zéro explication du flow. Toute première impression = « site cassé ». AuthLayout non appliqué/non stylé. | 2 captures | 🔴 | **P0.7** (+US-122) | ⬜ À faire |
-| **F8** | Transverse (dark mode) | Sous-nav quasi **illisible** en dark (texte sombre sur fond sombre) ; logo Aanime faible contraste. | capture dark | 🟡 | nouveau | ⬜ Backlog |
-| **F9** | Sous-onglets | **Aucun état actif visible** : For You / This Season / Coming Soon tous gris identiques ; idem Library. L'utilisateur ne sait pas où il est. | captures discover/library | 🟡 | nouveau | ⬜ Backlog |
-| **F10** | Calendar Week | **Jours vides muets** (Tue, Thu) : pas de suggestion (WeekSuggestionCard non rendue ?), pas de CTA. Cul-de-sac. | capture /week | 🟡 | US-144 | ⬜ Backlog |
-| **F11** | Calendar Week | **Pas de snap-to-today** : on atterrit sur Monday, le point • du jour courant (Friday) est hors écran. | capture /week | 🟡 | US-150 | ⬜ Backlog |
-| **F12** | Calendar | **Libellé date dupliqué** : « Jun 8—14, 2026 » ×2, « June 2026 » ×2 (barre nav + libellé interne page). | captures week+month | 🟡 | US-116 | ⬜ Backlog |
-| **F13** | Recherche | Suggestions sans **année ni score** pour désambiguïser (4 « Frieren » indistinguables), pas de bouton « + » direct. | capture suggestions | 🟡 | US-145 | ⬜ Backlog |
-| **F14** | Discover/This Season | **~6 s de blanc total sans skeleton** au chargement (le composant SkeletonCard existe pourtant et n'est pas utilisé). | capture /discover/season | 🟡 | nouveau | ⬜ Backlog |
-| **F15** | Library/Upcoming | Titre BYW interminable collé au bord, **section vide dessous** ; hiérarchie typographique incohérente (titres de sections de tailles/casses disparates). | capture /library | 🟡 | nouveau | ⬜ Backlog |
-| **F16** | Discover/cartes | Chip « **Ep 11** » sans total vs « Ep 11/12 » ailleurs (incohérence) ; signaux recos génériques répétés (« Same theme: Isekai · Fantasy » ×4) ; pas de « Because you watched X » sur la carte alors que `_signals`/`_triggerTitle` existent dans le type. | captures discover | 🟡 | US-143 | ⬜ Backlog |
+| # | Zone | Constat | Gravité | US cible | Statut |
+|---|---|---|---|---|---|
+| **F1** | Calendar Week + Discover | Modal morte : cliquer une carte n'ouvre rien (`WeekAnimeItem` émet `click`, page écoutait `@open-modal`). | 🔴🔴 P0 | P0.1 | ✅ CORRIGÉ (R4) |
+| **F2** | Boot | Écran beige 5-9 s sans spinner au 1er chargement. | 🔴 | P0.2 | ✅ CORRIGÉ s8 (code+E2E ; re-audit visuel à faire). Durée des 5-9 s = US-117 (défer Firestore), distincte. |
+| **F3** | On Air | `/month` inatteignable : pas de sous-nav Week/Month/List sur On Air. | 🔴 | P0.5 | ⬜ À faire |
+| **F4** | Calendar Month | Layout cassé : libellés jours verticaux, cellules sans titre. | 🔴 | P0.6 | ⬜ À faire (dépend de P0.5 pour être atteignable) |
+| **F5** | Discover/Season/Recherche | Doublons partout (pools non dédupliqués). | 🔴 | P0.3a/b/c | 🟡 PARTIEL : Season (P0.3a) ✅ + Recherche (P0.3c) ✅. **Reste For You batch = P0.3b** (dernier chemin). |
+| **F6** | Recherche / ajout | Ajout silencieux (ni toast, ni redirection). | 🔴 | P0.4 (+US-121) | 🟡 PARTIEL : feedback ajout depuis modal (P0.4) ✅. **Reste auto-vault muet au boot = US-121.** |
+| **F7** | Login | `/login` = HTML brut, zéro style/branding. | 🔴 | P0.7 (+US-122) | ⬜ À faire |
+| **F8** | Dark mode | Sous-nav quasi illisible en dark ; logo faible contraste. | 🟡 | nouveau | ⬜ Backlog |
+| **F9** | Sous-onglets | Aucun état actif visible (For You/Season/Coming Soon gris identiques). | 🟡 | nouveau | ⬜ Backlog |
+| **F10** | Calendar Week | Jours vides muets (pas de suggestion, pas de CTA). | 🟡 | US-144 | ⬜ Backlog |
+| **F11** | Calendar Week | Pas de snap-to-today. | 🟡 | US-150 | ⬜ Backlog |
+| **F12** | Calendar | Libellé date dupliqué. | 🟡 | US-116 | ⬜ Backlog |
+| **F13** | Recherche | Suggestions sans année/score, pas de bouton « + » direct. | 🟡 | US-145 | ⬜ Backlog |
+| **F14** | Discover/Season | ~6 s de blanc sans skeleton (SkeletonCard existe, non utilisé). | 🟡 | nouveau | ⬜ Backlog |
+| **F15** | Library/Upcoming | Titre BYW collé au bord, section vide, hiérarchie typo incohérente. | 🟡 | nouveau | ⬜ Backlog |
+| **F16** | Discover/cartes | Chip « Ep 11 » sans total ; signaux recos génériques répétés ; pas de « Because you watched X » alors que `_signals`/`_triggerTitle` existent. | 🟡 | US-143 | ⬜ Backlog |
 
 ---
 
-## Synthèse de priorisation
+## Finding ajouté en session 8 (hors walkthrough — révélé par audit de code/grep)
 
-**EPIC P0 (bloquants UX) = F1→F7.** Ordre d'attaque :
-1. F1 (modal) — ✅ fait
-2. F2 (LoadingOverlay) — douleur boot n°1 du PO
-3. F5 (dédup) — qualité perçue immédiate
-4. F6 (feedback ajout) — l'app doit confirmer les actions
-5. F3 (sous-nav On Air) — /month accessible
-6. F6/F4 (Month layout)
-7. F7 (login)
+| # | Zone | Constat | Gravité | US cible | Statut |
+|---|---|---|---|---|---|
+| **F17** | Discover + Library (RecCard) | Famille event-name : bouton **Add mort** (`@heart` écouté, `add` émis), **clic carte mort** (`@click` non écouté), **« pas intéressé » mort** (`@not-interested` non écouté) sur les 4 surfaces de reco. Même classe que F1. + emit orphelin `open-modal`. | 🔴🔴 P0 | P0.8a/b/c | 🟡 PARTIEL : Add (P0.8a) ✅ + clic/dismiss (P0.8b) ✅. **Reste `more-like-this` = P0.8c** (décision produit). |
 
-**Backlog UX post-P0 :** F16→US-143 (signaux recos, quasi gratuit) puis marquer-vu 1-tap
-(US-141), puis F10/F11/F12/F13 (US-144/150/116/145) et les nouveaux F8/F9/F14/F15.
+> **Audit event-name transverse (session 8) :** balayage `defineEmits` vs `@listener` sur
+> tout `src/components/`. Résultat : `RecCard` = **seul** foyer 🔴 (F17). Tout le reste
+> aligné. `open-recency` bien émis par `ModalCalendarTop` (pas fantôme). Dette event-name
+> (F1 + F17) **cartographiée et close** (sauf `more-like-this` reporté).
 
-## Findings SANS US existante (à créer en session future)
-- **F8** dark mode contraste sous-nav + logo
+---
+
+## Synthèse de priorisation (mise à jour s8)
+
+**EPIC P0 = F1→F7 + F17.** Restant : **P0.5 (F3) → P0.6 (F4) → P0.7 (F7)**, puis findings
+dérivés (P0.4-bis, US-121, P0.8c, P0.3b). **Re-audit live recommandé** avant clôture EPIC P0.
+
+**Backlog UX post-P0 :** F16→US-143, puis US-141, F10/F11/F12/F13 (US-144/150/116/145),
+et F8/F9/F14/F15 (nouveaux).
+
+## Findings SANS US existante (à créer)
+- **F8** dark contraste sous-nav + logo
 - **F9** état actif des sous-onglets
-- **F14** skeletons non utilisés sur les pages async (le composant existe)
+- **F14** skeletons non utilisés sur les pages async
 - **F15** hiérarchie typo des titres de sections + section BYW vide
 
-## Dette de test détectée
-- **[P0.1]** le test E2E `modal-open.spec.ts` seede `localStorage` avec la clé devinée
-  `'animeCalendar'`. **À vérifier** : est-ce la vraie clé écrite par `usePersistence` ?
-  Si non, le test passe pour une mauvaise raison. Grep à faire avant de s'appuyer
-  dessus comme référence.
+## Dette de test (résolue)
+- **[P0.1]** ✅ La clé localStorage seedée dans `modal-open.spec.ts` (`'animeCalendar'`)
+  est CONFIRMÉE être la vraie clé écrite par `usePersistence.saveToDatabase` (DEC-64).
+  Le test repose sur une vraie clé. Dette levée.
