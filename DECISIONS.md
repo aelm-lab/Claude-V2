@@ -149,6 +149,15 @@
 
 - **[DEC-65] Stratégie de test E2E affinée → `AGENTS_E2E.md` (R5).** Pendant un epic, chaque US ne livre qu'un E2E **ciblé** sur ce qu'elle impacte (rouge→vert sur le bug précis). À la **fin de l'epic**, un **grand check E2E complet** rejoue toute la suite (`npx playwright test` sans filtre) = régression globale. Les tests E2E sont **cumulatifs** dans `tests/e2e/`, jamais supprimés — c'est ce qui rend le grand check possible.
 
+**DEC-66 : libellé période = source unique CalendarNavControls (Month P0.6 + Week P0.6-bis, US-116 close)
+**DEC-67 : convention classe active nav = .active (markup aligné sur CSS)
+**DEC-68 : P0.7 = style pur (tokens existants, script intact) ; US-122 reste EPIC-3
+**DEC-69 : P0.8c sorti P0 → EPIC-4/US-152
+**DEC-70 : .modal-backdrop overlay centré (CSS manquant, pattern « markup réf une classe absente » = 3e occurrence après weekday-headers/secondary-tab). Règles préfixées pour ne pas casser .modal vanilla.
+**DEC-71 : libellés toasts harmonisés (« Vault »→« Completed », « Radar »→« Coming Soon ») 
+
+
+
 > **Note transverse session 8 (audit event-name) :** un balayage `defineEmits` vs `@listener` sur **tout** `src/components/` a confirmé que le **seul foyer de désalignement 🔴 est `RecCard`** (résolu P0.8a/b). Tout le reste (calendar, AnimeCard, chips, nudges, tous les `Modal*`) est aligné. `open-recency` est bien émis par `ModalCalendarTop` (ligne 70) et écouté par `AnimeModal` (pas un handler fantôme). La dette event-name (P0.1 + RecCard) est donc **cartographiée et close**.
 
 > **Note de capacité (session 8) :** l'audit UX **live** (walkthrough navigateur) n'a pas pu être refait par Claude dans cette session — pas d'outil de navigateur interactif disponible, et l'app déployée est derrière l'auth AI Studio (cookie de sécurité). Les correctifs session 8 sont validés par **code + E2E** (R1/R4), pas par observation visuelle. Un audit live reste à refaire (par le PO pilotant le navigateur) avant de clore l'EPIC P0.
