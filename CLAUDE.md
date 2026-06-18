@@ -3,7 +3,7 @@
 > **Où mettre ce fichier :** dans la **Knowledge** du projet Claude Chat (glisser-déposer).
 > C'est le document de référence que Claude consulte en priorité.
 >
-> **État de référence : session 8 (EPIC P0 en cours — 6 US UX mergées).**
+> **État de référence : session 9 ; compteur tests : 76 unit + 16 E2E..**
 
 ---
 
