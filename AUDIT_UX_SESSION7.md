@@ -34,20 +34,21 @@ Un bug P0 (modal morte) a passé `vue-tsc` + 72 tests + 2 audits de code. UN cli
 |---|---|---|---|---|---|
 | **F1** | Calendar Week + Discover | Modal morte : cliquer une carte n'ouvre rien (`WeekAnimeItem` émet `click`, page écoutait `@open-modal`). | 🔴🔴 P0 | P0.1 | ✅ CORRIGÉ (R4) |
 | **F2** | Boot | Écran beige 5-9 s sans spinner au 1er chargement. | 🔴 | P0.2 | ✅ CORRIGÉ s8 (code+E2E ; re-audit visuel à faire). Durée des 5-9 s = US-117 (défer Firestore), distincte. |
-| **F3** | On Air | `/month` inatteignable : pas de sous-nav Week/Month/List sur On Air. | 🔴 | P0.5 | ⬜ À faire |
-| **F4** | Calendar Month | Layout cassé : libellés jours verticaux, cellules sans titre. | 🔴 | P0.6 | ⬜ À faire (dépend de P0.5 pour être atteignable) |
+| **F3** | On Air | `/month` inatteignable : pas de sous-nav Week/Month/List sur On Air. | 🔴 | P0.5 |✅ CORRIGÉ |
+| **F4** | Calendar Month | Layout cassé : libellés jours verticaux, cellules sans titre. | 🔴 | P0.6 | ✅ CORRIGÉ|
 | **F5** | Discover/Season/Recherche | Doublons partout (pools non dédupliqués). | 🔴 | P0.3a/b/c | 🟡 PARTIEL : Season (P0.3a) ✅ + Recherche (P0.3c) ✅. **Reste For You batch = P0.3b** (dernier chemin). |
 | **F6** | Recherche / ajout | Ajout silencieux (ni toast, ni redirection). | 🔴 | P0.4 (+US-121) | 🟡 PARTIEL : feedback ajout depuis modal (P0.4) ✅. **Reste auto-vault muet au boot = US-121.** |
-| **F7** | Login | `/login` = HTML brut, zéro style/branding. | 🔴 | P0.7 (+US-122) | ⬜ À faire |
+| **F7** | Login | `/login` = HTML brut, zéro style/branding. | 🔴 | P0.7 (+US-122) | ✅ CORRIGÉ |
 | **F8** | Dark mode | Sous-nav quasi illisible en dark ; logo faible contraste. | 🟡 | nouveau | ⬜ Backlog |
-| **F9** | Sous-onglets | Aucun état actif visible (For You/Season/Coming Soon gris identiques). | 🟡 | nouveau | ⬜ Backlog |
+| **F9** | Sous-onglets | Aucun état actif visible (For You/Season/Coming Soon gris identiques). | 🟡 | nouveau | ✅ CORRIGÉ |
 | **F10** | Calendar Week | Jours vides muets (pas de suggestion, pas de CTA). | 🟡 | US-144 | ⬜ Backlog |
 | **F11** | Calendar Week | Pas de snap-to-today. | 🟡 | US-150 | ⬜ Backlog |
-| **F12** | Calendar | Libellé date dupliqué. | 🟡 | US-116 | ⬜ Backlog |
+| **F12** | Calendar | Libellé date dupliqué. | 🟡 | US-116 | ✅ CORRIGÉ |
 | **F13** | Recherche | Suggestions sans année/score, pas de bouton « + » direct. | 🟡 | US-145 | ⬜ Backlog |
 | **F14** | Discover/Season | ~6 s de blanc sans skeleton (SkeletonCard existe, non utilisé). | 🟡 | nouveau | ⬜ Backlog |
 | **F15** | Library/Upcoming | Titre BYW collé au bord, section vide, hiérarchie typo incohérente. | 🟡 | nouveau | ⬜ Backlog |
 | **F16** | Discover/cartes | Chip « Ep 11 » sans total ; signaux recos génériques répétés ; pas de « Because you watched X » alors que `_signals`/`_triggerTitle` existent. | 🟡 | US-143 | ⬜ Backlog |
+| **F-modal-position** |  F-modal-position (modal en bas) → ✅ CORRIGÉ s9 (P0.9). Note : trou de P0.1 (E2E assertait visibilité, pas position).
 
 ---
 
