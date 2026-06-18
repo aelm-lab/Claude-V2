@@ -98,6 +98,24 @@
 
 ---
 
+
+## Anti-patterns event-name & feedback (session 9)
+
+❌ Markup référence une classe CSS inexistante → blocs en display:block dans le flux (weekday-headers F4 / secondary-tab--active F9 / modal-backdrop P0.9). Grep la classe dans style.css avant de l'utiliser.
+❌ E2E qui asserte la visibilité sans la position → un élément mal placé passe le test (P0.1 modal). Asserter getComputedStyle().position quand le placement est l'enjeu.
+Récidives Gemini s9 : build tronqué ×2 (P0.6 / P0.6-ter — 3e = suspension), clé localStorage non contractuelle (onAirDefaultView, calendar-subnav-layout).
+
+
+nouveaux findings CSS (backlog dette, EPIC-2/3) :
+
+F18 : dette « VUE TEST » morte (~150 lignes .test-*)
+F19 : doublons .post-it (solid vs pastel, contradictoires)
+F20 : hacks CSS :has([style*="none"]) morts post-migration
+F21 : #app-loading-overlay { display:none !important } à vérifier vs loader P0.2
+F22 : .month-header-mobile orpheline (doublon de .weekday-headers-mobile)
+F23 : « your Vault » empty state LibraryCompletedPage:37 (jargon, trivial)
+---
+
 ## Récidives détectées en cours de projet
 
 - **[US-001]** ❌ Déps parasites + DOM vanilla conservé dans `index.html`.
