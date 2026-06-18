@@ -75,6 +75,7 @@
 | US-149 | Page stats « Mon année anime » (Spotify Wrapped) | Engagement + partage |
 | US-150 | **Snap-to-today** : auto-ancrage sur le jour courant à l'ouverture de la semaine *(issu audit B)* | Repère immédiat |
 | US-151 | **Library en chips** : fusionner Completed/Plan to Watch via pills (préserve scroll, 1 clic) *(issu audit B)* | Navigation fluide |
+| US-152 | more-like-this A/B, 2 mockups réf
 
 ## EPIC-5 — Plateforme 🔵 LONG TERME
 
