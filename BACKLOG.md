@@ -27,16 +27,24 @@
 - [audit] **Audit event-name transverse** (`emit` vs `@listener`, tous composants) — CLOS : 1 seul foyer 🔴 (RecCard, résolu P0.8a/b), tout le reste aligné. `open-recency` confirmé émis par `ModalCalendarTop` (pas fantôme).
 - [P0.4] Feedback toast à l'ajout depuis la modal (F6 volet 1) — `onAdd`/`onStartWatching` annoncent la destination visible. E2E `modal-add-feedback.spec.ts` — DEC-63
 
-### 🔄 In Progress
-- _(rien)_
-
-### 📝 To Do — EPIC P0 (reste)
+### ✅ Done — Session 9 (EPIC P0)
 - [P0.5] Sous-nav On Air (Week/Month/List) → `/month` accessible depuis l'UI (F3)
 - [P0.6] Layout Month cassé : en-tête grille + titres dans cellules (F4)
 - [P0.7] `/login` stylé : AuthLayout + branding + explication flow (F7 / US-122)
-
-### 📝 Findings dérivés à ordonnancer (issus de session 8)
 - [P0.4-bis] Harmoniser le vocabulaire des toasts existants : `onMarkDone` « Moved to Vault »→« Moved to Completed » + `DiscoverExplorePage.onRecHeart` « Added to Radar »→« Added to Coming Soon ». (Optionnel : helper `stateToLabel` centralisé — dette légère.)
+
+### 🔄 In Progress
+- _(rien)_
+
+### 📝 To Do — EPIC P0 (reste
+- [US-121] Auto-vault muet au boot : `usePersistence.applyLoadTransitions` passe un show `Finished Airing` en `vault` sans toast (F6 volet 2 — chemin boot, distinct de P0.4).
+- [P0.8c] `@more-like-this` (RecCard, panneau why) non câblé — **décision produit requise** : modal simple (gratuit, la section ModalMoreLikeThis existe déjà) vs scroll-to-section (feature, ajout flag `stores/ui.ts`).
+- [P0.3b] Dédup For You batch : `getNextBatch` passe à `buildNextBatch` `remainingPool` entier + un sous-ensemble `wildcards` → un item wildcard peut sortir 2× (« 1ʳᵉ et 3ᵉ carte identiques »). **Le seul chemin F5 restant.** Touche le moteur → examen renforcé. Approche pressentie : déduper le batch sortant par `id` (préserve la cadence 1-wildcard/5).
+
+
+### 📝 Findings dérivés à ordonnancer (issus de session 9)
+- CSS F18–F23
+### 📝 Findings dérivés à ordonnancer (issus de session 8)
 - [US-121] Auto-vault muet au boot : `usePersistence.applyLoadTransitions` passe un show `Finished Airing` en `vault` sans toast (F6 volet 2 — chemin boot, distinct de P0.4).
 - [P0.8c] `@more-like-this` (RecCard, panneau why) non câblé — **décision produit requise** : modal simple (gratuit, la section ModalMoreLikeThis existe déjà) vs scroll-to-section (feature, ajout flag `stores/ui.ts`).
 - [P0.3b] Dédup For You batch : `getNextBatch` passe à `buildNextBatch` `remainingPool` entier + un sous-ensemble `wildcards` → un item wildcard peut sortir 2× (« 1ʳᵉ et 3ᵉ carte identiques »). **Le seul chemin F5 restant.** Touche le moteur → examen renforcé. Approche pressentie : déduper le batch sortant par `id` (préserve la cadence 1-wildcard/5).
