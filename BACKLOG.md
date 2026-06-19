@@ -65,4 +65,32 @@ _(rien)_
 - F19 : doublons `.post-it` (solid vs pastel, contradictoires)
 - F20 : hacks CSS `:has([style*="none"])` morts post-migration
 - F21 : `#app-loading-overlay { display:none !important }` à vérifier vs DEC-72
-- F22 :
+- F22 : `.month-header-mobile` orpheline (doublon créé P0.6)
+- F23 : « your Vault » empty state `LibraryCompletedPage:37` (jargon, trivial)
+- F24 : `BecauseYouWatched.vue` a un `<style scoped>` antérieur à DEC-72 (à inclure dans passe F18–F23)
+
+### 📝 Backlog UX post-P0 (issus audit session 7 — non traités)
+- [US-145] Recherche enrichie (année/score/+) (F13)
+- [US-116-F12] Libellé période dupliqué (F12) — ✅ fermé P0.6-bis (côté page) ; vérifier visuellement
+- Nouveaux sans US : F8 dark contraste sous-nav, F14 skeletons inutilisés, F15 hiérarchie typo + section BYW vide
+
+### 🗂️ En standby (repris après EPIC P0 + audit)
+- EPIC-2 : US-117 (défer Firestore, ROI 1er chargement = priorité), US-113b/c, US-114, US-111, US-112
+- EPIC-3 : US-120 (bug studios), US-122 (email re-entry), US-123→130
+- EPIC-4 : US-140 (onboarding), US-141-CSS, US-144, US-145, US-146→152
+- EPIC-5 : PWA, Firestore RT, virtualisation listes
+
+---
+
+## Règles de tenue du backlog
+- **Une seule US In Progress.** Pas de MERGE, pas de suite.
+- US > 3 fichiers → scinder + prévenir le PO. Dépassement autorisé SI annoncé **en gras + dans le titre**.
+- **Zéro confiance** : code brut intégral + sortie terminale brute.
+- **R1** triple preuve verte (vue-tsc + vitest run + build), **3 sorties brutes séparées** (jamais de paraphrase build — 4 récidives au compteur).
+- **R2** test runtime sur boot/store/câblage de composables.
+- **R3** un audit lit le code. Lire le code qui marche AVANT de proposer un fix (leçon s10).
+- **R4** tout correctif UX / feature touchant l'écran → E2E Playwright geste réel + DOM visible. ROUGE→VERT sans modif. Une preuve ROUGE = état figé unique.
+- **R5** test ciblé par US pendant l'epic, grand check complet en fin d'epic. Tests cumulatifs dans `tests/e2e/`, jamais supprimés. Grand check sandbox : `--workers=1` (le parallèle provoque des `ERR_CONNECTION_REFUSED` dans le sandbox Gemini).
+- **Diagnostic avant spec** : grep lecture seule, décision sur preuve.
+- **Démarrage Gemini** : exiger l'état des fichiers modifiés AVANT toute action (récidive s10 : 5 fichiers modifiés sans US → cascade 80% du temps perdu).
+- Livraison sans contenu intégral = review suspendue.
