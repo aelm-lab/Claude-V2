@@ -136,6 +136,40 @@ F23 : « your Vault » empty state LibraryCompletedPage:37 (jargon, trivial)
 
 ---
 
+## Anti-patterns process & diagnostic (session 10)
+
+> Session 10 a coûté ~80% de son temps à réparer une cascade de bugs auto-infligés. Ces deux patterns sont les causes racines.
+
+### Gemini — récidive R-SCOPE-1 la plus coûteuse du projet
+
+- ❌ **Modifier plusieurs fichiers sans aucune US, en cascade.** En réponse à un simple diagnostic, Gemini a modifié `main.ts`, `index.html`, `App.vue`, `playwright.config.ts`, `smoke.spec.ts` — 5 fichiers, zéro US, zéro autorisation. Conséquence : suite E2E cassée sur 17/17 tests, 80% de la session perdue à réparer. → **Règle de démarrage session obligatoire :** exiger de Gemini un état du dépôt (liste des fichiers modifiés depuis le dernier merge connu) AVANT toute action. Ne jamais laisser Gemini « préparer le terrain » de sa propre initiative. Le sandbox AI Studio interdit `git status` — à défaut, demander `ls -la` ou liste fichiers récemment modifiés.
+
+- ❌ **4ᵉ récidive de paraphrase de build.** `"Build succeeded - the applet is compiled."` au lieu de la sortie brute Vite. Compteur : P0.3a (s8) + 2 occurrences s10. → Rappel : toute paraphrase de build = review suspendue d'office, même quand le code est bon. Suggestion : exiger `npm run build 2>&1 | tail -40` pour forcer la sortie brute dans le sandbox.
+
+### Claude — 2 mauvais diagnostics en série (leçon zéro-confiance sur Claude lui-même)
+
+- ⚠️ **Proposer un fix avant de lire le code qui fonctionne déjà.** Sur le problème `.rowcard` absent après boot, Claude a proposé un mock `**/anime/**` (4 allers-retours pour constater qu'il cassait le rendu) avant de lire `modal-open.spec.ts` — le test identique qui passait. La solution (seed 7 jours) était visible dans ce fichier depuis le début. → **Règle :** quand un test échoue et qu'un test similaire passe, **lire le test qui passe EN PREMIER**, pas après épuisement des hypothèses. [s10 modal-position/toast-labels]
+
+- ⚠️ **Diagnostic basé sur une hypothèse non vérifiée (2ᵉ occurrence après DEC-59).** Claude a supposé que `syncAnimeUpdates` écrasait le store (hypothèse plausible mais fausse) sans avoir grep-é le flux réel. Cause du bug : seed mono-jour `day: 'monday'` ne couvrait pas la semaine courante. → Zéro-confiance s'applique aux hypothèses de Claude : grep d'abord, hypothèse après. [s10 boot-loader cascade]
+
+### Gemini — fichier parasite `test_script.ts`
+
+- ❌ **Créer un fichier non sollicité hors périmètre de l'US** (`test_script.ts` à la racine). Pattern identique à `kill.cjs` (s10, début). → Tout fichier non listé dans l'US est un R-SCOPE-1. Gemini doit signaler, pas créer. Claude doit demander la suppression immédiate avant review.
+
+### Pattern E2E boot-dépendant (gravé s10)
+
+- ❌ **Cliquer une carte sans attendre la fin du boot.** Le `#boot-loader` (DEC-72, position fixed) intercepte tous les pointer events pendant le boot. Tout test qui clique après un `page.goto` doit attendre `await expect(page.locator('#boot-loader')).toBeHidden({ timeout: 15000 })` AVANT de localiser/cliquer. Sans ça : timeout 30s garanti. [modal-position/toast-labels s10]
+
+- ❌ **Seed mono-jour dans un test de calendrier semaine.** `day: 'monday'` seul = carte invisible si la semaine courante est une autre. → Toujours seeder les 7 jours (pattern `['monday',...,'sunday'].map(...)`) pour garantir une carte visible quel que soit le jour courant. [modal-position/toast-labels s10, modal-open pattern de référence]
+
+---
+
+## Récidives détectées en cours de projet (suite)
+
+- **[DEC-72 boot-loader, session 10]** ⚠️ Gemini a modifié 5 fichiers sans US → cascade E2E 17/17 rouges. Récidive R-SCOPE-1 la plus coûteuse. (détail ci-dessus)
+- **[US-150 build, session 10]** ⚠️ **4ᵉ récidive paraphrase build** : « Build succeeded - the applet is compiled. » → review suspendue. (détail ci-dessus)
+- **[modal-position/toast-labels, session 10]** ⚠️ Claude a proposé mock `/anime/**` (faux diagnostic ×1) puis hypothèse "Jikan écrase le store" (faux diagnostic ×2) avant de lire `modal-open.spec.ts`. 4 allers-retours évitables. → Lire le code qui marche AVANT de proposer.
+
 ## Règles process permanentes (gravées dans AGENTS.md)
 
 - ✅ **R1 — Triple preuve verte (CI).** `vue-tsc --noEmit` + `vitest run` + `build`, **3 sorties brutes séparées**, pour tout MERGE. Rejouées par `ci.yml`.
