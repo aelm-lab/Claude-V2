@@ -48,6 +48,15 @@
 
 **Suite E2E cumulative : 22 specs.** 76 tests unit verts. Build ~4.7s, 716kb.
 
+
+### ✅ Done — Session 12 (clôture EPIC P0 via audit live PO)
+- [US-P0-E] BUG-5 — Gating "Mark done"/recency sur statut. v-if="isFinished" ModalCalendarTop. E2E modal-status-gating
+- [US-P0-C] BUG-2 — Modal centrée mobile : test-juge VERT sans fix → perception (artefact devtools). E2E modal-content-centered-mobile
+- [US-P0-D] BUG-1 — Discover réactif Add/Dismiss modal. dismissedRecIds réactif + excludedIds computed. E2E modal-add-removes-from-discover
+- [FIX] toast-labels réaligné post-gating (watchlist/Finished, /library/plan)
+
+**EPIC P0 → CLOS. Suite E2E : 26 specs. 76 unit. Build 716kb.**
+
 ### 🔄 In Progress
 _(rien)_
 
