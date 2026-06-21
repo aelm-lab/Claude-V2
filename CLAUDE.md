@@ -3,8 +3,8 @@ markdown# CLAUDE.md — Bible du projet « Aanime »
 > **Où mettre ce fichier :** dans la **Knowledge** du projet Claude Chat (glisser-déposer).
 > C'est le document de référence que Claude consulte en priorité.
 >
-> **État de référence : session 10 ; compteur tests : 76 unit + 22 E2E.**
-
+> **État de référence : session 12 closes. EPIC P0 CLOS. E2E : 26 specs. Unit : 76. Build 716kb, zéro any.
+Compteurs antipatterns : faux-vert ×5, R-SCOPE-1 ×2 (s10+s11), classe CSS inexistante ×3, paraphrase build ×4 (0 nouvelle).
 ---
 
 ## 1. L'application
