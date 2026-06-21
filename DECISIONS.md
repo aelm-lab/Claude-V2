@@ -177,3 +177,11 @@
 - **[US-143 fermée sans dev]** F16 était déjà implémenté : `BecauseYouWatched.vue:3` affiche `_triggerTitle` dans le titre de section ; `RecCard.vue` affiche `_signals` (résumé ligne + panneau why au clic) + badge `_badge`. Rien à coder. Dette notée : `BecauseYouWatched.vue` a un `<style scoped>` antérieur à DEC-72 — à inclure dans la passe F18–F23.
 
 > **Leçon process session 10 (→ ANTIPATTERNS) :** Gemini a modifié 5 fichiers sans US en début de session (cascade 80% du temps perdu). Claude a produit 2 mauvais diagnostics (mock `/anime/**` ajouté/retiré ; hypothèse Jikan écrase le store) faute d'avoir lu `modal-open.spec.ts` (le code qui marchait) avant de proposer. Zéro-confiance s'applique à Claude : lire le code qui marche AVANT de proposer, pas après 4 allers-retours.
+
+
+
+## Session 12 — Clôture EPIC P0 (audit live PO)
+- [DEC-77] BUG-5 : "Mark done" + ligne recency gatés sur isFinished (statut 'Finished') dans ModalCalendarTop. Règle produit : ces actions n'ont de sens que sur un anime terminé.
+- [DEC-78] BUG-2 clos comme PERCEPTION. Test-juge mesure boundingBox .modal-content (x:20 w:360 centerX:200 sur 400px) → centrage parfait. Le ressenti d'audit = artefact du cadre devtools responsive, pas un bug CSS.
+- [DEC-79] BUG-1 : réactivité Discover via dérivation, pas via canal modal→page. excludedIds = union(store.animeCalendarData, dismissedRecIds réactif). Add (store réactif) ET Dismiss (Set réassigné dans dismissRec) retirent la carte mécaniquement, quel que soit le chemin (carte ou modal). Handlers carte laissés en place (redondance inoffensive, minimise le diff/risque scope).
+- [DEC-80] Conflit de règles découvert : un anime calendar+Finished s'auto-vault au boot (usePersistence), calendar+Airing gate Mark done. Le scénario "Mark done depuis Week" est donc structurellement impossible post-gating. toast-labels déplacé sur watchlist+Finished (exclu de l'auto-vault) via /library/plan. Aucun code source modifié.
