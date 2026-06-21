@@ -170,6 +170,16 @@ F23 : « your Vault » empty state LibraryCompletedPage:37 (jargon, trivial)
 - **[US-150 build, session 10]** ⚠️ **4ᵉ récidive paraphrase build** : « Build succeeded - the applet is compiled. » → review suspendue. (détail ci-dessus)
 - **[modal-position/toast-labels, session 10]** ⚠️ Claude a proposé mock `/anime/**` (faux diagnostic ×1) puis hypothèse "Jikan écrase le store" (faux diagnostic ×2) avant de lire `modal-open.spec.ts`. 4 allers-retours évitables. → Lire le code qui marche AVANT de proposer.
 
+
+
+## Session 12
+- [AP] Faux-vert #5 (récidive) : E2E assertant store/desktop au lieu du DOM visible mobile. R4 confirmé comme garde-fou.
+- [AP] Classe CSS inexistante (.toast-notification sans règle) — déjà loggé s11, rappel.
+- [AP] R-SCOPE-1 récidive s11 (onRemove+onNavigate hors US-P0-B) — rappel.
+- [AP NOUVEAU — angle mort gating↔E2E] Un gating conditionnel (v-if) sur un élément interactif DOIT déclencher un grep des specs E2E qui ouvrent/cliquent cet élément, AVANT merge. US-P0-E a gaté "Mark done" → toast-labels (qui le cliquait sur un anime airing) est devenu rouge au sweep, pas au merge. Coût : 3 allers-retours. Règle : tout v-if sur un bouton/lien → vérifier les consommateurs E2E dans la même US.
+- [AP — auto-vault vs seed E2E] Un seed calendar+Finished s'auto-vault au boot et disparaît de la vue. Pour tester une action sur anime terminé, seed en watchlist (exclu de l'auto-vault par usePersistence). Erreur de diagnostic Claude corrigée en 1 itération.
+
+
 ## Règles process permanentes (gravées dans AGENTS.md)
 
 - ✅ **R1 — Triple preuve verte (CI).** `vue-tsc --noEmit` + `vitest run` + `build`, **3 sorties brutes séparées**, pour tout MERGE. Rejouées par `ci.yml`.
