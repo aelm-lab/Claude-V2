@@ -7,7 +7,7 @@
 > **État :** migration ✅ · EPIC-1 ✅ (s6) · EPIC P0 ✅ (s12) · EPIC-2 ✅ (s13/14) · EPIC-3 ✅ (s15) ·
 > dual audit s16 ✅ · SGit (pont GitHub + porte locale) ✅.
 > **Métriques (fin S16) :** ~84 unit (Vitest) · 26 specs / 30 tests E2E (Playwright) · build ~717 kb, ~3.7 s, zéro `any`.
-> **Dernière MAJ :** S18.
+> **Dernière MAJ :** passage S19, 9 US en Done, 102 tests
 
 ---
 
