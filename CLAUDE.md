@@ -77,7 +77,7 @@ action (récidive s10 : 5 fichiers modifiés sans US → cascade 80 % du temps p
 
 ## 4-bis. Règle PO non-technique (gravée s15) — OBLIGATOIRE
 
-Adnane est **Product Owner non-technique**. Pour **chaque US et chaque décision technique**,
+Adnane est **Product Owner non-technique**. Pour **chaque US et chaque décision **,
 Claude fournit systématiquement :
 - **(a) Impact utilisateur concret** — ce que l'utilisateur final voit/ressent, ou « aucun visible — dette ».
 - **(b) Recommandation Claude** — la décision proposée, sur laquelle le PO tranche.
@@ -120,6 +120,23 @@ tests/e2e/           # Tests Playwright (cumulatifs, exclus de Vitest)
 9. **Migration verticale** (types → logique → composant → test).
 10. **Contrat d'event = le composant** : les consommateurs s'alignent sur ses `defineEmits`, jamais l'inverse (leçons P0.1/P0.8).
 11. **Aucun `<style scoped>`** dans les composants existants — tous les styles vont dans `style.css` (DEC-72). Ne pas ajouter de `<style scoped>` dans une US sans validation explicite.
+
+---
+
+### Règles d' NON-NÉGOCIABLES
+**R1 — Porte verte locale (preuve par le PO, jamais par l'implémenteur) 
+Aucune US ne reçoit le verdict MERGE sans TROIS sorties brutes,
+produites par le PO sur sa machine, jamais par Gemini, jamais paraphrasées :
+  1. npm run type-check   (vue-tsc --noEmit)
+  2. npm run test:run     (vitest run)
+  3. npm run build
+Les trois doivent être vertes. Une seule sortie rouge = pas de MERGE.
+Toute preuve fournie par l'implémenteur ("82 passed" collé par Gemini)
+est IRRECEVABLE : seule la machine du PO fait foi.
+
+
+
+
 
 ---
 
