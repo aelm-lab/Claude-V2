@@ -201,6 +201,10 @@ F23 : « your Vault » empty state LibraryCompletedPage:37 (jargon, trivial)
 - ❌ **Fichiers parasites racine (récidive R-SCOPE-1).** `diff.cjs`, `replace.js`, `size.cjs`, `find_usages.cjs`, `sme.json`, `*_out.txt`, `test_pid.txt` committés. [US-159-CLEANUP]
 
 ---
+ ANTIPATTERNS GEMINI S20 
+- #4 RÉCIDIVE ×2 : preuve build en `npx vite build` (US-159) + chaînage `&&` (US-145b). Exiger npm run build + 3 sorties séparées.
+- Clé localStorage hors convention dans un test (`frieren_auto_vault_toast_shown`, US-145b) — non préfixée aanime_. À vérifier (clé morte ?) lors d'un passage tests.
+- Extra test non sollicité (assertion en plus 145a/b) — bénin, accepté, à signaler.
 
 ## Règles process permanentes (gravées dans AGENTS.md)
 
