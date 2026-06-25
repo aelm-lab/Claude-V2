@@ -205,7 +205,15 @@ F23 : « your Vault » empty state LibraryCompletedPage:37 (jargon, trivial)
 - #4 RÉCIDIVE ×2 : preuve build en `npx vite build` (US-159) + chaînage `&&` (US-145b). Exiger npm run build + 3 sorties séparées.
 - Clé localStorage hors convention dans un test (`frieren_auto_vault_toast_shown`, US-145b) — non préfixée aanime_. À vérifier (clé morte ?) lors d'un passage tests.
 - Extra test non sollicité (assertion en plus 145a/b) — bénin, accepté, à signaler.
+-----
+### #5 — npx bypass des scripts npm (US-158, Gemini)
+Gemini utilise `npx vue-tsc --noEmit` et `npx vitest run` dans ses preuves CI
+au lieu de `npm run type-check` et `npm run test:run`. Les scripts npm peuvent
+embarquer des options de config supplémentaires — le bypass les masque.
+Commandes valides : uniquement `npm run type-check`, `npm run test:run`, `npm run build`.
+Variante déjà connue : `npx vite build` (#4).
 
+-----
 ## Règles process permanentes (gravées dans AGENTS.md)
 
 - ✅ **R1 — Triple preuve verte (CI).** `vue-tsc --noEmit` + `vitest run` + `build`, **3 sorties brutes séparées**, pour tout MERGE. Rejouées par `ci.yml`.
