@@ -1,141 +1,214 @@
-# EPICS.md — Taxonomie produit Aanime
-> MAJ : S21. Lentille : EPIC = page/surface/système. Tag US = `[EPIC][SECTION][TYPE]`.
-> Une US vit dans 1 EPIC. Les TAGS TYPE sont transverses.
-> Ce fichier contient l'historique complet depuis la migration (S0→S21).
+# EPICS.md — Vue epics & avancées fonctionnelles Aanime
 
-## Tags TYPE (transverses)
-`[FEATURE]` `[UX]` `[CSS]` `[TEST]` `[PERF]` `[DETTE]` `[A11Y]` `[CI]`
-
----
-
-## ═══ ÉPICS ACTIFS ═══
-
-### EPIC On Air — Calendrier
-Sections : `[WEEK]` `[MONTH]` `[LIST]`
-- US-150 [ON AIR][WEEK][UX] Snap-to-today — ✅
-- US-142 [ON AIR][WEEK][UX] Barre de progression sous la carte — ✅
-- US-141 [ON AIR][WEEK][UX] Bouton ✓ marquer-vu 1 tap — ✅ (style → US-141-CSS)
-- US-144 [ON AIR][WEEK][UX] CTA « Explore this season » jours vides — ✅ S20
-- US-141-CSS [ON AIR][WEEK][CSS] Styliser `.rc-mark-done` (cible 44px) — ⬜
-- BUG-10 [ON AIR][WEEK][DETTE] Suggestions slot-fill intermittentes — ⬜
-
-### EPIC Discover — Découvrir
-Sections : `[FOR-YOU]` `[SEASON]` `[COMING-SOON]`
-- US-P0.3a/b/c [DISCOVER][*][DETTE] Déduplication pools — ✅ S9
-- F14 [DISCOVER][SEASON][UX] Skeleton boot — ✅ clos sans dev (loader US-155 suffit)
-- F16 [DISCOVER][FOR-YOU][FEATURE] Because You Watched — ✅ déjà implémenté
-
-### EPIC Library — Bibliothèque
-Sections : `[PLAN]` `[COMPLETED]` `[UPCOMING]`
-- US-120 [LIBRARY][COMPLETED][UX] Badge vault = « Finished » — ✅ S14
-- US-124 [LIBRARY][DETTE] MAL `Dropped` → non importé (vérifier filtre) — ⬜
-- F15 [LIBRARY][UPCOMING][CSS] Titre BYW collé, typo incohérente — ⬜
-
-### EPIC Recherche
-- US-145a [RECHERCHE][UX] Suggestions enrichies année·studio·★score — ✅ S20
-- US-145b [RECHERCHE][FEATURE] Bouton « + » direct, routage statut — ✅ S20
-
-### EPIC Modal
-- US-119 [MODAL][FEATURE] Covers relations enrichies — ✅ S14
-
-### EPIC Navigation
-- US-P0.5 [NAV][UX] Sous-nav Week/Month/List — ✅ S9
-- US-P0.6-ter [NAV][UX] États actifs sous-onglets (F9) — ✅ S9
-
-### EPIC Login & Authentification
-- US-P0.7 [LOGIN][UX] Page login stylée — ✅ S9
-- US-122 [LOGIN][FEATURE] Magic-link UI in-app — ✅ S14
-- DEC-82 [LOGIN][FEATURE] Redirect post-login route d'origine — 🗄️ Vault
-
-### EPIC Boot & Démarrage ← EPIC-BOOT complet S21
-Sections : `[BOOT]` `[PERSIST]` `[SYNC]`
-- US-153 [BOOT][PERSIST][FEATURE] saveToDatabase try/catch + toast — ✅ S19
-- US-155 [BOOT][UX] Boot non bloquant (loader instantané) — ✅ S19
-- US-154 [BOOT][PERSIST][DETTE] getCardStatus 'Continuing' → Airing — ✅ S19
-- US-156a/b [BOOT][SYNC][TEST] specs useEpisodeInfo + useSync — ✅ S19
-- US-157 [BOOT][PERSIST][DETTE] Mutations store via actions — ✅ S21
-- US-158 [BOOT][PERSIST][DETTE] Legacy normalisé, zéro double cast — ✅ S21
-
-### EPIC Onboarding & Rétention
-- US-140 [ONBOARDING][FEATURE] 1ʳᵉ visite : genres → animes → calendrier — ⬜ **levier n°1**
-
-### EPIC Moteur de Recommendation
-Sections : `[RECCARD]` `[ENGINE]` `[BYW]` `[MORE-LIKE-THIS]`
-- US-167 [REC][ENGINE][FEATURE] Bouton ❓ + RecEngineModal — ✅ S19
-- US-152 [REC][MORE-LIKE-THIS][FEATURE] more-like-this → modal (Option A) — ✅ S21
-- US-131 [REC][WEEK][FEATURE] Slot-fill Skip + clic→modal — ✅ S15
-- US-131-E2E [REC][WEEK][TEST] E2E slot-fill skip + clic→modal — ⬜
-- US-127 [REC][SYNC][FEATURE] SyncIndicator tous fetches Jikan (option B) — ⬜
-- US-165 [REC][ENGINE][DETTE] Extraire fetchTopFinishedAnime → useJikanApi — ⬜ trivial
-- US-152B [REC][MORE-LIKE-THIS][FEATURE] more-like-this inline (Option B) — 🗄️ Stockée
-
-### EPIC Plateforme & Dette Technique
-- US-159 [PLATEFORME][CI][DETTE] gitignore reports + purge parasites — ✅ S20
-- US-166-CSS [PLATEFORME][CSS][DETTE] Dette CSS groupée F18–F24 — ⬜
-- F8 [PLATEFORME][CSS][A11Y] Dark mode lisibilité (sous-nav, logo) — ⬜
-
-### EPIC Évolution Majeure — Horizon
-- Monétisation, stats « Mon année », notifs épisode, Library en chips — ⬜ idées
-
-### EPIC Plateforme Long Terme (ex EPIC-5)
-- US-160 PWA service worker + manifest — 🗄️
-- US-161 Firestore onSnapshot temps réel — 🗄️
-- US-162 Virtualisation listes longues — 🗄️
-- US-163 Accessibilité focus trap, clavier, aria — 🗄️
-- File Jikan anti-429 · Monitoring Sentry · TTL cache aanime_ · Redirect post-login — 🗄️
+> **Où mettre ce fichier :** dans la **Knowledge** du projet Claude Chat.
+> **Rôle :** vue d'ensemble par EPIC (le « OÙ » : page / surface / système) avec l'état
+> d'avancement réel. C'est le **cœur fonctionnel** du projet. Le Kanban du sprint courant
+> vit dans `STATE.md` ; le « pourquoi » des choix dans `DECISIONS.md`.
+>
+> **État de référence : fin S29 / v0.29.0.**
+> ⚠️ Détail S22→S27 partiellement non capturé (handoffs archivés). Trous marqués ⚠️.
 
 ---
 
-## ═══ ÉPICS CLOS — Historique ═══
+## Taxonomie — 12 EPICs
 
-### EPIC-1 — Stabilisation migration ✅ CLOS S6
-> Filet CI + 4 correctifs runtime + suppression vanilla + dark mode + nav dédupliquée.
-- US-101 Suppression code vanilla du repo — ✅
-- US-102 [P0] Correctifs reco runtime (Add mort, clic carte mort) — ✅
-- US-106 Throttle Jikan — ✅
-- US-107 Hiatus detection (`isOnHiatus`) — ✅
-- US-109 CI GitHub Actions — ✅
+| # | EPIC | Surface | État global |
+|---|---|---|---|
+| 1 | On Air | Calendar Week / Month / List | ✅ Mature, polish continu |
+| 2 | Discover | Season / For You / résultats | ✅ Mature |
+| 3 | Library | Vault / Watchlist / Plan / Completed | ✅ Mature, 1 US déférée |
+| 4 | Recherche | `SearchInput` | 🔄 Actif (S29 + S30) |
+| 5 | Modal | `AnimeModal` | ✅ Mature |
+| 6 | Navigation | Header / navs / routing | 🔄 Polish S30 (N1, N9) |
+| 7 | Login & Authentification | `LoginPage` / magic-link | ✅ Fonctionnel, redesign backlog |
+| 8 | Boot & Démarrage | Orchestration `App.vue` | ✅ Durci (audit S16 résolu S19) |
+| 9 | Onboarding & Rétention | 1ʳᵉ visite | ⬜ Non démarré — levier n°1 |
+| 10 | Moteur de Recommandation | `useRecommendations` / `recEngine` | 🔄 Socle solide, Clusters B/C à venir |
+| 11 | Évolution Majeure | Stats / monétisation / notifs | 🟡 Stats livré S28, reste backlog |
+| 12 | Plateforme & Dette Technique | Build / CI / tests / infra | 🔄 Continu |
 
-### EPIC P0 — Correctifs UX ✅ CLOS S12 (audit live PO, R6, DEC-77→80)
-> Modal morte, dédup, RecCard actions, layout Month, sous-navs, login,
-> toasts destination visible, auto-vault toasts, snap, marquer-vu, barre progression.
-> 26 specs E2E cumulatives au moment de la clôture.
-- US-P0.1 [BOOT] Clé localStorage `aanime_calendar` — ✅ (DEC-64, puis DEC-85)
-- US-P0.2 [MODAL] Modal morte réparée — ✅
-- US-P0.3a/b/c [DISCOVER] Déduplication pools Season/Reco/For You — ✅
-- US-P0.4 [MODAL] Toasts destination visible (Add → « On Air / Plan to Watch / … ») — ✅ (DEC-63)
-- US-P0.4-bis Harmonisation libellés toasts existants — ✅
-- US-P0.5 [NAV] Sous-nav Week/Month/List — ✅
-- US-P0.6 [CALENDAR] Layout Month — ✅
-- US-P0.6-bis [CALENDAR] Libellé date dupliqué — ✅
-- US-P0.6-ter [NAV] États actifs sous-onglets (F9) — ✅
-- US-P0.7 [LOGIN] Page login stylée — ✅
-- US-P0.8a [REC] RecCard `@add` câblé — ✅ (DEC-61)
-- US-P0.8b [REC] RecCard `@click`→modal + `@not-interested`→dismiss — ✅ (DEC-61)
-- US-P0.8c [REC] `@more-like-this` → reporté US-152, livré S21
-- US-P0.9 [MODAL] Modal centrée (`.modal-backdrop` CSS) — ✅ (DEC-70)
-- US-121 [BOOT] Auto-vault toast au boot — ✅
-- US-141 [ON AIR] Bouton ✓ marquer-vu 1 tap — ✅
-- US-142 [ON AIR] Barre progression — ✅
-- US-150 [ON AIR] Snap-to-today — ✅ (DEC-76)
+---
 
-### EPIC-2 — Fiabilité & industrialisation ✅ CLOS S13/S14
-> Code-splitting lazy routes + chunk Firebase, défer Firestore, build ~717 kb.
-- Lazy routes + chunk Firebase — ✅
-- Défer init Firestore (ROI 1er chargement) — ✅
-- `useScrollKeeper` CalendarWeek — ✅
+## EPIC 1 — On Air (Calendar)
+**Surface :** carte de la semaine, vue mois, vue liste. Le cœur d'usage quotidien.
 
-### EPIC-3 — Dette fonctionnelle héritée ✅ CLOS S15
-- US-118 Pool réactif suggestions calendrier — ✅ *(BUG-10 intermittent)*
-- US-119 Covers relations enrichies modal — ✅
-- US-120 Badge vault = « Finished » — ✅
-- US-122 Magic-link UI in-app — ✅
-- US-123 Renommage badges RecCards — ✅
-- US-131 Slot-fill Skip session-only + clic→modal (DEC-83) — ✅
-- US-132 episodeOverride reset + POSTER_PLACEHOLDER unique + onHiatus? supprimé (DEC-84) — ✅
-- US-133 Clés `aanime_*` + migration legacy (DEC-85) — ✅
-- US-134 Studios normalisés `studios: string[]` (DEC-86) — ✅
+✅ **Livré :**
+- Modal au clic carte (P0.1, contrat event corrigé).
+- Vue Month réparée (layout, P0.6) + sous-nav Week/Month/List (P0.5).
+- Snap-to-today à l'ouverture (US-150, DEC-76).
+- Barre de progression fine sous la carte (US-142).
+- Marquer-vu 1 tap : bouton ✓ direct sur la carte (US-141).
+- Slot-fill jours vides : suggestion + Skip session-only (US-131, DEC-83) + CTA jour vide (US-144).
+- **S29 — US-BUG5** : bouton ✓ masqué sur Airing/Hiatus (n'a de sens que sur terminé ; reste dispo via modale).
+- **S29 — US-TITLE** (amorce dual-titre, util `getAnimeTitle`).
 
-### EPIC Boot — Sprint audit S16 ✅ CLOS S19/S21
-> Dual audit S16 (DEC-87) → 7 US correctifs. Toutes livrées S19 (US-153→156) + S21 (US-157→158).
-> Voir détail dans section EPIC Boot & Démarrage ci-dessus.
+🔄 **Backlog :**
+- Dual-titre rollout sur la carte semaine (S30).
+- `.rc-mark-done` / `.test-*` : dette CSS (US-166-CSS).
+
+---
+
+## EPIC 2 — Discover
+**Surface :** Season en cours, Coming Soon, For You, résultats enrichis.
+
+✅ **Livré :**
+- Déduplication des pools (Season / recherche / For You) — F5, 3 chemins clos.
+- Feedback d'ajout visible (toast destination, P0.4) + auto-vault toast au boot (US-121).
+- États actifs visibles sur les sous-onglets (P0.6-ter).
+- RecCard : Add / clic / dismiss câblés (P0.8a/b).
+- « Because you watched X » : `BecauseYouWatched.vue` + signaux RecCard (US-143, déjà implémenté).
+
+🔄 **Backlog :**
+- Skeletons au chargement (~6 s de blanc, `SkeletonCard` existe mais inutilisé — F14).
+
+---
+
+## EPIC 3 — Library
+**Surface :** Vault (Completed), Watchlist, Plan to Watch.
+
+✅ **Livré :**
+- Auto-vault sens unique sur `Finished Airing` + badge « Finished » (US-120).
+- Studios normalisés `studios: string[]` (US-134, résout dimension scoring inerte).
+
+🔄 **Backlog :**
+- **US-124** — mapping MAL `Dropped` → non importé (déféré ; P0 si campagne import MAL).
+- **F15** — hiérarchie typo Library/Upcoming, section vide.
+- Library Completed/Plan en chips (idée UX).
+
+---
+
+## EPIC 4 — Recherche  🔄 ACTIF
+**Surface :** `SearchInput.vue`.
+
+✅ **Livré :**
+- Recherche enrichie année/studio/score + bouton « + » direct (US-145).
+- **S29 — US-SEARCH** : badge statut + nb épisodes + dual-titre dans les suggestions.
+- **S29 — US-SEARCH-2 + CSS** : ✓ Added cliquable (retrait du store, toast « Removed ») + polish (15px / ellipsis / 64px).
+
+🔄 **To Do (S30) :**
+- **US-SEARCH-3** — séparation visuelle « IN YOUR LIBRARY » / « ADD TO YOUR LIST » (screenshot PO).
+- Dette : `.search-suggestion-added` `#10b981` en dur → `var(--airing)`.
+
+📌 **Vocabulaire figé (P0.4) :** « Coming Soon » (pas Upcoming), « Finished airing » (pas Finished).
+
+---
+
+## EPIC 5 — Modal
+**Surface :** `AnimeModal`.
+
+✅ **Livré :**
+- Centrage de la modale (`.modal-backdrop`, P0.9, DEC-70).
+- Covers de relations enrichies (US-119).
+- More-like-this → modale, option A (US-152, DEC).
+
+🔄 **Backlog :**
+- Dual-titre rollout dans la modale (S30).
+
+---
+
+## EPIC 6 — Navigation  🔄 POLISH S30
+**Surface :** header, navs primaire/secondaire, routing (11 routes).
+
+✅ **Livré :**
+- Déduplication des contrôles de navigation date (US-105 / US-116).
+- Onglet Stats ajouté à `PrimaryNav.vue` (S28).
+
+🔄 **To Do (S30) :**
+- **N1** — au scroll, header → sous-onglets only (pattern Apple).
+- **N9** — date de semaine trop grande.
+
+---
+
+## EPIC 7 — Login & Authentification
+**Surface :** `LoginPage`, magic-link Firebase.
+
+✅ **Livré :**
+- Page login stylée/brandée (P0.7).
+- Magic-link UI in-app (input email, remplace `window.prompt` — US-122).
+- Redirect post-login = reste `/` (DEC-82).
+
+🔄 **Backlog :**
+- Redesign du fond de la page de connexion.
+- Redirect post-login vers la route d'origine (déféré, ROI faible).
+
+---
+
+## EPIC 8 — Boot & Démarrage
+**Surface :** orchestration `App.vue`, persistance, sync.
+
+✅ **Livré (durci) :**
+- Séquence de boot stricte (US-102) + smoke test `App.spec.ts` (US-109).
+- **Architecture 2 phases** : paint immédiat depuis le cache localStorage (Phase 1), réconciliation
+  Firestore en fond via comparaison de timestamps (Phase 2) → suppression du ~6 s d'écran blanc.
+- Correctifs dual audit S16 → tous livrés S19/S21 :
+  - US-153 (P0) : `saveToDatabase` try/catch + toast échec.
+  - US-155 (P1) : boot non bloquant (overlay levé après load local).
+  - US-157/158 (P1) : mutations store via actions ; legacy normalisé, zéro double cast.
+- Clés localStorage toutes préfixées `aanime_` + migration legacy au boot (US-133, DEC-85).
+
+---
+
+## EPIC 9 — Onboarding & Rétention  ⬜ NON DÉMARRÉ
+**Surface :** parcours 1ʳᵉ visite.
+
+🔥 **Levier rétention n°1 — backlog :**
+- **US-140** — 1ʳᵉ visite : 3 genres → 5 animes → calendrier pré-rempli. À découper.
+
+---
+
+## EPIC 10 — Moteur de Recommandation
+**Surface :** `useRecommendations`, `recEngine`, `TasteProfile`.
+
+✅ **Livré :**
+- Socle scoring (genres/themes/demographics/studios, recency buckets, presets).
+- Studios désormais peuplés → dimension studio active (US-134/DEC-86).
+- Pool réactif suggestions calendrier (US-118, effet de bord BUG-10 intermittent).
+
+🔄 **Backlog :**
+- **US-165** — `fetchTopFinishedAnime` inline → extraire vers `useJikanApi` (trivial).
+- **US-127** — SyncIndicator sur `startBackgroundRelationFetch` (option A) — **statut à confirmer** (cf. STATE §Trous).
+- **Cluster B découverte** : S3/S4 « Parce que vous avez aimé X », S1/C1/LB RecCard universel.
+- Option B US-127 : tous les fetches Jikan via `useJikanApi` (déféré Vault).
+
+---
+
+## EPIC 11 — Évolution Majeure
+**Surface :** fonctionnalités produit lourdes.
+
+✅ **Livré (S28 — Epic Stats) :**
+- `useStats` (composable) + `StatsPage.vue` « Mon année anime ».
+- Route `/stats` avec guard auth + onglet Stats dans `PrimaryNav.vue`.
+- `useStats.spec.ts` (4 cas : store vide, vault année courante, vault année passée, genres chevauchants).
+- **`topGenres` scoped `completedThisYear` uniquement** — benchmark AniList / Spotify Wrapped /
+  Letterboxd : un year-in-review ne compte que le **contenu consommé** (terminé).
+- Garde null-safety (`genres ?? []`) contre le crash legacy cache.
+
+🔄 **Backlog :**
+- **STATS-5** — `topGenres` scoped completed-this-year pour la **vue vault** (déféré Vault).
+- **Cluster C growth** : M4 partage, PTW4 suivi épisodes.
+- Monétisation, notifications.
+
+---
+
+## EPIC 12 — Plateforme & Dette Technique
+**Surface :** build, CI, tests, infra, dette transverse.
+
+✅ **Livré :**
+- EPIC-2 : code-split (lazy routes + chunk Firebase), défer init Firestore, `useScrollKeeper`.
+- CI GitHub Actions verte (rejoue tout d'un bloc).
+- Nettoyage fichiers parasites racine (US-159).
+- `npm install` direct (downgrade `@pinia/testing` mergé — parade `--legacy-peer-deps` supprimée).
+
+🔄 **Backlog (priorité S30) :**
+- 🔴 **US-E2E-CONFIG** — script Playwright local + faire tourner la suite gelée. **Reco n°1 S30.**
+  (Aujourd'hui R4/R5 théoriques : aucun runner E2E local.)
+- **US-166-CSS** — passe CSS groupée (`.test-*` mortes, doublons `.post-it`, hacks `:has()` morts,
+  `#app-loading-overlay`, `.month-header-mobile` orpheline, jargon « Vault » empty state).
+- Cache relations IDB sans TTL (relations périmées indéfiniment).
+- `clean.cjs` recréé par AI Studio à chaque commit Gemini → purger (`git rm clean.cjs`) avant chaque gate.
+
+---
+
+## ❓ Trous connus (R3)
+- **S22→S27** : avancées non capturées ici. Compléter depuis handoffs archivés au besoin.
+- **US-127** : à classer (livré ou déféré) en début S30.
