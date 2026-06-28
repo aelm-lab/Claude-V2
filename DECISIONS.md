@@ -226,3 +226,60 @@
     5. `getElementById('boot-loader').remove()` agit sur un élément d'`index.html` (loader pré-Vue) → pattern **légitime** (DEC-72). **REJETÉ comme bug**, reclassé P2 cosmétique.
     - `import idb dynamique inutile` : non matérialisé (import statique). **NON-PROBLÈME** (confirmé par les deux audits).
   - **Backlog priorisé issu de l'audit** : US-153 (P0 try/catch save) · US-154 (P1 Continuing→Airing) · US-155 (P1 boot non bloquant) · US-156 (P1 tests unit composables) · US-157 (P1 persistance mute le store hors action) · US-158 (P1 cast legacy normalisé) · US-159-CLEANUP (P2 fichiers parasites). Détail dans `BACKLOG.md` et `AUDIT.md §3`.
+
+---
+
+## Décisions de session 28 (Epic Stats)
+
+- **[DEC-88] `useStats` = composable dédié, `StatsPage.vue` = page pure.** La logique d'agrégation
+  (compte par année, top genres) vit dans `useStats`, la page ne fait qu'afficher. Respect strict
+  de la séparation des couches. *Impact user : aucun visible — fondation propre pour enrichir les stats.*
+
+- **[DEC-89] `topGenres` scoped à `completedThisYear` uniquement.** Un « year-in-review » ne compte
+  que le contenu **consommé** (terminé), pas la watchlist ni le radar. Benchmark validé contre
+  **AniList / Spotify Wrapped / Letterboxd**. *Impact user : les stats reflètent ce que tu as
+  vraiment regardé cette année, pas tes intentions.*
+
+- **[DEC-90] Garde null-safety `genres ?? []` sur le chemin Stats.** Un cache legacy peut contenir
+  des entrées sans `genres` → `topGenres` crashait. Garde runtime ajoutée. *Impact user : la page
+  Stats ne plante plus sur un vieux cache.*
+
+- **[DEC-91] Route `/stats` derrière le guard auth.** Les stats sont personnelles → réservées à
+  l'utilisateur connecté. Onglet ajouté dans `PrimaryNav.vue`. *Impact user : accès aux stats via
+  la nav principale, après connexion.*
+
+---
+
+## Décisions de session 29 (Polish & confiance)
+
+- **[DEC-92] BUG-1 / BUG-2 / BUG-4 fermés sans spec (morts en prod).** Audit live PO (R6) : les 3
+  bugs sont **invérifiables en prod** (déjà corrigés ou jamais reproductibles). Aucune ligne de code
+  touchée. *Impact user : aucun — confirmation que le ressenti d'audit antérieur était périmé.*
+
+- **[DEC-93] US-BUG5 = fix présentationnel (`v-if`), pas de touche logique.** Le bouton ✓ « Mark done »
+  est **masqué** sur statut Airing/Hiatus dans `WeekAnimeItem.vue`. L'action reste disponible via la
+  modale. R4-bis appliqué (grep des specs E2E cliquant ce bouton). *Impact user : on ne propose plus
+  « terminé » sur un anime encore en diffusion — cohérence.*
+
+- **[DEC-94] Règle de titre centralisée dans `getAnimeTitle`.** Anglais primaire + romaji secondaire
+  si différent. **Rollout progressif** (search fait en S29 ; modale / RecCards / carte semaine = backlog).
+  *Impact user : titres cohérents et lisibles, d'abord dans la recherche.*
+
+- **[DEC-95] Vocabulaire search figé (P0.4).** « Coming Soon » (jamais « Upcoming ») / « Finished airing »
+  (jamais « Finished »). *Impact user : vocabulaire constant entre les surfaces.*
+
+- **[DEC-96] ✓ Added = cliquable.** Un clic sur l'état « Added » d'une suggestion **retire** l'anime
+  d'où qu'il soit (On Air / watchlist / vault) + toast « Removed ». *Impact user : on annule un ajout
+  en un clic, sans ouvrir de modale.*
+
+- **[DEC-97] Couleurs = réutilisation des tokens, pas de redéclaration.** Les statuts search réutilisent
+  `var(--airing)` / `var(--upcoming)`. *Impact user : aucun visible — dette CSS évitée (sauf un
+  `#10b981` en dur résiduel à corriger, cf. backlog).*
+
+---
+
+## Décision infrastructure (S22→S29, à dater précisément)
+
+- **[DEC-98] `npm install` direct — parade `--legacy-peer-deps` supprimée.** Le downgrade
+  `@pinia/testing` a été mergé → le conflit de peer-deps disparaît. *Impact dev : commande
+  d'install simplifiée. À ré-armer si un futur `package.json` réintroduit le conflit.*
