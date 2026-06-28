@@ -213,6 +213,51 @@ embarquer des options de config supplémentaires — le bypass les masque.
 Commandes valides : uniquement `npm run type-check`, `npm run test:run`, `npm run build`.
 Variante déjà connue : `npx vite build` (#4).
 
+
+
+## Anti-patterns process & livraison (récidives S17→S29)
+
+> Ces récidives sont du **bruit de fond** : R1 (porte verte locale sur machine PO) les neutralise
+> structurellement. Les traiter comme tels — sauf #10 (grave) et #11 (grave) qui faussent la confiance.
+
+### Commandes de preuve
+- **#4 — `npx vue-tsc` au lieu de `npm run type-check`.** Bruit ; R1 neutralise (seule la machine PO fait foi).
+- **#5 — `npx vitest run` au lieu de `npm run test:run`, OU chaînage des commandes de preuve avec `&&`.**
+  Les 3 sorties doivent être **séparées et brutes**. Jamais chaînées.
+
+### Fichiers parasites & périmètre
+- **#8 — Recrée `clean.cjs` malgré `.gitignore`.** AI Studio le force-crée à chaque commit Gemini.
+  → **Purger systématiquement (`git rm clean.cjs`) avant chaque gate local.**
+- **#9 — Modifie `.gitignore` hors scope de l'US.** Signal R-SCOPE-1 → refuser.
+- **#11 — 🔴 GRAVE : pousse des changements hors scope de sa propre initiative.** Violation R-SCOPE-1.
+  (Récidive historique la plus coûteuse : 5 fichiers modifiés sans US → 17/17 E2E cassés.)
+  → Exiger la liste des fichiers modifiés AVANT toute action ; vérifier par `git diff --name-only`.
+
+### Tests
+- **#10 — 🔴 GRAVE : injecte un hack de production conscient du test pour fake-green un test.**
+  Code qui détecte le contexte de test pour passer au vert sans corriger la vraie cause.
+  → Inadmissible. L'auteur du test ≠ l'auteur du code (invariant) précisément pour bloquer ça.
+- **#12 — Réécrit un test rédigé par Claude.** Le test de fidélité est figé ; Gemini le fait passer,
+  il ne le modifie **jamais**. ROUGE→VERT sans toucher au test.
+- **#13 — Met à jour des snapshots en autonomie (`vitest run -u`) sans annoncer le `.snap` comme
+  fichier modifié.** → Annoncer tout `.snap` touché dans la liste R-SCOPE-1.
+
+---
+
+## Anti-patterns E2E (vigilance permanente)
+
+- **Faux-vert E2E par mauvaise cible d'assertion.** Un test qui asserte l'**état du store** ou le
+  **layout desktop** au lieu de la **visibilité DOM réelle en viewport mobile** passe au vert sans
+  rien prouver. → R4 : geste réel + DOM visible mobile. Récurrent, à vérifier sur **chaque** spec E2E.
+
+- **Angle mort gating ↔ E2E.** Tout `v-if` ajouté sur un élément interactif (bouton/lien) **casse en
+  silence** une spec E2E qui clique cet élément — et ça ne se voit qu'au sweep, pas au merge.
+  → R4-bis : grep des specs E2E touchant cet élément **dans la même US**.
+
+- **Piège auto-vault / seed.** Au boot, les animes Calendar **et** Finished sont auto-vaultés.
+  Pour tester une interaction sur un anime terminé, utiliser l'état **watchlist** (exclu de
+  l'auto-vault), sinon la carte n'est jamais là où le test la cherche.
+
 -----
 ## Règles process permanentes (gravées dans AGENTS.md)
 
