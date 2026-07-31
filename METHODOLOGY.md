@@ -13,6 +13,7 @@ Sprint = **un Sprint Goal atteint**, PAS « une session ». Une session peut con
 | **Backlog Refinement** | En continu + clôture | À chaque US close, Claude pose **1 question de refinement** sur une US du sprint suivant (décision produit en attente OU lecture R3 à prévoir). But : la 1ʳᵉ US du sprint suivant démarre **déjà raffinée**, zéro vas-et-vient à froid. |
 | **TNR** (non-régression) | Avant chaque merge + clôture | Porte complète : type-check + test:run + build (3 sorties brutes séparées) + E2E cumulatifs (R5). Preuves Gemini IRRECEVABLES — seule la machine PO fait foi (R1). |
 | **Release** | Clôture de sprint | Bump version + entrée dans STATE.md §Versions. Déploiement déjà continu (Cloud Run) → la release est un **repère versionné**, pas une mise en prod. |
+**Sprint Outcome Gate** | Clôture de sprint | 1 ligne : gain ressenti / gain fiabilité / dette justifiée. Max 1 sprint "aucun gain" d'affilée. Détail → PRODUCT_NORTHSTAR.md §3.
 
 ## Schéma de version
 `0.<sprint>.0` — ex. S20 = v0.20.0. Patch (`0.20.1`) si correctif hors sprint. 
