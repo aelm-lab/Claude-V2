@@ -73,7 +73,8 @@
 - *(vide)*
 
 ### 📝 To Do — priorité immédiate
-1. **US-MODAL-CENTER-AUDIT** (P1, NOUVEAU) — audit du centrage sur **tous** les popups
+1.audit US-140 pour s'assurer qu'elle est deja faite
+2. **US-MODAL-CENTER-AUDIT** (P1, NOUVEAU) — audit du centrage sur **tous** les popups
    (`AnimeModal`, `LogoutConfirmModal`, `RecEngineModal` partagent tous `.modal-backdrop`)
    **et** le reste du site, pas seulement le logout. Point de départ déjà identifié :
    `findstr /s /n "modal-backdrop" src\*.css` (jamais exécuté — la classe n'apparaît que dans
@@ -81,11 +82,11 @@
    ailleurs, non localisé). Le test E2E `logout-modal-position.spec.ts` (boundingBox vs centre
    viewport, tolérance 24px) fourni par Claude n'a **jamais été exécuté** (ni rouge, ni vert) —
    à faire en tout premier avant tout correctif CSS.
-2. **US-SEARCH-3** — séparation « IN YOUR LIBRARY » / « ADD TO YOUR LIST ». Décision ouverte :
+3. **US-SEARCH-3** — séparation « IN YOUR LIBRARY » / « ADD TO YOUR LIST ». Décision ouverte :
    cacher les en-têtes de section vides (reco Claude) ou toujours les afficher. Seul
    `SearchInput.vue` à modifier — `isAdded` existe déjà sur `enrichedSuggestions`.
-3. **Micro-fix visuel Month** — signalé par le PO, capture pas encore fournie. Déféré.
-4. **US-JIKAN-HEALTHCHECK** (P1) — refinement acté cette session : usage **dev-only** (pas de
+4. **Micro-fix visuel Month** — signalé par le PO, capture pas encore fournie. Déféré.
+5. **US-JIKAN-HEALTHCHECK** (P1) — refinement acté cette session : usage **dev-only** (pas de
    signal visible utilisateur), avec **détail par test** au-delà d'un simple verdict global
    OK/KO. Prêt à specer après le cleaning doc.
 
