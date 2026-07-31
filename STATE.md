@@ -114,7 +114,8 @@
 - **Hash commit `main` S33** : non fourni, à relever.
 - Si des entrées DEC/US ont été ajoutées hors de cette vue, vérifier le dernier numéro réel
   avant de coller un bloc d'append (dernier connu : **DEC-99**, cf. `DECISIONS.md`).
-
+Désynchronisation confirmée entre AGENTS.md/AGENTS_E2E.md racine (lus par Gemini) et leurs copies Knowledge — corrigé au cleaning, à surveiller à l'avenir.
+US-E2E-BATCH-AUDIT (P1, nouveau) — le §8 de AGENTS_E2E.md (racine) liste les specs E2E enregistrées dans les batchs sweep ; au moins 3 specs (search-enriched, search-quick-add, search-hides-nav) semblent absentes de cette liste → probablement jamais exécutées. Audit complet de tests/e2e/ nécessaire avant de faire confiance à un futur "grand check vert".
 ---
 
 ## 🗄️ Archivage (nouveau — S34)
