@@ -43,7 +43,7 @@
   `package.json` réintroduit le conflit.
 - 🌐 **Jikan (API MyAnimeList) en panne** — confirmé S33 (curl → 504 « Jikan failed to connect to
   MyAnimeList »). Aucune évolution récente. Bloque la confirmation visuelle de plusieurs items (voir Kanban).
-
+### 📈 Métriques produit (PRODUCT_NORTHSTAR.md) + les 3 lignes TTFA / Adds-semaine / Jours-retour, toutes marquées "non instrumenté — baseline à 0" pour l'instant.
 ---
 
 ## 📋 Kanban
