@@ -5,8 +5,7 @@
 > le **pont** entre chaque fonctionnalité et les briques techniques qui la portent.
 > Se lit avec `ARCHITECTURE_TECHNIQUE.md` (le « comment c'est construit »).
 >
-> **État de référence :** session 16 (dual audit). EPIC-1 + EPIC P0 + EPIC-2 + EPIC-3 clos.
-
+> **État de référence : voir `STATE.md`.** EPIC-1 + EPIC P0 + EPIC-2 + EPIC-3 clos.
 ---
 
 ## 1. Ce que fait l'application
