@@ -1,102 +1,144 @@
-# AGENTS_E2E.md — Agent de test technique & E2E (Gemini)
+# AGENTS_E2E.md — Stratégie de test technique & E2E (Gemini)
 
-> **Où mettre ce fichier :** racine du dépôt (lu automatiquement par Gemini AI Studio,
-> comme `AGENTS.md`) **et** dans la Knowledge du projet Claude Chat.
-> **Rôle :** définir comment Gemini exécute et fait évoluer les tests technique (Vitest)
-> et E2E (Playwright). Complète `AGENTS.md` ; ne le remplace pas.
+> Fichier racine, lu automatiquement par Gemini comme `AGENTS.md`. Complète `AGENTS.md`, ne le remplace pas.
 >
-> **État de référence : session 16.** Suite cumulative **26 specs / 30 tests** · **84** unit.
+> **État de référence : fin S33 (cleaning S34).** 🔴 **§8 (registre des batchs) marqué
+> À AUDITER** — au moins 3 specs écrites récemment (`search-enriched`, `search-quick-add`,
+> `search-hides-nav`) ne figurent dans aucun batch ci-dessous et n'ont donc probablement
+> **jamais tourné au sweep**. Ne pas faire confiance à ce registre tant qu'il n'a pas été
+> confronté à un `dir tests\e2e` / `ls tests/e2e` réel.
 
 ---
 
-## 1. Règle d'or (R5) : tester l'impact, pas l'univers
+## 1. R5 — Tester l'impact, pas l'univers
 
-**Pendant un epic** — chaque US ne livre qu'un test **ciblé** sur ce qu'elle impacte :
-- le geste précis du bug ou de la feature (un clic, une saisie, une navigation) ;
-- l'assertion sur le **DOM visible** (R4), pas sur un état de store ;
-- méthode ROUGE→VERT : le test échoue sur le code actuel (le bug), passe après le fix,
-  **sans être modifié**. Fournir les DEUX sorties brutes.
+**Pendant un epic** : chaque US ne livre qu'UN test ciblé sur ce qu'elle change :
+- le geste précis (un clic, une saisie, une navigation) ;
+- assertion sur le DOM VISIBLE (R4), jamais un état de store ;
+- méthode ROUGE→VERT : échoue sur le code actuel, passe après le fix, SANS être modifié. Fournir les DEUX sorties brutes.
 
-**À la fin d'un epic** — un **grand check E2E complet** :
-- toute la suite `tests/e2e/**` rejouée + `npx vitest run` + `npm run build`.
-- Objectif : prouver qu'aucune US n'a régressé une autre. Fournir les sorties brutes.
+**Fin d'epic** : grand check complet — `npx vitest run`, `npm run build`, et la suite E2E complète. Objectif : prouver qu'aucune US n'a régressé une autre.
 
-**Corollaire non négociable :** les tests E2E sont **cumulatifs**. On n'en supprime
-jamais un pour « faire passer » le grand check. Un test cumulé rouge = **régression à
-corriger**, pas un test à retirer.
+**Cumulatif** : les specs `tests/e2e/**` ne sont JAMAIS supprimées. Un test cumulé rouge au grand check = régression à corriger, pas test à retirer.
 
----
-
-## 2. Exécution en lots (sandbox Gemini) — OBLIGATOIRE
-
-La suite complète dépasse le timeout sandbox (~60 s) et le mode parallèle provoque des
-`ERR_CONNECTION_REFUSED` faux-négatifs. Donc :
-
-- **`--workers=1`** toujours (jamais `fullyParallel` dans le sandbox).
-- Lancer par lots via les scripts `package.json` : `test:e2e:batch1`, `test:e2e:batch2`,
-  `test:e2e:batch3` (≤9 specs chacun) + `test:e2e:sweep`.
-- La CI GitHub Actions n'a pas ces contraintes (elle rejoue tout d'un bloc).
+**Renforcé S33, sans exception :** l'auteur du test ≠ l'auteur du code — même pour un test
+visuel jugé « simple » (position, centrage). Tu ne rédiges jamais toi-même le test qui
+valide ton propre correctif. Voir `AGENTS.md` R7.
 
 ---
 
-## 3. Périmètre d'un test ciblé d'US
+## 2. Sweep sandbox : par batchs `--workers=1`
 
-Un test d'US couvre **uniquement** le comportement que l'US change. Ne PAS ajouter
-d'assertions sur des fonctionnalités voisines non touchées (ça transforme le test ciblé en
-test de régression et brouille le rouge→vert).
+Le sweep monolithique timeout à 60s dans le sandbox. Le parallèle provoque des `ERR_CONNECTION_REFUSED`. Lancer le grand check en **batchs ≤9 specs** avec `--workers=1` (voir scripts `package.json`). Fournir chaque sortie de batch brute.
 
 ---
 
-## 4. Socle technique (à connaître)
+## 3. R4 strict — assertion mobile = position, pas visibilité
 
-- **Playwright** : `playwright.config.ts` — `webServer: build && preview`, `baseURL:
-  http://localhost:4173`, `env: { VITE_E2E_AUTH_BYPASS: 'true' }`, **`timeout: 120000`** (sandbox lent).
-- **Bypass auth** : `src/router/index.ts` `beforeEach` court-circuite si
-  `import.meta.env.VITE_E2E_AUTH_BYPASS === 'true'` (lecture **statique** → éliminé du
-  bundle prod, prouvé `grep -c=0`). **Jamais** en variable runtime.
-- **Isolation runners** : `vite.config.ts` `test.exclude` ignore `tests/e2e/**`.
-- **Réseau déterministe** : mocker via `page.route('**/pattern**', route => route.fulfill(...))`.
-  Ne JAMAIS taper l'API Jikan/Firebase live (flaky). Patterns : `**/seasons/now**`,
-  `**/seasons/upcoming**`, `**/anime?q=**`, `**/anime/**`. **Ne jamais mocker partiellement**
-  (une vraie requête qui fuit rend le test flaky).
-- **localStorage** : la vraie clé de persistance est **`aanime_calendar`** (US-133 — toutes
-  les clés préfixées `aanime_`). **Ne pas utiliser l'ancienne `'animeCalendar'`.** État
-  propre : `await page.addInitScript(() => window.localStorage.clear())` avant `goto`.
-- **Pattern boot-dépendant** : avant tout clic après `goto`, attendre
-  `await expect(page.locator('#boot-loader')).toBeHidden({ timeout: 15000 })`. Le `#boot-loader`
-  (DEC-72, `position: fixed`) intercepte les pointer events tant que le boot tourne.
-- **Seed 7 jours** : seeder un anime par jour (`['monday'..'sunday'].map(...)`) pour garantir
-  une carte visible quel que soit le jour courant. Un seed mono-jour = carte invisible hors ce jour.
-- **Auto-vault vs seed** : un seed `calendar` + `Finished` s'auto-vault au boot et disparaît.
-  Pour tester une action sur un anime terminé, seeder en **`watchlist`** (exclu de l'auto-vault).
+Quand le placement/centrage est l'enjeu (cas mobile), asserter `boundingBox()` ou `getComputedStyle().position` — JAMAIS `toBeVisible()` seul. Un élément hors écran peut être "visible" au sens DOM. Faux-vert n°1 du projet : ne jamais asserter `ui.modalOpen`/`toast.visible`/un état de store.
 
-### Sélecteurs réels (à lire dans le code, ne jamais deviner)
-Carte reco/season `.card-cp-container` (titre `.card-cp-title`, cover `.card-cp-cover`,
-panneau why `.rec-why-clickable`) · recherche `.search-input` / `.search-suggestion` /
-`.search-suggestion-title` · modal `.modal-backdrop` / `.modal-content` (fermeture `Escape`
-ou clic backdrop) · toast `.toast-notification` · carte semaine `.rowcard` (bouton ✓
-`.rc-mark-done`, barre progression `.rc-progress` / `.rc-progress-fill`) · jour courant
-`.day-hdr.today` · navs `.secondary-tab` / `.tab-item` / `.active` · login `.login-brand`.
-**Avant d'écrire un sélecteur, l'ouvrir dans le composant concerné.**
+**Récidive confirmée S33** : un test de centrage de modale assertait `max-height`/`overflow-y`
+au lieu de la position réelle — alors que le placement était précisément le sujet du bug
+signalé. Ce test a été écarté sans valeur de preuve. Vigilance permanente sur ce point précis
+à chaque test touchant du positionnement.
 
 ---
 
-## 5. Preuves attendues (rappel R1/R4)
+## 4. RÈGLE GATING↔E2E (durcissement, angle mort session 12)
 
-Pour une US avec test ciblé : `vue-tsc --noEmit` (brut) · `vitest run` (brut, complet) ·
-`build` (brut) · E2E **ROUGE** (avant fix, état figé) · E2E **VERT** (après fix, test inchangé).
-Pour un grand check fin d'epic : `vitest run` + `build` + suite E2E complète (par lots batch1..3 + sweep).
-Toute paraphrase d'une sortie = preuve rejetée, review suspendue.
+Tout `v-if` / gating conditionnel ajouté sur un **élément interactif** (bouton, lien, carte cliquable) DÉCLENCHE, dans la MÊME US, un grep des specs E2E qui ouvrent/cliquent cet élément. Si une spec cliquait l'élément désormais gaté, elle deviendra rouge au sweep, pas au merge. Vérifier et réaligner AVANT de livrer. (US-P0-E avait gaté "Mark done" → toast-labels rouge au sweep, 3 allers-retours perdus.)
 
 ---
 
-## 6. Interdits spécifiques aux tests
+## 5. SEED STANDARDISÉ (durcissement, anti faux-vert seed)
 
-- ❌ Asserter `ui.modalOpen`, `toast.visible`, ou tout état de store → asserter le **DOM**.
-- ❌ Asserter la visibilité sans la position quand le placement est l'enjeu → `getComputedStyle().position` / `boundingBox`.
-- ❌ Livrer un E2E « réparateur » sans sa sortie ROUGE pré-fix.
-- ❌ Deviner un sélecteur ou une clé localStorage → les lire dans le code (clé = `aanime_calendar`).
-- ❌ Supprimer/désactiver un test cumulé pour faire passer le grand check.
-- ❌ Mocker partiellement (laisser une vraie requête réseau fuir).
-- ❌ Rejouer une sortie ROUGE dans un état différent et la présenter comme la même.
-- ❌ Accepter un « X passed » sans vérifier la cohérence interne du test (variable déclarée ? fonction réellement appelée ?).
+🔴 **Clé localStorage réelle : `aanime_calendar`** (corrigée au cleaning S34 — une version
+antérieure de ce fichier référençait encore `'animeCalendar'`, la clé legacy pré-migration
+US-133). L'ancienne clé fonctionne encore *indirectement* grâce à une migration de
+compatibilité au boot, mais **tout nouveau seed doit utiliser `aanime_calendar`** — ne pas
+s'appuyer sur un chemin de migration legacy qui pourrait disparaître.
+
+Pattern de seed obligatoire pour tout test calendrier/semaine :
+
+```ts
+const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+const mockData = {
+  timestamp: Date.now(),
+  data: days.map((day, i) => ({
+    mal_id: i + 1, id: i + 1, title: `Show ${i}`,
+    state: 'calendar', day, airsTime: '12:00',
+    status: 'Currently Airing', startDate: '2020-01-01T00:00:00.000Z',
+  })),
+};
+await page.addInitScript((c) => {
+  window.localStorage.clear();
+  window.localStorage.setItem('aanime_calendar', c);
+}, JSON.stringify(mockData));
+```
+
+Deux pièges gravés :
+- **Seed mono-jour** (`day:'monday'` seul) = carte invisible si la semaine courante est un autre jour → toujours seeder les 7 jours.
+- **Auto-vault** : un seed `state:'calendar'` + `status:'Finished Airing'` s'auto-vault au boot (`usePersistence`) et DISPARAÎT de la vue semaine. Pour tester une action sur un anime terminé, seed en `state:'watchlist'` (exclu de l'auto-vault) sur `/library/plan`.
+
+---
+
+## 6. Socle technique
+
+- Playwright : `webServer: build && preview`, `baseURL: http://localhost:4173`, `env:{ VITE_E2E_AUTH_BYPASS:'true' }`, `timeout: 120000` (sandbox lent).
+- Bypass auth : `router/index.ts` `beforeEach` court-circuite si `import.meta.env.VITE_E2E_AUTH_BYPASS === 'true'` (lecture STATIQUE, mort en prod, prouvable `grep -c=0`). Jamais en runtime.
+- Isolation : `vite.config.ts` `test.exclude` ignore `tests/e2e/**`.
+- Réseau déterministe : mocker via `page.route('**/pattern**', r => r.fulfill(...))`. Jamais l'API live (flaky — Jikan est d'ailleurs en panne externe depuis S33, raison de plus). Patterns : `**/seasons/now**`, `**/seasons/upcoming**`, `**/anime?q=**`, `**/anime/**`. Ne jamais mocker partiellement (une vraie requête qui fuit rend le test flaky).
+- Boot : attendre `await expect(page.locator('#boot-loader')).toBeHidden({ timeout: 15000 })` AVANT tout clic (le loader fixed intercepte les pointer events).
+
+---
+
+## 7. Sélecteurs réels (lire dans le code, ne jamais deviner)
+
+- Carte reco/season : `.card-cp-container` (titre `.card-cp-title`, cover `.card-cp-cover`, why `.rec-why-clickable`)
+- Recherche : `.search-input` / `.search-suggestion` / `.search-suggestion-title`
+- Modal : `.modal-backdrop` / `.modal-content` (fermeture Escape ou clic backdrop)
+- Toast : `.toast-notification`
+- Bouton add modal : libellé `+ Add`
+- Carte semaine : `.rowcard` (bouton ✓ `.rc-mark-done`, barre progression `.rc-progress` / `.rc-progress-fill`)
+- Jour courant : `.day-hdr.today`
+- Navs : `.secondary-tab` / `.tab-item` / `.active`
+- Login : `.login-brand`
+
+**Avant d'écrire un sélecteur, l'ouvrir dans le composant concerné** — cette liste peut
+avoir dérivé du code réel, elle n'est pas une garantie.
+
+---
+
+## 8. Registre des batchs E2E — 🔴 À AUDITER (voir bandeau en tête de fichier)
+
+> Le découpage en batchs (scripts `test:e2e:batch1..3`) est FIGÉ EN DUR. Toute nouvelle
+> spec DOIT être ajoutée à un batch dans `package.json` ET listée ici, sinon elle ne
+> tourne jamais au sweep. Garder chaque batch ≤9 fichiers.
+>
+> **Dernier état connu (probablement périmé, non ré-audité depuis) :**
+
+- **batch1** (9 fichiers) : `auto-vault-toast`, `boot-loader`, `calendar-subnav-layout`, `discover-season-dedup`, `foryou-dedup`, `login-styled`, `modal-add-appears-on-week`, `modal-add-feedback`, `modal-add-removes-from-discover`
+- **batch2** (9 fichiers) : `modal-content-centered-mobile`, `modal-open`, `modal-position`, `modal-status-gating`, `month-layout`, `nav-active-state`, `onair-subnav`, `reccard-add`, `reccard-click-dismiss`
+- **batch3** (8 fichiers) : `search-dedup`, `smoke`, `snap-to-today`, `toast-labels`, `toast-visible-mobile`, `week-mark-done`, `week-no-duplicate-period`, `week-progress-bar`
+
+**Connus comme absents de cette liste (à ajouter dès confirmation de leur existence) :**
+`search-enriched`, `search-quick-add`, `search-hides-nav`, `logout-modal-position`.
+
+**Action requise** : au prochain grand check E2E, lister `tests/e2e/` réellement présent
+sur disque (`dir tests\e2e` / `ls tests/e2e`), comparer à cette liste, et mettre à jour les
+deux (ce fichier + `package.json`) en conséquence. Tant que ce n'est pas fait, un "sweep
+vert" ne prouve PAS l'absence de régression sur les specs orphelines.
+
+---
+
+## 9. Interdits
+
+- ❌ Asserter un état de store → asserter le DOM.
+- ❌ Livrer un E2E réparateur sans sa sortie ROUGE pré-fix.
+- ❌ Deviner un sélecteur / une clé localStorage (clé = `aanime_calendar`, pas `'animeCalendar'`).
+- ❌ Supprimer/désactiver une spec cumulée pour faire passer le grand check.
+- ❌ Écrire une nouvelle spec sans l'ajouter au batch correspondant dans `package.json` ET au §8 de ce fichier.
+- ❌ Mock partiel (laisser une requête fuir) → flaky.
+- ❌ `toBeVisible()` seul quand la position est l'enjeu (cas mobile).
+- ❌ **Écrire soi-même le test qui valide son propre correctif — aucune exception**, même
+  pour un test visuel jugé simple. Voir `AGENTS.md` R7.
