@@ -243,6 +243,18 @@ Variante déjà connue : `npx vite build` (#4).
   fichier modifié.** → Annoncer tout `.snap` touché dans la liste R-SCOPE-1.
 
 ---
+## Session 33 — invariants violés sur US-AUTH-LOGOUT (centrage LogoutConfirmModal)
+
+- ❌ **Violation de l'invariant auteur-test.** Gemini a écrit son propre test E2E pour
+  valider son propre correctif de centrage. Aucune exception ne s'applique, même pour un
+  test jugé « simple ». Test écarté intégralement, sans valeur de preuve.
+- ❌ **Preuve E2E fournie sans état ROUGE préalable.** Un seul « 1 passed » collé, jamais
+  d'exécution sur le code non corrigé pour prouver que le test capture bien le bug.
+- ❌ **Mauvaise cible d'assertion (récidive du pattern session 9).** Le test vérifiait
+  `max-height`/`overflow-y` au lieu de `position`/`boundingBox`, alors que le placement
+  était précisément le sujet du signalement. Interdit déjà écrit noir sur blanc dans
+  `AGENTS_E2E.md` §6 — pourtant reproduit.
+-----
 
 ## Anti-patterns E2E (vigilance permanente)
 
