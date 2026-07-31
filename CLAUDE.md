@@ -197,7 +197,7 @@ utilisable**. D'où les règles permanentes :
 | `TYPES_CONTRACT.md` | Contrat TypeScript de référence | Actif |
 | `STATE.md` | Kanban vivant + métriques (**source unique des compteurs**) | Actif |
 | `EPICS.md` | Avancées fonctionnelles par epic | Actif |
-| `DECISIONS.md` | Journal des décisions (DEC-01→99) | Actif |
+| `DECISIONS.md` | Journal des décisions (DEC-01→106) | Actif |
 | `ANTIPATTERNS.md` | Pièges récurrents (archi, runtime, UX/E2E, event-name, process) | Actif |
 | `AGENTS.md` | Gouvernance permanente Gemini (racine dépôt + Knowledge) | Actif |
 | `AGENTS_E2E.md` | Agent de test technique & E2E Gemini (racine dépôt + Knowledge) | Actif |
