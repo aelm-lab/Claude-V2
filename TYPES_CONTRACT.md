@@ -2,11 +2,16 @@
 
 > **Où mettre ce fichier :** dans la **Knowledge** du projet Claude Chat.
 >
-> **Règle absolue :** Gemini **n'invente JAMAIS un type**. Toute interface utilisée dans une US provient d'ici. Si un type manque, on crée d'abord une US « types » pour l'ajouter à ce fichier, **puis** on l'utilise. Ces interfaces sont déduites du code vanilla existant (`normalize.js`, `utils.js`, `rec-engine.js`, `store.js`).
+> **Règle absolue :** Gemini **n'invente JAMAIS un type**. Toute interface utilisée dans une US
+> provient d'ici. Si un type manque, on crée d'abord une US « types » pour l'ajouter à ce
+> fichier, **puis** on l'utilise. Ces interfaces sont déduites du code vanilla existant
+> (`normalize.js`, `utils.js`, `rec-engine.js`, `store.js`).
 >
-> **⚠️ État de référence : session 16.** Intègre les corrections S15 (DEC-84/86) et les vérifications zéro-confiance de l'audit s16 (DEC-87).
+> **État de référence : fin S33 (cleaning S34).** Intègre les corrections S15 (DEC-84/86),
+> les vérifications zéro-confiance de l'audit s16 (DEC-87), et la signature `signOut`
+> ajoutée S33 (US-AUTH-LOGOUT).
 >
-> **Trois faits confirmés par l'audit s16 (à ne pas réintroduire par erreur) :**
+> **Trois faits confirmés (à ne pas réintroduire par erreur) :**
 > - `syncStatus` **n'existe pas** dans `AnimeEntry` (0 hit dans `src/`). Ne pas l'ajouter.
 > - L'action store s'appelle **`setData`** (+ `clearAll`). Il n'existe **pas** de `setAllData`.
 > - La réconciliation au load se fait dans **`loadFromDatabase`** (il n'y a pas de `reconcileWithDatabase`).
@@ -49,7 +54,8 @@ export type RecencyBucket = 'recent' | 'mid' | 'old';
 
 ## 2. Entité principale : `AnimeEntry`
 
-Forme canonique renvoyée par `normalizeAnime`, enrichie des champs runtime utilisés par les vues et le moteur de recs.
+Forme canonique renvoyée par `normalizeAnime`, enrichie des champs runtime utilisés par les
+vues et le moteur de recs.
 
 ```ts
 // src/types/anime.ts
@@ -221,7 +227,7 @@ export type IdbStoreName = 'relations' | 'recommendations';
 > via `store.setData(loadedData as unknown as AnimeEntry[])` — double cast sans normalisation
 > ni garde runtime. Cache local corrompu → cartes incomplètes / écran blanc. Correctif :
 > garde runtime + normalisation sur le chemin legacy. Le **type** est correct ; c'est le
-> **cast non sécurisé** qui est en cause (viole R-CODE-2).
+> **cast non sécurisé** qui est en cause (viole R-CODE-2). ✅ Résolu — cf. `EPICS.md` EPIC 8.
 
 ---
 
@@ -236,7 +242,8 @@ export const POSTER_PLACEHOLDER: string;   // source UNIQUE (US-132/DEC-84) — 
 
 ## 7. Types locaux (NON dans le contrat — pour mémoire)
 
-Ces types sont **locaux à un fichier util** et NE doivent PAS être déplacés ici (ce sont des DTO de plomberie, pas des types métier) :
+Ces types sont **locaux à un fichier util** et NE doivent PAS être déplacés ici (ce sont des
+DTO de plomberie, pas des types métier) :
 - `RawAnime` (+ `RawNamed`, `RawListItem`, `RawImages`) → local non exporté dans `utils/normalize.ts`.
 - `MalImportEntry` → local non exporté dans `utils/malImport.ts`.
 - `MalImportResult` → **exporté** depuis `utils/malImport.ts` (pas un type métier partagé, reste près de sa fonction).
@@ -261,7 +268,7 @@ fetchTopFinishedAnime(): Promise<AnimeEntry[]>   // ⚠️ encore inline dans us
 
 // usePersistence
 loadFromDatabase(): Promise<void>                // inclut migration clés aanime_* + réconciliation
-saveToDatabase(showFeedback?: boolean): Promise<void>   // ⚠️ saveSchedule sans try/catch → US-153 P0
+saveToDatabase(showFeedback?: boolean): Promise<void>   // ⚠️ saveSchedule sans try/catch → US-153 P0 (✅ résolu, cf. EPICS.md EPIC 8)
 staleDataWarning: Readonly<Ref<boolean>>
 
 // useSync
@@ -295,6 +302,12 @@ showToast(message: string, isHtml?: boolean, durationMs?: number): void
 // useTheme
 isDark: Readonly<Ref<boolean>>
 toggleDarkMode(): void
+
+// useFirebaseAuth
+sendSignInLink(email: string): Promise<void>
+completeSignIn(): Promise<void>
+onAuthStateChanged(callback: (user: User | null) => void): Unsubscribe
+signOut(): Promise<void>                          // ── ajouté S33 (US-AUTH-LOGOUT) ── try/catch conforme R-CODE-5, testé (T7 succès / T8 erreur)
 ```
 
 > ⚠️ **Note signature `getAnimeEpisodeInfo`** : l'util porté (US-006a) impose `targetDate: Date`
