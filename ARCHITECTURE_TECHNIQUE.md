@@ -4,8 +4,8 @@
 > **Rôle :** décrire l'architecture **technique** réellement implémentée.
 > Le pendant fonctionnel est `ARCHITECTURE_FONCTIONNELLE.md` ; les deux se lisent ensemble.
 >
-> **État de référence : session 16 (dual audit).** EPIC-1 + EPIC P0 + EPIC-2 + EPIC-3 clos.
-> **84** tests unit · **26 specs / 30 tests** E2E · build **~717 kb** (~3.7 s) · zéro `any`.
+>> **État de référence : voir `STATE.md`** pour les compteurs à jour (tests/E2E/build).
+> EPIC-1 + EPIC P0 + EPIC-2 + EPIC-3 clos.
 
 ---
 
