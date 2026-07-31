@@ -15,8 +15,14 @@ Sprint = **un Sprint Goal atteint**, PAS « une session ». Une session peut con
 | **Release** | Clôture de sprint | Bump version + entrée dans STATE.md §Versions. Déploiement déjà continu (Cloud Run) → la release est un **repère versionné**, pas une mise en prod. |
 
 ## Schéma de version
-`0.<sprint>.0` — ex. S20 = v0.20.0. Patch (`0.20.1`) si correctif hors sprint.
+`0.<sprint>.0` — ex. S20 = v0.20.0. Patch (`0.20.1`) si correctif hors sprint. 
 
+**Handoff — double checklist obligatoire.** Chaque handoff de fin de session répond
+explicitement à deux questions, même si la réponse est « rien à changer » :
+1. Côté Gemin (AGENTS.md/AGENTS_E2E.md racine) : une règle a-t-elle changé, ou une
+   désynchronisation a-t-elle été détectée cette session ?
+2. Côté State (STATE.md) : le Kanban a-t-il été mis à jour pour refléter la session ?
+3. 
 ## Tag des US
 `US-XXX [EPIC][SECTION][TYPE] Titre`
 - **[EPIC]** = le OÙ (page/surface/système) — voir EPICS.md.
