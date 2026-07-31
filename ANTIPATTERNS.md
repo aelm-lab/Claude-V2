@@ -258,6 +258,9 @@ Variante déjà connue : `npx vite build` (#4).
   Pour tester une interaction sur un anime terminé, utiliser l'état **watchlist** (exclu de
   l'auto-vault), sinon la carte n'est jamais là où le test la cherche.
 
+  
+❌ Gouvernance racine/Knowledge désynchronisée. AGENTS_E2E.md racine référençait encore la clé localStorage legacy 'animeCalendar' (US-133 l'a migrée vers aanime_calendar) ; R-SCOPE-1/R-SCOPE-2/R-CODE-7 absents du fichier réellement lu par Gemini. → Toute mise à jour de règle doit être appliquée aux deux emplacements, pas seulement à la Knowledge.
+❌ Spec E2E non enregistrée dans un batch = jamais exécutée, silencieusement. Le §8 d'AGENTS_E2E.md est une liste figée en dur ; une spec écrite mais non ajoutée ne tourne jamais au sweep, sans erreur ni signal. → Vérifier systématiquement après l'écriture d'une nouvelle spec E2E.
 -----
 ## Règles process permanentes (gravées dans AGENTS.md)
 
