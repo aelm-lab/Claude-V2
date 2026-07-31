@@ -17,12 +17,21 @@ Sprint = **un Sprint Goal atteint**, PAS « une session ». Une session peut con
 ## Schéma de version
 `0.<sprint>.0` — ex. S20 = v0.20.0. Patch (`0.20.1`) si correctif hors sprint. 
 
+## Règles de clôture de session
+
+**Mise à jour minimale obligatoire.** Aucune session ne se termine sans qu'au moins
+`STATE.md` soit mis à jour (Kanban + toute US mergée/débloquée dans la session). Si la
+session a touché une règle de gouvernance (nouvel antipattern, nouvelle décision
+d'architecture, changement de clé/contrat), le doc concerné (`ANTIPATTERNS.md` /
+`DECISIONS.md` / `TYPES_CONTRACT.md`) est mis à jour dans la **même** session — pas
+reporté. Un handoff qui ne touche aucun doc est un signal d'alerte, pas un raccourci.
+
 **Handoff — double checklist obligatoire.** Chaque handoff de fin de session répond
 explicitement à deux questions, même si la réponse est « rien à changer » :
-1. Côté Gemin (AGENTS.md/AGENTS_E2E.md racine) : une règle a-t-elle changé, ou une
-   désynchronisation a-t-elle été détectée cette session ?
-2. Côté State (STATE.md) : le Kanban a-t-il été mis à jour pour refléter la session ?
-3. 
+1. **Côté Gemini** (`AGENTS.md`/`AGENTS_E2E.md`, racine **et** Knowledge) : une règle
+   a-t-elle changé, ou une désynchronisation a-t-elle été détectée cette session ?
+2. **Côté State** (`STATE.md`) : le Kanban a-t-il été mis à jour pour refléter la session ?
+
 ## Tag des US
 `US-XXX [EPIC][SECTION][TYPE] Titre`
 - **[EPIC]** = le OÙ (page/surface/système) — voir EPICS.md.
