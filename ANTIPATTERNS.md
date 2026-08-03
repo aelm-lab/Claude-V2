@@ -257,7 +257,9 @@ Variante déjà connue : `npx vite build` (#4).
 -----
 
 ## Anti-patterns E2E (vigilance permanente)
-
+❌ **US 🟠/🔴 sans test E2E fourni en code dans la spec.** Une description en langage naturel du
+critère d'acceptance E2E laisse une ouverture pour que Gemini écrive lui-même le test — violation
+R7. Toute US 🟠/🔴 doit embarquer le fichier .spec.ts complet, verbatim, prêt à copier. [US-140d] 
 - **Faux-vert E2E par mauvaise cible d'assertion.** Un test qui asserte l'**état du store** ou le
   **layout desktop** au lieu de la **visibilité DOM réelle en viewport mobile** passe au vert sans
   rien prouver. → R4 : geste réel + DOM visible mobile. Récurrent, à vérifier sur **chaque** spec E2E.
