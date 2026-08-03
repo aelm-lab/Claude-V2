@@ -48,7 +48,7 @@ Trois réponses possibles :
 2. **Gain de fiabilité visible** (ex. « il ne perd plus ses données en silence ») → ✅ acceptable.
 3. **Aucun gain visible — dette/audit** → ⚠️ **autorisé en exception, pas en routine.** Doit être justifié (« filet avant correctif », « risque silencieux ») ET suivi d'un sprint produit.
 
-**Garde-fou anti-dérive :** pas plus d'**1 sprint « aucun gain visible » consécutif**. Deux d'affilée = signal d'alarme, on bascule sur un levier produit (US-140 par défaut, ou autre item d'EPIC 9).
+**Garde-fou anti-dérive :** pas plus d'**1 sprint « aucun gain visible » consécutif**. Deux d'affilée = signal d'alarme, on bascule sur un levier produit.
 
 ---
 
@@ -64,7 +64,7 @@ La dette invisible est réelle et doit être traitée — mais sous plafond, jam
 > `US-MODAL-CENTER-AUDIT`, `US-E2E-BATCH-AUDIT` et `US-JIKAN-HEALTHCHECK` — trois items
 > sans gain utilisateur visible — contre `US-SEARCH-3` comme seul item à gain visible prêt.
 > Appliqué strictement, ce budget imposerait soit d'étaler la dette sur 2-3 sprints, soit de
-> faire remonter un item produit supplémentaire (ex. amorcer US-140a). **Décision PO requise
+> faire remonter un item produit supplémentaire . **Décision PO requise
 > à la prochaine Sprint Planning, pas tranchée dans ce document.**
 
 ---
@@ -72,23 +72,20 @@ La dette invisible est réelle et doit être traitée — mais sous plafond, jam
 ## 5. Re-priorisation — ⚠️ À RÉÉVALUER CONTRE LE BACKLOG RÉEL (voir note ci-dessus)
 
 > Cette section a été rédigée avant le cleaning de doc et référençait un sprint figé (« S22 »)
-> — retiré. Le principe reste valable (US-140 est le levier produit n°1, jamais shippé), mais
+> — retiré. Le principe reste valable , mais
 > la table ci-dessous ne reflète plus le backlog actuel (`STATE.md`) et ne doit pas être
 > appliquée telle quelle sans repasser par une Sprint Planning explicite.
 
+
 | Proposition d'origine | Après (si retenu) | Raison |
 |---|---|---|
-| US-140 repoussé depuis longtemps | US-140 (découpé en 3 lots) devient Sprint Goal d'un prochain sprint | C'est LE levier produit n°1 depuis des mois, jamais shippé |
 | Dette/polish (CSS, audits) | Glissés en remplissage *après* le gain produit, dans la limite du budget dette (§4) | Polish ≠ valeur tant que personne n'arrive jusque-là |
 
-**Découpage US-140 suggéré (3 lots à gain visible chacun, inchangé) :**
-- **US-140a** — Écran « choisis 3 genres » (1ère visite seulement).
-- **US-140b** — Proposer 5 animes scorés sur ces genres + ajout 1 tap.
-- **US-140c** — Atterrissage calendrier pré-rempli + 1 toast de bienvenue.
+US-140 confirmée livrée (S30-S34, découverte tardive au cleaning) — gap résiduel : toast de
+bienvenue (US-140d, backlog immédiat). N'est plus le levier "jamais shippé" ; EPIC 9 passe
+en polish, pas en démarrage.
 
 Chaque lot est démontrable au PO (audit live R6), donc chacun fait avancer la North Star.
 
-**Question ouverte pour la Sprint Planning S35** : on ouvre S35 sur `US-140a` (product-first,
-conforme à cette reco), ou on traite d'abord `US-MODAL-CENTER-AUDIT`/`US-SEARCH-3` (déjà
-raffinés, prêts à specer) et on programme `US-140a` pour l'ouverture suivante ? Les deux
-sont défendables — ce n'est pas à ce document de trancher seul.
+**Question ouverte pour la Sprint Planning S35** : on ouvre S35 Audit US 140  puis `US-MODAL-CENTER-AUDIT`/`US-SEARCH-3` (déjà
+raffinés, prêts à specer) 
