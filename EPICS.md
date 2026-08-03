@@ -185,11 +185,20 @@ partagent la classe `.modal-backdrop`.
 
 ---
 
-## EPIC 9 — Onboarding & Rétention  ⬜ NON DÉMARRÉ
-**Surface :** parcours 1ʳᵉ visite.
+## EPIC 9 — Onboarding & Rétention  ✅ LIVRÉ (découvert au cleaning S34-bis, doc désynchronisée)
+**Surface :** parcours 1ʳᵉ visite (`/welcome` → `OnboardingPage.vue`).
 
-🔥 **Levier rétention n°1 — backlog :**
-- **US-140** — 1ʳᵉ visite : 3 genres → 5 animes → calendrier pré-rempli. À découper.
+✅ **Livré :**
+- **US-140a** — Écran « choisis 3 genres ».
+- **US-140b** — 8 suggestions scorées sur ces genres + ajout 1 tap (`selectOnboardingSuggestions`,
+  `limit: 8` — doc initiale mentionnait 5, comportement réel conservé côté PO, doc alignée).
+- **US-140c** — Atterrissage calendrier pré-rempli (`finishWithSeed` → `store.addAnime` par
+  item coché → `saveToDatabase` → `router.push('/week')`).
+
+🔄 **Backlog :**
+- **US-140d** — Toast de bienvenue à l'atterrissage. Gap identifié à l'audit S34-bis :
+  `finishWithSeed` n'appelle jamais `showToast` — même classe de bug que le fix P0.4
+  historique sur `AnimeModal` (ANTIPATTERNS.md, session 8).
 
 ---
 
