@@ -73,8 +73,8 @@
 - *(vide)*
 
 ### 📝 To Do — priorité immédiate
-1.audit US-140 pour s'assurer qu'elle est deja faite
-2. **US-MODAL-CENTER-AUDIT** (P1, NOUVEAU) — audit du centrage sur **tous** les popups
+1. **US-140d** — Toast de bienvenue onboarding (🟠 STANDARD, 1 fichier `OnboardingPage.vue`) —
+   gap identifié à l'audit US-140 (S34-bis), EPIC 9 sinon complet et confirmé livré.2. **US-MODAL-CENTER-AUDIT** (P1, NOUVEAU) — audit du centrage sur **tous** les popups
    (`AnimeModal`, `LogoutConfirmModal`, `RecEngineModal` partagent tous `.modal-backdrop`)
    **et** le reste du site, pas seulement le logout. Point de départ déjà identifié :
    `findstr /s /n "modal-backdrop" src\*.css` (jamais exécuté — la classe n'apparaît que dans
