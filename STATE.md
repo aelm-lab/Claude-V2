@@ -110,6 +110,9 @@
 
 ## ❓ Trous connus / à confirmer (R3 — ne pas inventer)
 - **S22→S27** : aucun détail per-sprint dans cette régénération.
+- - ✅ **US-140 confirmée livrée** par grep S34-bis (route `/welcome`, `OnboardingPage.vue`,
+  `useOnboarding.ts`, `onboardingFilter.ts`). Doc `EPICS.md`/`PRODUCT_NORTHSTAR.md` corrigée.
+  Gap résiduel : toast de bienvenue (US-140d).
 - **Compteur E2E** : périmé depuis session 16, jamais rafraîchi. Ne pas le citer comme actuel.
 - **US-E2E-CONFIG** : statut d'exécution locale non formellement confirmé S30-S33 (voir §Métriques).
 - **Hash commit `main` S33** : non fourni, à relever.
