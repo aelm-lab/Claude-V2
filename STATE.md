@@ -138,3 +138,76 @@ Ces deux fichiers ne sont plus référencés dans la table des docs actifs de `C
 3. Questions de clarification s'il y a ambiguïté.
 4. Traiter en priorité **US-MODAL-CENTER-AUDIT** (grep CSS + E2E rouge/vert, jamais fait).
 5. Attendre le `go` PO avant toute spec.
+
+
+---
+
+# 🔄 APPEND S36 (clôture) — état de référence courant
+
+> ⚠️ Les sections antérieures de ce fichier décrivent l'état **fin S33**. En cas de conflit,
+> ce bloc fait foi.
+
+## 📦 Version
+| Version | Sprint | Livré |
+|---|---|---|
+| **v0.30.0** | S36 | US-E2E-REGISTRY-RESYNC · US-SCROLL-387 · US-MODAL-CENTER-AUDIT (clos) · US-SEARCH-3 (clos sans dev). **Bump acté** — résorbe le retard de versionnage S30→S35. |
+
+## 🎯 Métriques (fin S36)
+- **156 tests unit** (20 fichiers) · type-check vert · zéro `any`.
+- Build **vite 6.4.2 · 178 modules** · 2.76s.
+- **E2E : 38 fichiers sur disque, 38 enregistrés · 47 tests (46 verts).** Compteur enfin exact
+  — le trou « périmé depuis session 16 » est FERMÉ.
+- Batchs : **batch1..batch5** (batch4/batch5 créés en S36).
+- Seul rouge : `more-like-this-modal` (Jikan 504, non-régression, dette US-E2E-MLT-MOCK).
+- Commit `main` S36 : `de64cac` (précédents : `82cd7ad`, `92d5a5a`).
+- **Dernier numéro DECISIONS réel : DEC-109.** (Les mentions « DEC-99 » et « DEC-106 »
+  ailleurs dans la Knowledge sont périmées.)
+
+## 🏁 Sprint Outcome Gate S36
+**Gain ressenti.** L'app ne glisse plus latéralement sur téléphone étroit et toutes les
+popups sont centrées. Clôt l'exception de dette déclarée en S35. Budget PRODUCT_NORTHSTAR
+respecté (1 dette / 1 gain visible).
+
+## 📋 Kanban — fin S36
+### ✅ Done
+- **US-E2E-REGISTRY-RESYNC** — registre §8 resynchronisé, 12 specs orphelines remises en
+  service (dont 11 n'ayant jamais tourné), référence morte `week-mark-done` purgée.
+- **US-SCROLL-387** — `box-sizing:border-box` sur `.secondary-nav-wrapper` + `flex:1 1 0;
+  min-width:0` sur `.secondary-tabs button` (`src/style.css`). Nouvelle spec
+  `no-horizontal-overflow.spec.ts` (2 tests).
+- **US-MODAL-CENTER-AUDIT** — clos par US-SCROLL-387 sans code dédié (DEC-108). Audit R6 validé.
+- **US-SEARCH-3** — clos sans développement, déjà en production (`groupedSuggestions` +
+  filtre sections vides dans `SearchInput.vue`).
+
+### 🔄 In Progress
+- *(vide)*
+
+### 📝 To Do — S37
+1. **US-MODAL-UNIFY** 🔴 — modale anime = **un seul composant** entre Discover et Library.
+   Démarre par investigation du câblage réel (déjà redérivé une fois : corriger l'apparence
+   seule ne suffit pas).
+2. Sweep complet batch1→5 — baseline totale.
+3. US-E2E-MLT-MOCK (dette) — mock réseau de `more-like-this-modal`.
+4. US-SEARCH-GUARD (dette) — spec E2E sur les section headers de recherche.
+
+### 🗂️ Backlog produit
+login redesign · US-PWA · US-ANILIST-SEARCH · Cluster B/C · dual-titre rollout · US-124 ·
+US-JIKAN-HEALTHCHECK · US-140d (toast onboarding)
+
+## ✅ Trous connus FERMÉS en S36
+- Compteur E2E (périmé depuis session 16) → exact : 38 fichiers / 47 tests.
+- US-E2E-CONFIG → confirmée fonctionnelle en local.
+- Hash `main` → relevé.
+- US-140, US-127, US-SEARCH-3 → les trois étaient livrés, backlog corrigé.
+- US-E2E-BATCH-AUDIT → absorbé par US-E2E-REGISTRY-RESYNC.
+
+## ❓ Trous restants
+- **Baseline sweep partielle** : batch1 et batch2 non rejoués en S36. À figer en ouverture S37.
+- Détail per-sprint S22→S27 : toujours non capturé (historique, non bloquant).
+- DEC-75 : trou de lecture assumé, ne pas inventer.
+
+## ⏸️ Standby
+- **Jikan 504** — panne externe inchangée depuis S33. Bloque `more-like-this-modal` et
+  US-NAV-A-FIX2. AniList GraphQL reste l'alternative stratégique pré-lancement.
+
+
