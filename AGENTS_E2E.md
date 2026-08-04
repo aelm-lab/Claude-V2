@@ -2,11 +2,7 @@
 
 > Fichier racine, lu automatiquement par Gemini comme `AGENTS.md`. Complète `AGENTS.md`, ne le remplace pas.
 >
-> **État de référence : fin S33 (cleaning S34).** 🔴 **§8 (registre des batchs) marqué
-> À AUDITER** — au moins 3 specs écrites récemment (`search-enriched`, `search-quick-add`,
-> `search-hides-nav`) ne figurent dans aucun batch ci-dessous et n'ont donc probablement
-> **jamais tourné au sweep**. Ne pas faire confiance à ce registre tant qu'il n'a pas été
-> confronté à un `dir tests\e2e` / `ls tests/e2e` réel.
+> **État de référence : fin S36.**
 
 ---
 
@@ -109,27 +105,41 @@ avoir dérivé du code réel, elle n'est pas une garantie.
 
 ---
 
-## 8. Registre des batchs E2E — 🔴 À AUDITER (voir bandeau en tête de fichier)
+## 8. Registre des batchs E2E — ✅ AUDITÉ ET RESYNCHRONISÉ (S36)
 
-> Le découpage en batchs (scripts `test:e2e:batch1..3`) est FIGÉ EN DUR. Toute nouvelle
-> spec DOIT être ajoutée à un batch dans `package.json` ET listée ici, sinon elle ne
-> tourne jamais au sweep. Garder chaque batch ≤9 fichiers.
->
-> **Dernier état connu (probablement périmé, non ré-audité depuis) :**
+> Le découpage en batchs (`test:e2e:batch1..5`) est FIGÉ EN DUR. Toute nouvelle spec DOIT
+> être ajoutée à un batch dans `package.json` ET listée ici, sinon elle ne tourne jamais
+> au sweep, silencieusement. Garder chaque batch ≤9 fichiers.
 
-- **batch1** (9 fichiers) : `auto-vault-toast`, `boot-loader`, `calendar-subnav-layout`, `discover-season-dedup`, `foryou-dedup`, `login-styled`, `modal-add-appears-on-week`, `modal-add-feedback`, `modal-add-removes-from-discover`
-- **batch2** (9 fichiers) : `modal-content-centered-mobile`, `modal-open`, `modal-position`, `modal-status-gating`, `month-layout`, `nav-active-state`, `onair-subnav`, `reccard-add`, `reccard-click-dismiss`
-- **batch3** (8 fichiers) : `search-dedup`, `smoke`, `snap-to-today`, `toast-labels`, `toast-visible-mobile`, `week-mark-done`, `week-no-duplicate-period`, `week-progress-bar`
+> **Audit S36 : 38 fichiers sur disque, 38 enregistrés. Mapping 1:1 vérifiable par
+> `dir tests\e2e /b`.**
 
-**Connus comme absents de cette liste (à ajouter dès confirmation de leur existence) :**
-`search-enriched`, `search-quick-add`, `search-hides-nav`, `logout-modal-position`.
+🔴 **RÈGLE D'ÉCRITURE — chemin complet obligatoire.** Chaque entrée de batch s'écrit
+`tests/e2e/<nom>.spec.ts`, jamais le nom nu. Playwright interprète l'argument comme une
+**regex de sous-chaîne** : l'entrée nue `modal-position` captait aussi
+`logout-modal-position.spec.ts`, qui tournait donc hors registre. Slashes AVANT (`/`),
+jamais des backslashes — sous Windows les `\` cassent le matching (« No tests found »).
 
-**Action requise** : au prochain grand check E2E, lister `tests/e2e/` réellement présent
-sur disque (`dir tests\e2e` / `ls tests/e2e`), comparer à cette liste, et mettre à jour les
-deux (ce fichier + `package.json`) en conséquence. Tant que ce n'est pas fait, un "sweep
-vert" ne prouve PAS l'absence de régression sur les specs orphelines.
+- **batch1** (9) : `auto-vault-toast` · `boot-loader` · `calendar-subnav-layout` · `discover-season-dedup` · `foryou-dedup` · `login-styled` · `modal-add-appears-on-week` · `modal-add-feedback` · `modal-add-removes-from-discover`
+- **batch2** (9) : `modal-content-centered-mobile` · `modal-open` · `modal-position` · `modal-status-gating` · `month-layout` · `nav-active-state` · `onair-subnav` · `reccard-add` · `reccard-click-dismiss`
+- **batch3** (7) : `search-dedup` · `smoke` · `snap-to-today` · `toast-labels` · `toast-visible-mobile` · `week-no-duplicate-period` · `week-progress-bar`
+- **batch4** (9) : `logout-modal-position` · `nav-scroll-hide` · `onboarding-fullscreen` · `onboarding-genres` · `onboarding-seed` · `onboarding-toast` · `onboarding-welcome` · `search-enriched` · `search-hides-nav`
+- **batch5** (4) : `search-quick-add` · `week-empty-day-cta` · `more-like-this-modal` · `no-horizontal-overflow`
+**Retiré S36 :** `week-mark-done` — référence morte dans batch3, aucun fichier correspondant
+sur disque.
+
+**Dette connue :** `more-like-this-modal` n'a aucun `page.route()` et tape l'API Jikan live
+→ viole la règle « réseau déterministe » (§6). Rouge tant que Jikan est en 504. Correctif
+prévu : US-E2E-MLT-MOCK. **Ce rouge n'est pas une régression** — ne pas retirer la spec du
+batch pour faire passer le sweep (interdit §9).
 
 ---
+
+**Interdit S36 — fichiers de débogage jetables.** Aucun `debug-*.spec.ts` ne doit être
+commité dans `tests/e2e/`. Un fichier de debug non enregistré pollue le registre et
+réintroduit le problème des specs orphelines. Débogage = local, jamais commité.
+
+-------
 
 ## 9. Interdits
 
