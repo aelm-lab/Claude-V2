@@ -7,7 +7,7 @@
 > ces chiffres ailleurs, y renvoyer. Exception : `AGENTS.md`/`AGENTS_E2E.md` (lus par Gemini,
 > sans accès à ce fichier) portent leurs propres chiffres en dur, à resynchroniser à la main.
 >
-> **État de référence : fin S33 (régénéré au cleaning S34).**
+> **État de référence : fin S36**
 > ⚠️ Détail S22→S27 non capturé ici (vit dans les handoffs archivés) — voir §Trous connus.
 
 ---
@@ -195,7 +195,9 @@ login redesign · US-PWA · US-ANILIST-SEARCH · Cluster B/C · dual-titre rollo
 US-JIKAN-HEALTHCHECK · US-140d (toast onboarding)
 
 ## ✅ Trous connus FERMÉS en S36
-- Compteur E2E (périmé depuis session 16) → exact : 38 fichiers / 47 tests.
+- Compteur E2E (périmé depuis session 16) → - **E2E : 38 fichiers sur disque, 38 enregistrés · 46 tests (45 verts).**
+  Baseline complète batch1→5 prouvée en ouverture S37 sur machine PO. Compteur enfin exact.
+- Commit `main` : `444d385` (précédents : `de64cac`, `82cd7ad`).
 - US-E2E-CONFIG → confirmée fonctionnelle en local.
 - Hash `main` → relevé.
 - US-140, US-127, US-SEARCH-3 → les trois étaient livrés, backlog corrigé.
