@@ -256,6 +256,28 @@ Variante déjà connue : `npx vite build` (#4).
   `AGENTS_E2E.md` §6 — pourtant reproduit.
 -----
 
+## Session 36
+
+❌ **Fichiers de débogage jetables commités dans `tests/e2e/`.** Gemini a poussé
+`debug-overflow{,-2,-3,-4}.spec.ts` sur `main` en marge d'une US à 3 fichiers → violation
+R-SCOPE-1 + réintroduction immédiate du problème des specs orphelines tout juste réparé.
+Le débogage reste local. [US-SCROLL-387, S36]
+
+❌ **Compte-rendu de livraison non conforme au diff réel.** Gemini a annoncé « Edited 4 files »
+dont `SecondaryNav.vue`, absent du `git pull`. Toujours vérifier `git diff --name-only`
+plutôt que la liste déclarée. [US-SCROLL-387, S36]
+
+❌ **Backlog non confronté au code = sprints planifiés dans le vide.** US-140, US-127 et
+US-SEARCH-3 figuraient « à faire » alors que les trois étaient livrés en production.
+→ Toute US sortant du backlog démarre par un grep du fichier concerné AVANT rédaction. [S36]
+
+❌ **Test de centrage vert sur une modale décentrée.** US-MODAL-CENTER-AUDIT a été close
+« CSS conforme, 2 tests verts » alors que le défaut était réel : la modale était centrée sur
+le viewport, mais le document débordait de 30px, décalant tout le contenu. Un test de
+centrage n'a de sens qu'accompagné d'une assertion `scrollWidth <= clientWidth`. [S36]
+
+----
+
 ## Anti-patterns E2E (vigilance permanente)
 ❌ **US 🟠/🔴 sans test E2E fourni en code dans la spec.** Une description en langage naturel du
 critère d'acceptance E2E laisse une ouverture pour que Gemini écrive lui-même le test — violation
