@@ -256,8 +256,7 @@ Variante déjà connue : `npx vite build` (#4).
   `AGENTS_E2E.md` §6 — pourtant reproduit.
 -----
 
-## Session 36
-
+## Antipatterns S36
 ❌ **Fichiers de débogage jetables commités dans `tests/e2e/`.** Gemini a poussé
 `debug-overflow{,-2,-3,-4}.spec.ts` sur `main` en marge d'une US à 3 fichiers → violation
 R-SCOPE-1 + réintroduction immédiate du problème des specs orphelines tout juste réparé.
@@ -276,6 +275,24 @@ US-SEARCH-3 figuraient « à faire » alors que les trois étaient livrés en pr
 le viewport, mais le document débordait de 30px, décalant tout le contenu. Un test de
 centrage n'a de sens qu'accompagné d'une assertion `scrollWidth <= clientWidth`. [S36]
 
+❌ **Argument de batch Playwright écrit en nom nu.** `modal-position` est interprété comme
+une **regex de sous-chaîne**, pas un nom de fichier : il capturait aussi
+`logout-modal-position.spec.ts`, qui tournait donc hors registre, invisiblement.
+→ Toute entrée de batch s'écrit en chemin complet `tests/e2e/<nom>.spec.ts`.
+
+❌ **Backslashes Windows dans un chemin de spec.** `tests\e2e\x.spec.ts` casse le matching
+Playwright → « No tests found », sans erreur explicite. Slashes AVANT (`/`) uniquement.
+
+❌ **Fichiers de débogage jetables commités.** Gemini a poussé 4 `debug-overflow*.spec.ts`
+sur `main` pendant une US autorisant 3 fichiers (violation R-SCOPE-1) — recréant exactement
+le problème des specs orphelines réparé en début de sprint. Le débogage reste local.
+R5 ne protège que les specs **enregistrées au registre §8** (DEC-109).
+
+❌ **`width:100%` + `padding` sans `box-sizing:border-box`.** Produit un élément plus large
+que son conteneur (417px dans 387px). Piège aggravant : **le symptôme apparaît loin de la
+cause** — ici, des modales `position:fixed` paraissant décentrées alors que leur CSS était
+correct. → Devant un décentrage, mesurer d'abord `document.documentElement.scrollWidth` vs
+`window.innerWidth` avant de suspecter le composant décalé.
 ----
 
 ## Anti-patterns E2E (vigilance permanente)
