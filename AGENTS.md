@@ -3,8 +3,8 @@
 - **Diff Requirement**: Always show the exact code diffs or the entire file content when delivering a User Story (US) or code modifications.
 - Reponses to users must include the code (content or diff) alongside the command outputs.
 
-> **État de référence : fin S33 (cleaning S34).** Ce fichier est lu automatiquement par
-> Gemini AI Studio — vérifie dans ta session que `AGENTS.md` et `AGENTS_E2E.md` apparaissent
+> **État de référence : fin 36.
+> ** Ce fichier est lu automatiquement par Gemini AI Studio — vérifie dans ta session que `AGENTS.md` et `AGENTS_E2E.md` apparaissent
 > bien sous **Environment → Sources**, sinon ils ne sont peut-être pas réellement chargés.
 > Toute mise à jour de règle doit être répercutée ici, pas seulement dans la Knowledge Claude.
 
