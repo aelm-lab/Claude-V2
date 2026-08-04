@@ -301,3 +301,24 @@
   cette clôture ne doit pas être extrapolée à `LogoutConfirmModal` sans vérification propre
   (R3). *Impact user : à déterminer une fois l'audit fait — potentiellement des popups mal
   centrés sur mobile pour un sous-ensemble d'utilisateurs, à confirmer avant de conclure.*
+
+
+## Décisions groupées S36
+
+  - **[DEC-107] Cause racine unique du débordement horizontal et du décentrage des popups.**
+  `.secondary-nav-wrapper` portait `width:100%` + `padding:10px 15px` sans
+  `box-sizing:border-box` → document à 417px dans un viewport de 387px. Les modales,
+  en `position:fixed`, se centraient sur le viewport tandis que le contenu s'étalait
+  30px plus large → décalage visible d'environ 15px. Correctif : `box-sizing:border-box`
+  sur le wrapper + `flex:1 1 0; min-width:0` sur `.secondary-tabs button`.
+  *Impact user : l'app ne glisse plus latéralement sur téléphone et toutes les popups
+  (fiche anime, déconnexion) sont enfin centrées.*
+
+- **[DEC-108] US-MODAL-CENTER-AUDIT close par DEC-107, sans code dédié.** Le CSS des modales
+  était conforme depuis le début ; le défaut venait d'un élément situé ailleurs dans la page.
+  *Impact user : identique à DEC-107.*
+
+- **[DEC-109] Suppression autorisée de specs E2E non enregistrées.** R5 (specs cumulatives
+  jamais supprimées) protège les specs figurant au registre `AGENTS_E2E.md` §8. Un fichier
+  `debug-*.spec.ts` jamais enregistré n'a aucune valeur de preuve et doit être supprimé.
+  *Impact user : aucun — hygiène du filet de tests.*
