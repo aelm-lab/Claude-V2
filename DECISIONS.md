@@ -317,6 +317,11 @@
 - **[DEC-108] US-MODAL-CENTER-AUDIT close par DEC-107, sans code dédié.** Le CSS des modales
   était conforme depuis le début ; le défaut venait d'un élément situé ailleurs dans la page.
   *Impact user : identique à DEC-107.*
+  
+- **[DEC-109] Suppression autorisée de specs E2E non enregistrées.** R5 (specs cumulatives
+  jamais supprimées) protège les specs figurant au registre `AGENTS_E2E.md` §8. Un fichier
+  `debug-*.spec.ts` jamais enregistré n'a aucune valeur de preuve et doit être supprimé.
+  *Impact user : aucun — hygiène du filet de tests.*
 
   
 ## Décisions groupées S37
@@ -342,7 +347,21 @@
   conteneur, pas de son contenu rendu. Correction faite par Claude (auteur du test, R7
   respecté), livrée à Gemini en copier-coller. *Impact user : aucun — fiabilité de test.*
 
-- **[DEC-109] Suppression autorisée de specs E2E non enregistrées.** R5 (specs cumulatives
-  jamais supprimées) protège les specs figurant au registre `AGENTS_E2E.md` §8. Un fichier
-  `debug-*.spec.ts` jamais enregistré n'a aucune valeur de preuve et doit être supprimé.
-  *Impact user : aucun — hygiène du filet de tests.*
+
+
+
+  ### DEC-113 — La « panne Jikan » était un défaut de notre requête
+**S38.** Mesures curl : `anime?q=naruto&limit=1` → 200 ; la requête réelle de l'app
+(`&order_by=popularity&sort=asc`, useJikanApi.ts:78) → 504 ; `seasons/now?limit=25` → 200
+deux fois consécutives. `order_by=popularity` impose un tri global côté Jikan et dépasse
+le timeout. La recherche était donc cassée **par notre code**, pas par une panne externe.
+Le standby « Jikan en panne » porté depuis S33 était erroné.
+**Conséquence :** US-ANILIST-SEARCH redescend de « condition de lancement » à backlog
+stratégique. `more-like-this-modal` et US-NAV-A-FIX2 à retester après correctif.
+
+### DEC-114 — Fallback cache périmé : comportement voulu, non signalé
+**S38.** `readLocalCache` expose `stale`; `fetchCurrentSeason` sert le cache périmé si le
+fetch échoue (useJikanApi.ts:162, fidèle au vanilla). `error.value` est renseigné mais
+jamais affiché. Sans cache et sans réseau → liste vide silencieuse.
+**Décision :** comportement conservé. Dette UX enregistrée (US-CACHE-STALE-WARNING, P2),
+non planifiée S38.
