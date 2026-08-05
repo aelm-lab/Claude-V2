@@ -306,17 +306,25 @@ correct. → Devant un décentrage, mesurer d'abord `document.documentElement.sc
 sans jamais être remesuré, gelant 2 items du backlog. **Règle : toute panne externe inscrite en standby est remesurée à
 l'ouverture de chaque sprint, avec la requête EXACTE émise par le code — jamais une version
 simplifiée.** Un endpoint testé avec d'autres paramètres est un autre endpoint.
-### DEC-113 — Recherche Jikan KO : cause non encore isolée
-**S38.** Mesures curl successives :
-- `anime?q=naruto&limit=1` → 200
-- `anime?q=naruto&sfw=true&limit=25` → 504
-- `anime?q=naruto&sfw=true&limit=25&order_by=popularity&sort=asc` → 504
-- `seasons/now?limit=25` → 200 (×2, stable)
-La recherche échoue, mais la variable responsable n'est PAS isolée : `order_by` a été
-écarté par la 2ᵉ mesure. Restent `sfw=true` et `limit=25`. `seasons/now` est sain →
-Jikan n'est pas globalement en panne. Le standby « panne Jikan » porté depuis S33
-reste néanmoins erroné dans sa formulation globale.
-**Aucune conclusion de cause racine avant isolation par variable unique (R3).**
+### DEC-113 — Jikan : cache HIT/MISS, pas panne globale ni paramètre fautif
+**S38.** 8 mesures curl. Le code HTTP ne dépend d'aucun paramètre de requête mais de
+l'état du cache Jikan : URL déjà en cache → 200 ; URL neuve → Jikan interroge
+MyAnimeList → échec → 504.
+Preuves : `anime?q=naruto&limit=1` → 200 (URL de test banale, en cache) ; les mêmes
+paramètres en `limit=25` OU `sfw=true` OU `order_by` → 504 (URLs neuves) ;
+`seasons/now?limit=25` (URL réelle de l'app, appelée en boucle) → 200 ×2 ;
+`seasons/now?limit=1` → 504.
+Corroboré par la doc Jikan (cache 24 h + rafraîchissement en tâche de fond) et par
+l'issue GitHub jikan-rest #610, ouverte, non résolue, décrivant le même symptôme.
+**Conséquences :**
+- La RECHERCHE est structurellement KO : chaque titre tapé = URL neuve = miss = 504.
+  Aucun correctif possible côté Aanime.
+- Les SAISONS restent fonctionnelles (URLs fixes, cache chaud chez Jikan).
+- Le standby « panne Jikan globale » (S33) était faux. Formulation correcte :
+  « MyAnimeList inaccessible depuis Jikan ; seules les URLs en cache répondent ».
+- US-ANILIST-SEARCH devient la SEULE voie de réparation de la recherche.
+**Hypothèses écartées en cours de route (ne pas réessayer) :** cache local périmé,
+TTL non vérifié, flag dev non câblé, `order_by=popularity`, intermittence aléatoire.
 ----
 ## Anti-patterns E2E (vigilance permanente)
 ❌ **US 🟠/🔴 sans test E2E fourni en code dans la spec.** Une description en langage naturel du
