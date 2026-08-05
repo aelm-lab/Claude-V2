@@ -294,7 +294,15 @@ cause** — ici, des modales `position:fixed` paraissant décentrées alors que 
 correct. → Devant un décentrage, mesurer d'abord `document.documentElement.scrollWidth` vs
 `window.innerWidth` avant de suspecter le composant décalé.
 ----
+## Antipatterns S37
 
+- ❌ **`toBeVisible()` sur un conteneur de grille sous données mockées vides.** Un `display:grid`
+  sans enfant a une hauteur de 0px → Playwright le juge invisible même quand le CSS est
+  correct. Pour tester une propriété de conteneur (nb de colonnes), vérifier l'existence
+  (`toHaveCount`) puis lire `getComputedStyle` directement — ne pas conditionner l'assertion
+  à un rendu visuel qui dépend du contenu, pas du conteneur.
+
+----
 ## Anti-patterns E2E (vigilance permanente)
 ❌ **US 🟠/🔴 sans test E2E fourni en code dans la spec.** Une description en langage naturel du
 critère d'acceptance E2E laisse une ouverture pour que Gemini écrive lui-même le test — violation
