@@ -303,10 +303,20 @@ correct. → Devant un décentrage, mesurer d'abord `document.documentElement.sc
   à un rendu visuel qui dépend du contenu, pas du conteneur.
 ### AP-PROCESS — Diagnostiquer une panne externe sans la mesurer
 **S38.** « Jikan est en panne » a été porté 5 sprints (S33→S38) sur la foi d'un unique curl,
-sans jamais être remesuré, gelant 2 items du backlog. La cause réelle était un paramètre de
-notre propre requête. **Règle : toute panne externe inscrite en standby est remesurée à
+sans jamais être remesuré, gelant 2 items du backlog. **Règle : toute panne externe inscrite en standby est remesurée à
 l'ouverture de chaque sprint, avec la requête EXACTE émise par le code — jamais une version
 simplifiée.** Un endpoint testé avec d'autres paramètres est un autre endpoint.
+### DEC-113 — Recherche Jikan KO : cause non encore isolée
+**S38.** Mesures curl successives :
+- `anime?q=naruto&limit=1` → 200
+- `anime?q=naruto&sfw=true&limit=25` → 504
+- `anime?q=naruto&sfw=true&limit=25&order_by=popularity&sort=asc` → 504
+- `seasons/now?limit=25` → 200 (×2, stable)
+La recherche échoue, mais la variable responsable n'est PAS isolée : `order_by` a été
+écarté par la 2ᵉ mesure. Restent `sfw=true` et `limit=25`. `seasons/now` est sain →
+Jikan n'est pas globalement en panne. Le standby « panne Jikan » porté depuis S33
+reste néanmoins erroné dans sa formulation globale.
+**Aucune conclusion de cause racine avant isolation par variable unique (R3).**
 ----
 ## Anti-patterns E2E (vigilance permanente)
 ❌ **US 🟠/🔴 sans test E2E fourni en code dans la spec.** Une description en langage naturel du
