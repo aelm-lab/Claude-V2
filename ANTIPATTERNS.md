@@ -325,7 +325,52 @@ l'issue GitHub jikan-rest #610, ouverte, non résolue, décrivant le même sympt
 - US-ANILIST-SEARCH devient la SEULE voie de réparation de la recherche.
 **Hypothèses écartées en cours de route (ne pas réessayer) :** cache local périmé,
 TTL non vérifié, flag dev non câblé, `order_by=popularity`, intermittence aléatoire.
+
+---
+
+## Antipatterns S38 — diagnostic
+
+❌ **Théoriser une cause racine en changeant deux variables à la fois.**
+Sur l'investigation Jikan, 4 hypothèses successives (TTL non vérifié, flag dev absent,
+`order_by=popularity`, intermittence aléatoire) ont toutes été fausses, parce que chaque
+mesure modifiait plusieurs paramètres simultanément et que l'échec était ensuite attribué
+à celui qui arrangeait l'hypothèse en cours. La bonne cause n'est apparue qu'en isolant
+**une variable par mesure**. → **Règle : une mesure = une variable. Aucune cause racine
+n'est gravée avant qu'une hypothèse n'explique 100 % des mesures, sans exception.**
+
+❌ **Confondre le cache HTTP du navigateur et le localStorage applicatif.**
+La case « Disable cache » du panneau Network de DevTools ne désactive que le cache HTTP
+(JS, CSS, images). Elle ne touche **jamais** au localStorage. Croire l'inverse a fait
+porter pendant une session entière la conviction fausse d'un « cache désactivé en dev »,
+alors qu'aucun flag de ce type n'existe dans le code. → Vérifier l'existence d'un flag
+par grep avant de raisonner dessus.
+
+❌ **Prendre les images qui chargent pour une preuve que l'API répond.**
+Les jaquettes viennent du CDN `cdn.myanimelist.net`, pas de `api.jikan.moe`, et leurs
+URLs sont déjà stockées dans le cache local. Une page pleine de posters en HTTP 200
+n'indique **rien** sur la santé de l'API de données. → Ne jamais inférer l'état d'un
+service depuis des requêtes vers un autre domaine.
+
+❌ **Un toast de confirmation qui n'est conditionné à aucune vérification d'affichage.**
+`finishWithSeed` affiche « N shows added to your calendar » après `addAnime`, sans que
+rien ne garantisse que ces animes soient effectivement visibles dans la vue cible.
+L'app **certifie** un succès que l'écran suivant dément. → Un message de confirmation
+doit porter sur ce que l'utilisateur va voir, pas sur ce que le code vient d'exécuter.
+
+⚠️ **`findstr` sous Windows : pièges de syntaxe qui produisent de faux vides.**
+- `findstr /n "a\|b\|c"` cherche la chaîne littérale `a\|b\|c` → 0 résultat trompeur.
+  Le OU s'écrit avec des **mots séparés par des espaces** : `findstr /n "a b c"`.
+- Un résultat vide n'est une preuve d'absence **que si la syntaxe est vérifiée**.
+  Deux fausses conclusions ont été tirées de vides syntaxiques en S37/S38.
+
 ----
+
+
+
+
+
+
+
 ## Anti-patterns E2E (vigilance permanente)
 ❌ **US 🟠/🔴 sans test E2E fourni en code dans la spec.** Une description en langage naturel du
 critère d'acceptance E2E laisse une ouverture pour que Gemini écrive lui-même le test — violation
