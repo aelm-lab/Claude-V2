@@ -348,8 +348,6 @@
   respecté), livrée à Gemini en copier-coller. *Impact user : aucun — fiabilité de test.*
 
 
-
-
   ### DEC-113 — La « panne Jikan » était un défaut de notre requête
 **S38.** Mesures curl : `anime?q=naruto&limit=1` → 200 ; la requête réelle de l'app
 (`&order_by=popularity&sort=asc`, useJikanApi.ts:78) → 504 ; `seasons/now?limit=25` → 200
@@ -365,3 +363,68 @@ fetch échoue (useJikanApi.ts:162, fidèle au vanilla). `error.value` est rensei
 jamais affiché. Sans cache et sans réseau → liste vide silencieuse.
 **Décision :** comportement conservé. Dette UX enregistrée (US-CACHE-STALE-WARNING, P2),
 non planifiée S38.
+
+---
+
+## Décisions S38
+
+### DEC-113 — Jikan : cache HIT/MISS, ni panne globale ni paramètre fautif
+**S38.** 9 mesures curl successives. Le code HTTP ne dépend d'**aucun paramètre de
+requête** mais de l'état du cache Jikan : URL déjà en cache → 200 ; URL neuve → Jikan
+interroge MyAnimeList → échec → 504.
+
+Mesures :
+| URL | Code |
+|---|---|
+| `anime?q=naruto&limit=1` | 200 (×2) — URL de test banale, en cache mondial |
+| `anime?q=naruto&limit=25` | 504 |
+| `anime?q=naruto&sfw=true&limit=1` | 504 |
+| `anime?q=naruto&sfw=true&limit=25` | 504 |
+| `anime?q=naruto&sfw=true&limit=25&order_by=popularity&sort=asc` | 504 |
+| `anime?q=zzqxwv&limit=1` (chaîne absurde) | 504 |
+| `seasons/now?limit=25` (URL réelle de l'app) | 200 (×2) |
+| `seasons/now?limit=1` | 504 |
+| `anime/1/recommendations` | 504 |
+
+Corroboré par la doc officielle Jikan (cache 24 h + rafraîchissement en tâche de fond)
+et par l'issue GitHub `jikan-me/jikan-rest` #610, ouverte et non résolue, décrivant le
+même symptôme (même URL, résultats incohérents d'une tentative à l'autre).
+
+**Conséquences :**
+- La **recherche** est structurellement KO : chaque titre tapé = URL neuve = miss = 504.
+  Aucun correctif possible côté Aanime.
+- Les **saisons** restent fonctionnelles (URLs fixes, cache chaud chez Jikan).
+- Le standby « panne Jikan globale » porté de S33 à S38 était **faux**. Formulation
+  correcte : « MyAnimeList inaccessible depuis Jikan ; seules les URLs en cache répondent ».
+- `US-ANILIST-SEARCH` devient la **seule** voie de réparation de la recherche, et passe
+  de « alternative stratégique » à **condition de lancement**.
+- `more-like-this-modal` et `US-NAV-A-FIX2`, gelés depuis S33 sur ce diagnostic faux,
+  sont à retester.
+
+**Hypothèses écartées en cours de route (ne pas réessayer) :** cache local périmé ·
+TTL non vérifié · flag dev non câblé · `order_by=popularity` · intermittence aléatoire.
+
+### DEC-114 — Fallback sur cache périmé : comportement voulu, non signalé
+**S38.** `readLocalCache` (`useJikanApi.ts:33`) expose un booléen `stale` ;
+`fetchCurrentSeason` (`:165`) sert le cache périmé si le fetch échoue — comportement
+délibéré, documenté en commentaire, fidèle au vanilla. `error.value` est renseigné mais
+**jamais affiché** dans l'UI. Sans cache et sans réseau → liste vide silencieuse.
+**Décision :** comportement conservé (il évite une page vide en cas de panne).
+Dette UX enregistrée sous `US-CACHE-STALE-WARNING` (P2), non planifiée S38.
+
+### DEC-115 — Le champ `day` n'est produit par aucun chemin de normalisation
+**S38.** `normalizeAnime` (`utils/normalize.ts`) ne produit **jamais** `day` ni
+`airsTime` (`findstr day/airsTime/parseJSTToLocal/broadcast` → 0 résultat). Le type
+`AnimeEntry` déclare pourtant `day?: WeekDay` comme optionnel.
+Or `CalendarWeekPage.vue:94` filtre sur `a.state === 'calendar' && a.day === dayClass` :
+**sans `day`, un anime en `state:'calendar'` n'apparaît dans aucune colonne de la semaine,
+et n'apparaît pas non plus en Library.** Il est stocké mais invisible partout.
+`buildSeedEntry` (`onboardingFilter.ts:10`) pose `state` mais pas `day` — le même bug
+avait déjà été corrigé une fois sur `state` seul (commentaire « Corrige B1 »), la moitié
+`day` est restée.
+**⚠️ Statut : hypothèse forte, NON close.** Le `aanime_calendar` du PO ne contient aucune
+entrée `state:'calendar'`, ce qui empêche la vérification sur donnée réelle. Ne pas
+spécifier de correctif avant d'avoir tranché (voir handoff S38→S39).
+**Piste non vérifiée :** `day` serait rempli par `syncAnimeUpdates` via `parseJSTToLocal`
+depuis le `broadcast` Jikan — donc dépendant de `/anime/{id}`, endpoint en 504 (DEC-113).
+Si confirmé, le défaut d'onboarding et la panne Jikan ont la même cause aval.
