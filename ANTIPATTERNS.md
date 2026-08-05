@@ -301,7 +301,12 @@ correct. → Devant un décentrage, mesurer d'abord `document.documentElement.sc
   correct. Pour tester une propriété de conteneur (nb de colonnes), vérifier l'existence
   (`toHaveCount`) puis lire `getComputedStyle` directement — ne pas conditionner l'assertion
   à un rendu visuel qui dépend du contenu, pas du conteneur.
-
+### AP-PROCESS — Diagnostiquer une panne externe sans la mesurer
+**S38.** « Jikan est en panne » a été porté 5 sprints (S33→S38) sur la foi d'un unique curl,
+sans jamais être remesuré, gelant 2 items du backlog. La cause réelle était un paramètre de
+notre propre requête. **Règle : toute panne externe inscrite en standby est remesurée à
+l'ouverture de chaque sprint, avec la requête EXACTE émise par le code — jamais une version
+simplifiée.** Un endpoint testé avec d'autres paramètres est un autre endpoint.
 ----
 ## Anti-patterns E2E (vigilance permanente)
 ❌ **US 🟠/🔴 sans test E2E fourni en code dans la spec.** Une description en langage naturel du
