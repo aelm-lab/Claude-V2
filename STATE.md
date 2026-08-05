@@ -7,7 +7,7 @@
 > ces chiffres ailleurs, y renvoyer. Exception : `AGENTS.md`/`AGENTS_E2E.md` (lus par Gemini,
 > sans accès à ce fichier) portent leurs propres chiffres en dur, à resynchroniser à la main.
 >
-> **État de référence : fin S36**
+> **État de référence : fin S37**
 > ⚠️ Détail S22→S27 non capturé ici (vit dans les handoffs archivés) — voir §Trous connus.
 
 ---
@@ -212,4 +212,34 @@ US-JIKAN-HEALTHCHECK · US-140d (toast onboarding)
 - **Jikan 504** — panne externe inchangée depuis S33. Bloque `more-like-this-modal` et
   US-NAV-A-FIX2. AniList GraphQL reste l'alternative stratégique pré-lancement.
 
+
+
+## 📦 Version — MAJ
+v0.31.0 (S37, à bumper à la clôture) — US-GRID-FIX mergée.
+
+## 📋 Kanban — fin de session S37 (partielle)
+### ✅ Done
+- US-GRID-FIX — MERGE (DEC-111/112)
+- US-MODAL-UNIFY — annulée (DEC-110)
+- Baseline E2E complète : 38/38 fichiers, 46 tests (45 verts)
+
+### 🔄 In Progress
+- 🔴 P0 — Investigation cache saisons Jikan (pourquoi This Season/For You affichent des
+  animes alors que Jikan répond 504 sur la recherche). Hypothèse : cache localStorage
+  `aanime_seasons_now`/`aanime_seasons_upcoming`, TTL 24h, sert des données périmées
+  silencieusement. À confirmer par lecture de `useJikanApi.ts`/`useSync.ts` + âge réel du
+  cache en prod. AUCUNE conclusion tirée avant confirmation code (R3).
+
+### 📝 To Do — S37/S38
+1. **P0** — clore l'investigation cache Jikan (peut révéler une US-CACHE-STALE-WARNING si
+   confirmé : avertir l'utilisateur quand les données affichées ont dépassé le TTL)
+2. **US-GRID-CENTRAL** (dette) — migrer les 4 pages saines vers `.aa-card-grid`, supprimer
+   `.recs-grid`/`.grid`/`.plantowatch-grid` locales
+3. **US-ONBOARDING-REFRESH** (nouveau, priorité proposée) — les choix d'onboarding
+   n'apparaissent pas dans le calendrier sans rafraîchissement manuel. Impact TTFA direct.
+4. Backlog capturé par captures PO (onboarding) :
+   - Titres onboarding en japonais/rōmaji, pas en anglais comme le reste de l'app
+   - Cartes onboarding mal centrées (probablement même famille que US-GRID-FIX/CENTRAL)
+   - Demande PO : lien "vider mes données / repartir de zéro" dans la modale de déconnexion
+5. US-E2E-MLT-MOCK (dette, inchangé) · US-SEARCH-GUARD (dette, inchangé)
 
