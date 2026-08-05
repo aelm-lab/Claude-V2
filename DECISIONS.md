@@ -318,6 +318,30 @@
   était conforme depuis le début ; le défaut venait d'un élément situé ailleurs dans la page.
   *Impact user : identique à DEC-107.*
 
+  
+## Décisions groupées S37
+
+  - **[DEC-110] US-MODAL-UNIFY annulée — la modale était déjà unique.** Investigation (grep
+  `AnimeModal.vue`, `App.vue`) : un seul composant `AnimeModal`, monté une seule fois dans
+  `App.vue`, routant déjà par `modalContext` entre `ModalCalendarTop`/`ModalVersionTop`. Le
+  vrai défaut signalé par le PO (captures à l'appui) était une incohérence de grille CSS
+  entre écrans de LISTE (Discover/This Season, Library/Upcoming en 1 colonne vs le reste en
+  2), pas la fiche détail. → Résolu par US-GRID-FIX. *Impact user : aucun changement de
+  modale nécessaire ; le vrai gain est sur les grilles.*
+- **[DEC-111] US-GRID-FIX mergée — `.aa-card-grid` classe partagée, 2 colonnes fixes.**
+  Cause racine 1 : `.anime-grid` (This Season) avec `minmax(160px,1fr)` + padding + gap
+  réclamait 344px sur un viewport de 387px n'offrant que 339px utiles → bascule 1 colonne
+  par manque de 5px. Cause racine 2 : `.recs-grid` (Library/Upcoming) référençait une classe
+  définie uniquement en `<style scoped>` de `DiscoverExplorePage.vue`, donc jamais appliquée
+  ailleurs. Correctif : classe unique `.aa-card-grid` dans `style.css` (2/3/4 colonnes selon
+  breakpoint), consommée par les deux pages fautives. *Impact user : Discover/This Season et
+  Library/Upcoming affichent enfin 2 colonnes comme le reste de l'app.*
+- **[DEC-112] Spec E2E corrigée en cours de review — `toBeVisible` remplacé par `toHaveCount`.**
+  Une grille CSS vide (sous mock Jikan à `data:[]`) a une hauteur de 0px → `toBeVisible()`
+  la juge invisible alors que le CSS est correct. Le nombre de colonnes est une propriété du
+  conteneur, pas de son contenu rendu. Correction faite par Claude (auteur du test, R7
+  respecté), livrée à Gemini en copier-coller. *Impact user : aucun — fiabilité de test.*
+
 - **[DEC-109] Suppression autorisée de specs E2E non enregistrées.** R5 (specs cumulatives
   jamais supprimées) protège les specs figurant au registre `AGENTS_E2E.md` §8. Un fichier
   `debug-*.spec.ts` jamais enregistré n'a aucune valeur de preuve et doit être supprimé.
