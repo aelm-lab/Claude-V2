@@ -1,20 +1,29 @@
 # TYPES_CONTRACT.md — Contrat TypeScript de référence
 
-> **Où mettre ce fichier :** dans la **Knowledge** du projet Claude Chat.
+> **Où mettre ce fichier :** Knowledge du projet Claude Chat (`aelm-lab/Claude-V2`).
+> **Rôle :** la **seule** source d'interfaces du projet. Toute US copie ses types d'ici,
+> verbatim, dans son corps — Gemini n'a pas accès à ce fichier.
 >
-> **Règle absolue :** Gemini **n'invente JAMAIS un type**. Toute interface utilisée dans une US
-> provient d'ici. Si un type manque, on crée d'abord une US « types » pour l'ajouter à ce
-> fichier, **puis** on l'utilise. Ces interfaces sont déduites du code vanilla existant
-> (`normalize.js`, `utils.js`, `rec-engine.js`, `store.js`).
+> **Règle absolue :** on n'invente **jamais** un type. Si un type manque, on crée d'abord une
+> US « types » pour l'ajouter ici, **puis** on l'utilise.
 >
-> **État de référence : fin S33 (cleaning S34).** Intègre les corrections S15 (DEC-84/86),
-> les vérifications zéro-confiance de l'audit s16 (DEC-87), et la signature `signOut`
-> ajoutée S33 (US-AUTH-LOGOUT).
->
-> **Trois faits confirmés (à ne pas réintroduire par erreur) :**
-> - `syncStatus` **n'existe pas** dans `AnimeEntry` (0 hit dans `src/`). Ne pas l'ajouter.
-> - L'action store s'appelle **`setData`** (+ `clearAll`). Il n'existe **pas** de `setAllData`.
-> - La réconciliation au load se fait dans **`loadFromDatabase`** (il n'y a pas de `reconcileWithDatabase`).
+> **Ce qui n'est PAS ici :** les bugs ouverts et la dette (→ `STATE.md`), le pourquoi des
+> choix de typage (→ `DECISIONS.md`). Ce document décrit **la forme des données**, pas leur
+> état de santé.
+
+---
+
+## 0. Trois faits gravés — ne jamais réintroduire
+
+- **`syncStatus` n'existe pas** dans `AnimeEntry` (0 hit dans `src/`, vérifié à l'audit s16).
+  Ne pas l'ajouter.
+- **L'action de remplacement du store s'appelle `setData`** (+ `clearAll`). Il n'existe
+  **pas** de `setAllData`.
+- **`reconcileWithDatabase` n'existe plus.** La réconciliation au chargement se fait dans
+  `loadFromDatabase`.
+
+Ces trois affirmations ont été inscrites à tort dans un handoff antérieur, puis réfutées par
+grep. Un handoff est une source secondaire faillible : **le code réel tranche** (R3).
 
 ---
 
@@ -31,7 +40,7 @@ export type AnimeStatus =
   | 'Currently Airing'
   | 'Not yet aired'
   | 'Finished Airing'
-  // legacy à migrer vers les valeurs ci-dessus :
+  // legacy, présentes en cache et injectées par la persistance :
   | 'Continuing'
   | 'Ended'
   | 'Finished';
@@ -40,22 +49,21 @@ export type WeekDay =
   | 'monday' | 'tuesday' | 'wednesday' | 'thursday'
   | 'friday' | 'saturday' | 'sunday';
 
-/** Pour le tri de recency dans le moteur de recs. */
+/** Tri de recency dans le moteur de recommandations. */
 export type RecencyBucket = 'recent' | 'mid' | 'old';
 ```
 
-> ⚠️ **Bug audité s16 (US-154, P1) — `getCardStatus`** : la valeur legacy `'Continuing'`
-> est dans l'union et peut être injectée par la persistance, mais `getCardStatus`
-> (`utils/episodeInfo.ts`) ne la mappe pas → elle tombe sur le `return` par défaut
-> `{ dot: 'done', word: 'Finished' }`. Correctif planifié : mapper `'continuing'` → `Airing`.
-> Le **type** reste correct ; c'est le **mapping** qui est incomplet.
+> **Règle de consommation d'une union :** quand un type union gagne une valeur, **grep tous
+> les `switch` et chaînes de `if` qui le consomment**. Un membre jamais mappé tombe
+> silencieusement sur le `return` par défaut. C'est exactement ce qui est arrivé à
+> `'Continuing'` dans `getCardStatus` (un show en cours s'affichait « Finished »).
 
 ---
 
 ## 2. Entité principale : `AnimeEntry`
 
 Forme canonique renvoyée par `normalizeAnime`, enrichie des champs runtime utilisés par les
-vues et le moteur de recs.
+vues et le moteur de recommandations.
 
 ```ts
 // src/types/anime.ts
@@ -70,7 +78,7 @@ export interface AnimeEntry {
   title: string;
   cover_url: string | null;
   cover_url_hd: string | null;
-  studio: string | null;          // singulier — null si inconnu, NE PAS mettre "Unknown Studio". Conservé pour l'AFFICHAGE.
+  studio: string | null;          // SINGULIER — null si inconnu, jamais "Unknown Studio". Conservé pour l'AFFICHAGE.
   genres: string[];
   themes: string[];
   demographics: string[];
@@ -79,21 +87,21 @@ export interface AnimeEntry {
   members: number;
 
   // Dates
-  aired_from: string | null;       // ISO
-  startDate: string | null;        // alias de aired_from (code calendrier legacy)
-  lastAired?: string | null;       // ISO
-  completedAt?: string;            // ISO — passage en vault
-  startedAt?: string;              // ISO — passage en calendar
+  aired_from: string | null;      // ISO
+  startDate: string | null;       // alias de aired_from (code calendrier legacy)
+  lastAired?: string | null;      // ISO
+  completedAt?: string;           // ISO — passage en vault
+  startedAt?: string;             // ISO — passage en calendar
 
   // Classement & planning
   state: AnimeState | null;
   episodes: number | null;
-  day?: WeekDay;                   // jour de diffusion local
-  airsTime?: string | null;        // "HH:mm" local
-  episodeOverride?: number;        // numéro d'épisode forcé par l'utilisateur — RESET à undefined à chaque upsert (DEC-84)
+  day?: WeekDay;                  // jour de diffusion LOCAL — voir note ci-dessous
+  airsTime?: string | null;       // "HH:mm" local
+  episodeOverride?: number;       // épisode forcé par l'utilisateur — RESET à undefined à chaque upsert (DEC-84)
   recencyBucket?: RecencyBucket;
 
-  // Champs internes au moteur de recs (préfixe _, optionnels)
+  // Champs internes au moteur de recommandations (préfixe _, optionnels)
   isRec?: boolean;
   why?: string;
   _computedScore?: number;
@@ -103,25 +111,26 @@ export interface AnimeEntry {
   _extractedByBYW?: boolean;
   _triggerTitle?: string;
 
-  // ── Ajoutés en US-008-types (moteur de recs) ──
-  studios: string[];               // PLURIEL — lu par scorePool. Désormais TOUJOURS peuplé par normalizeAnime (DEC-86). Voir note ci-dessous.
-  popularityScore?: number;        // fallback popularité quand historyCount < 5
-  _relevanceScore?: number;        // produit par scorePool
-  _presetScore?: number;           // produit par applyPreset
+  // Moteur de recommandations
+  studios: string[];              // PLURIEL — lu par scorePool. TOUJOURS peuplé par normalizeAnime (DEC-86).
+  popularityScore?: number;       // fallback popularité quand historyCount < 5
+  _relevanceScore?: number;       // produit par scorePool
+  _presetScore?: number;          // produit par applyPreset
 }
 ```
 
-> ✅ **`studios: string[]` — dette P8-01 RÉSOLUE (US-134/DEC-86).** Avant s15,
-> `scorePool` lisait `item.studios` (pluriel) que `normalizeAnime` ne produisait jamais
-> (il produisait `studio` singulier) → dimension studio du scoring **inerte**. Depuis
-> US-134, `normalizeAnime` produit **toujours** `studios: string[]` (fallback sur le
-> singulier `studio`, filtre `"Unknown"`). Le champ n'est donc plus optionnel en pratique
-> sur les entrées normalisées → typé **non optionnel**. `studio` (singulier) est **conservé**
-> pour l'affichage. `scorePool`/`recEngine` étaient déjà corrects (lisaient `item.studios`).
->
-> ❌ **`onHiatus?` SUPPRIMÉ du type (US-132/DEC-84).** Champ persisté mais plus écrit depuis
-> US-107 (hiatus = calcul dérivé `isOnHiatus`, source unique). Retiré du contrat. Ne pas
-> le réintroduire.
+**`studio` vs `studios` — les deux coexistent volontairement.** `studio` (singulier) sert
+l'**affichage** ; `studios: string[]` sert le **scoring** (`scorePool`). `normalizeAnime`
+produit toujours `studios` (fallback sur le singulier, filtre `"Unknown"`), d'où le typage
+non optionnel.
+
+🔴 **`day` n'est produit par aucun chemin de normalisation.** `normalizeAnime` ne pose ni
+`day` ni `airsTime`. Or `CalendarWeekPage` filtre sur `state === 'calendar' && day === …` :
+**une entrée sans `day` est stockée mais invisible partout**. Toute fonction qui crée une
+entrée `state:'calendar'` doit se demander qui posera son `day` (DEC-115).
+
+❌ **`onHiatus?` a été SUPPRIMÉ du type** (DEC-84). Le hiatus est un calcul dérivé
+(`isOnHiatus`, source unique). Ne pas le réintroduire.
 
 ---
 
@@ -132,7 +141,7 @@ export interface AnimeEntry {
 
 export interface CardStatus {
   dot: 'airing' | 'done' | 'upcoming' | 'behind';
-  word: string;                    // ex: "Airing", "Finished", "Upcoming", "Hiatus"
+  word: string;                   // "Airing", "Finished", "Upcoming", "Hiatus"
 }
 
 export interface AnimeEpisodeInfo {
@@ -146,7 +155,7 @@ export interface AnimeEpisodeInfo {
 
 export interface JstParseResult {
   localDay: WeekDay;
-  localTime: string | null;        // "HH:mm"
+  localTime: string | null;       // "HH:mm"
 }
 ```
 
@@ -170,8 +179,7 @@ export interface TasteProfile {
   genreScores?: Map<string, number>;
 }
 
-export type RecAction =
-  | 'heart' | 'confirm' | 'manual-add' | 'dismiss' | 'remove';
+export type RecAction = 'heart' | 'confirm' | 'manual-add' | 'dismiss' | 'remove';
 
 export interface HistoryItem {
   id: number;
@@ -181,21 +189,20 @@ export interface HistoryItem {
   demographics?: string[];
   studios?: string[];
   title?: string;
-  completedAt?: string;            // ── ajouté US-008-types (getRecencyWeight) ──
-  recencyBucket?: RecencyBucket;   // ── ajouté US-008-types (getRecencyWeight) ──
+  completedAt?: string;
+  recencyBucket?: RecencyBucket;
 }
 
 export interface RecBadge {
-  type: string;                    // ex: "trending", "hidden-gem"
+  type: string;                   // "trending", "hidden-gem"…
   icon: string;
   label: string;
 }
 
-// ── ajouté US-008-types ──
 export type RecSignalKind = 'relation' | 'studio' | 'genre' | 'theme' | 'score';
 
 export interface RecSignal {
-  kind?: RecSignalKind;            // ── ajouté US-008-types ──
+  kind?: RecSignalKind;
   icon?: string;
   label: string;
 }
@@ -223,36 +230,33 @@ export interface ScheduleDocument {
 export type IdbStoreName = 'relations' | 'recommendations';
 ```
 
-> ⚠️ **Chemin legacy audité s16 (US-158, P1)** : `usePersistence` charge le cache local
-> via `store.setData(loadedData as unknown as AnimeEntry[])` — double cast sans normalisation
-> ni garde runtime. Cache local corrompu → cartes incomplètes / écran blanc. Correctif :
-> garde runtime + normalisation sur le chemin legacy. Le **type** est correct ; c'est le
-> **cast non sécurisé** qui est en cause (viole R-CODE-2). ✅ Résolu — cf. `EPICS.md` EPIC 8.
-
 ---
 
 ## 6. Constantes partagées
 
 ```ts
 // src/utils/constants.ts
-export const POSTER_PLACEHOLDER: string;   // source UNIQUE (US-132/DEC-84) — 4 copies inline supprimées
+export const POSTER_PLACEHOLDER: string;   // source UNIQUE (DEC-84) — 4 copies inline supprimées
 ```
 
 ---
 
-## 7. Types locaux (NON dans le contrat — pour mémoire)
+## 7. Types locaux — NON contractuels
 
-Ces types sont **locaux à un fichier util** et NE doivent PAS être déplacés ici (ce sont des
-DTO de plomberie, pas des types métier) :
-- `RawAnime` (+ `RawNamed`, `RawListItem`, `RawImages`) → local non exporté dans `utils/normalize.ts`.
-- `MalImportEntry` → local non exporté dans `utils/malImport.ts`.
-- `MalImportResult` → **exporté** depuis `utils/malImport.ts` (pas un type métier partagé, reste près de sa fonction).
+Ces types sont locaux à un fichier util et **ne doivent pas** être déplacés ici : ce sont des
+DTO de plomberie, pas des types métier.
+
+| Type | Emplacement |
+|---|---|
+| `RawAnime`, `RawNamed`, `RawListItem`, `RawImages` | local non exporté, `utils/normalize.ts` |
+| `MalImportEntry` | local non exporté, `utils/malImport.ts` |
+| `MalImportResult` | **exporté** depuis `utils/malImport.ts` (reste près de sa fonction) — expose `imported`, pas `entries` |
 
 ---
 
-## 8. Signatures clés des composables (contrat d'API)
+## 8. Signatures des composables & stores
 
-> Les valeurs retournées exposées vers l'extérieur sont **`readonly`** ou des `computed`.
+> Les valeurs exposées vers l'extérieur sont **`readonly`** ou des `computed`.
 
 ```ts
 // useJikanApi
@@ -262,13 +266,12 @@ fetchAnimeRelations(malId: number): Promise<unknown[]>
 fetchAnimeRecommendations(malId: number): Promise<unknown[]>
 fetchAnimeRelationsWithMeta(malId: number): Promise<{ data: unknown[]; fromNetwork: boolean }>
 fetchAnimeRecommendationsWithMeta(malId: number): Promise<{ data: unknown[]; fromNetwork: boolean }>
-fetchCurrentSeason(): Promise<AnimeEntry[]>
+fetchCurrentSeason(): Promise<AnimeEntry[]>        // sert le cache PÉRIMÉ si le fetch échoue (DEC-114)
 fetchUpcomingSeason(): Promise<AnimeEntry[]>
-fetchTopFinishedAnime(): Promise<AnimeEntry[]>   // ⚠️ encore inline dans useRecommendations (extraction = US-165, ex-US-123)
 
 // usePersistence
-loadFromDatabase(): Promise<void>                // inclut migration clés aanime_* + réconciliation
-saveToDatabase(showFeedback?: boolean): Promise<void>   // ⚠️ saveSchedule sans try/catch → US-153 P0 (✅ résolu, cf. EPICS.md EPIC 8)
+loadFromDatabase(): Promise<void>                  // inclut migration des clés aanime_* + réconciliation
+saveToDatabase(showFeedback?: boolean): Promise<void>
 staleDataWarning: Readonly<Ref<boolean>>
 
 // useSync
@@ -280,18 +283,21 @@ isSyncing: Readonly<Ref<boolean>>
 fetchRecPool(type: RecContext, force?: boolean): Promise<AnimeEntry[]>
 getNextBatch(type: RecContext, size: number): AnimeEntry[]
 reScorePool(): void
+buildRelationMemory(): Promise<void>
 getBecauseYouWatchedBatch(type: RecContext): AnimeEntry[]
 getSlotFillSuggestions(list: AnimeEntry[]): Partial<Record<WeekDay, AnimeEntry>>
+getSeasonNudges(): AnimeEntry[]
+fetchTopFinishedAnime(): Promise<AnimeEntry[]>     // ⚠️ vit ICI, inline — PAS dans useJikanApi (extraction = US-165)
 
-// useEpisodeInfo (pur — wrappe utils/episodeInfo.ts)
+// useEpisodeInfo (wrappe utils/episodeInfo.ts)
 getAnimeEpisodeInfo(anime: AnimeEntry, targetDate?: Date): AnimeEpisodeInfo
-getCardStatus(anime: AnimeEntry): CardStatus     // ⚠️ ne gère pas 'Continuing' → US-154 P1
+getCardStatus(anime: AnimeEntry): CardStatus
 isOnHiatus(anime: AnimeEntry): boolean
 
 // stores/anime (actions)
-setData(data: AnimeEntry[]): void                // PAS de setAllData (confirmé audit s16)
+setData(data: AnimeEntry[]): void                  // PAS de setAllData
 clearAll(): void
-addAnime(input: Partial<AnimeEntry>): void       // upsert — reset episodeOverride à undefined (DEC-84)
+addAnime(input: Partial<AnimeEntry>): void         // upsert — reset episodeOverride à undefined (DEC-84)
 addAnimeSilent(input: Partial<AnimeEntry>): void
 removeAnime(id: number): void
 setDate(date: Date): void
@@ -307,9 +313,32 @@ toggleDarkMode(): void
 sendSignInLink(email: string): Promise<void>
 completeSignIn(): Promise<void>
 onAuthStateChanged(callback: (user: User | null) => void): Unsubscribe
-signOut(): Promise<void>                          // ── ajouté S33 (US-AUTH-LOGOUT) ── try/catch conforme R-CODE-5, testé (T7 succès / T8 erreur)
+signOut(): Promise<void>
+
+// useICS / useMalImport
+downloadICS(): void
+importMalFile(file: File): Promise<MalImportResult>
 ```
 
-> ⚠️ **Note signature `getAnimeEpisodeInfo`** : l'util porté (US-006a) impose `targetDate: Date`
-> **obligatoire**. `useEpisodeInfo` fournit `new Date()` au moment de l'appel pour exposer
-> un `targetDate?` optionnel.
+> **`getAnimeEpisodeInfo`** : l'util sous-jacent impose `targetDate: Date` **obligatoire**.
+> `useEpisodeInfo` fournit `new Date()` à l'appel pour exposer un `targetDate?` optionnel.
+
+---
+
+## 9. ⚠️ Lacunes assumées du contrat
+
+Ces éléments **existent dans le code** d'après la documentation du projet mais n'ont jamais
+été contractualisés ici. Ils sont listés pour éviter que Gemini n'invente un type en leur
+absence. **Aucun ne doit être utilisé dans une US avant d'avoir été relu dans le code et
+ajouté ci-dessus par une US « types ».**
+
+| Élément | Source documentaire | Ce qui manque |
+|---|---|---|
+| `AnimeEntry.synopsis?` | DEC-47 — « `synopsis?` ajouté à AnimeEntry » | Le champ **n'apparaît pas** dans l'interface §2. Type exact à confirmer |
+| `useStats` | DEC-88, EPIC 11 — `completedThisYear`, `topGenres` | Aucune signature contractualisée |
+| `useOnboarding` / `finishWithSeed` / `markOnboarded` | EPIC 9 (livré) | Aucune signature contractualisée |
+| `utils/onboardingFilter.ts` — `buildSeedEntry`, `selectOnboardingSuggestions` | EPIC 9, DEC-115 | `buildSeedEntry` retourne `{ ...anime, id, state }` et **ne pose jamais `day`**. Signature exacte à confirmer |
+| `getAnimeTitle` | DEC-94 — règle de titre centralisée (anglais primaire + rōmaji si différent) | Emplacement et signature à confirmer |
+
+> Cette section est un **filet, pas une dette permanente** : chaque ligne se ferme par une
+> lecture du code (R3) et une US « types ». Elle ne doit pas grossir sans être traitée.

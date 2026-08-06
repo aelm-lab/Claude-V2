@@ -1,15 +1,16 @@
-# ARCHITECTURE_TECHNIQUE.md — Vue technique du système Aanime (Vue 3)
+# ARCHITECTURE_TECHNIQUE.md — Vue technique du système Aanime
 
-> **Où mettre ce fichier :** dans la **Knowledge** du projet Claude Chat.
-> **Rôle :** décrire l'architecture **technique** réellement implémentée.
-> Le pendant fonctionnel est `ARCHITECTURE_FONCTIONNELLE.md` ; les deux se lisent ensemble.
+> **Où mettre ce fichier :** Knowledge du projet Claude Chat (`aelm-lab/Claude-V2`).
+> **Rôle :** décrire l'architecture **technique réellement implémentée** — couches, modules,
+> boot, réseau, registre des clés.
+> **Pendant fonctionnel :** `ARCHITECTURE_FONCTIONNELLE.md` — les deux se lisent ensemble.
 >
->> **État de référence : voir `STATE.md`** pour les compteurs à jour (tests/E2E/build).
-> EPIC-1 + EPIC P0 + EPIC-2 + EPIC-3 clos.
+> **Aucun compteur ici** (tests, E2E, taille de build) → `STATE.md`.
+> **Aucune dette ici** (backlog, bugs ouverts) → `STATE.md`.
 
 ---
 
-## 1. Stack & principe directeur
+## 1. Stack
 
 | Couche | Techno |
 |---|---|
@@ -17,115 +18,141 @@
 | Langage | TypeScript strict (zéro `any`) |
 | State global | Pinia (`stores/anime.ts`, `stores/ui.ts`) |
 | Routing | Vue Router 4 (11 routes, guards auth/guest) |
-| Réactivité utilitaire | `@vueuse/core` (useDark, useSwipe, useIntersectionObserver, watchDebounced, onClickOutside, onKeyStroke) |
+| Réactivité utilitaire | `@vueuse/core` — `useDark`, `useSwipe`, `useIntersectionObserver`, `watchDebounced`, `onClickOutside`, `onKeyStroke` |
 | Build | Vite 6 + `@vitejs/plugin-vue` |
 | Auth / DB | Firebase v12 (Auth email-link + Firestore) |
 | API externe | Jikan v4 (publique, sans clé) |
-| Cache | IndexedDB (relations, recommendations) + localStorage (**clés préfixées `aanime_`**, cf. §7) |
-| Styles | `style.css` global (variables CSS, dark mode `html.dark`) |
-| Tests | Vitest (**84**) + Playwright (**26 specs / 30 tests**) + CI GitHub Actions |
-
-**Principe directeur :** séparation stricte des responsabilités en couches, avec une
-règle de dépendance **descendante uniquement**.
+| Cache | IndexedDB (relations, recommandations) + localStorage (clés préfixées `aanime_`, cf. §7) |
+| Styles | `style.css` **global** (variables CSS, dark mode via `html.dark`) |
+| Tests / CI | Vitest + Playwright + GitHub Actions |
+| Déploiement | Cloud Run (europe-west2), continu |
 
 ---
 
-## 2. Les couches et la règle de dépendance
+## 2. Structure des dossiers
+
+```
+src/
+├── assets/
+├── components/
+│   ├── layout/      # AppLayout.vue, AuthLayout.vue
+│   ├── pages/       # 1 composant par route
+│   └── ui/          # Composants atomiques réutilisables (AppHeader.vue y compris)
+├── composables/     # useXxx.ts — logique réactive réutilisable
+├── stores/          # Stores Pinia
+├── utils/           # Fonctions PURES (zéro import Vue)
+├── router/          # index.ts
+├── types/           # Interfaces TypeScript partagées
+├── lib/             # firebase.ts (singleton)
+└── main.ts
+tests/e2e/           # Specs Playwright (cumulatives, exclues de Vitest)
+```
+
+> ⚠️ **`AppHeader.vue` vit dans `src/components/ui/`**, pas `src/components/` — un handoff
+> antérieur le supposait par erreur. **Toujours vérifier le chemin réel** (`findstr`) avant
+> de lister un fichier dans une US.
+
+---
+
+## 3. Les couches et la règle de dépendance
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  COMPOSANTS (.vue)   pages / layout / ui                     │  UI + réactivité locale
-│   ▼ peut importer                                            │
+│  COMPOSANTS (.vue)   pages / layout / ui                    │  UI + réactivité locale
+│   ▼ peut importer                                           │
 ├─────────────────────────────────────────────────────────────┤
-│  COMPOSABLES (useXxx.ts)   logique réutilisable réactive     │  orchestration, I/O, réseau
-│   ▼ peut importer                                            │
+│  COMPOSABLES (useXxx.ts)                                    │  orchestration, I/O, réseau
+│   ▼ peut importer                                           │
 ├─────────────────────────────────────────────────────────────┤
-│  STORES (Pinia)   état global partagé                        │  état pur, zéro I/O
-│   ▼ peut importer                                            │
+│  STORES (Pinia)                                             │  état pur, zéro I/O
+│   ▼ peut importer                                           │
 ├─────────────────────────────────────────────────────────────┤
-│  UTILS (.ts purs)   fonctions sans Vue, sans I/O             │  calculs purs, testables
-│   ▼ peut importer                                            │
+│  UTILS (.ts purs)                                           │  calculs purs, testables
+│   ▼ peut importer                                           │
 ├─────────────────────────────────────────────────────────────┤
-│  TYPES (.ts)   interfaces partagées                          │  contrat, zéro logique
+│  TYPES (.ts)                                                │  contrat, zéro logique
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Règles non-négociables (rappel CLAUDE.md §6) :**
-- Un composant `.vue` ne fait **jamais** de `fetch`, ni d'accès `localStorage`/IndexedDB, ni de logique métier lourde.
-- Un composable n'expose vers l'extérieur que des `readonly ref` / `computed`.
-- Le store Pinia ne fait **aucun I/O** (la persistance est un `watch` externe dans `usePersistence`).
-- Les utils n'importent **jamais** Vue.
-- Zéro manipulation DOM directe (sauf exceptions documentées : download Blob `useICS`, `<input file>.click()` import MAL, `DOMParser`, `getElementById('boot-loader').remove()` dans `App.vue` — DEC-72).
+**Dépendance descendante uniquement.** Les règles opposables à Gemini (R-CODE-3 à R-CODE-8)
+vivent dans `AGENTS.md` ; ce document décrit la structure, il ne la duplique pas en règles.
 
-> ⚠️ **Violations relevées par le dual audit s16** (à corriger, EPIC-5-tech) :
-> `usePersistence` mute directement `store.animeCalendarData` et `store.suppressPersist`
-> hors action Pinia, et porte de la logique métier + des toasts (couplage). → US-157 (P1).
+Deux conséquences structurantes souvent oubliées :
+- **Le store ne fait aucun I/O.** La persistance est un `watch` externe, dans `usePersistence`.
+- **Aucun `<style scoped>` dans les composants.** Tous les styles vivent dans `style.css`.
+  Une classe définie en `<style scoped>` est invisible depuis les autres composants — cause
+  racine réelle du bug de grille `.recs-grid` (DEC-111).
 
 ---
 
-## 3. Carte des modules par couche
+## 4. Carte des modules
 
-### 3.1 Types (`src/types/`)
+### 4.1 Types (`src/types/`)
+
 | Fichier | Contenu |
 |---|---|
 | `anime.ts` | `AnimeEntry`, `AnimeState`, `AnimeStatus`, `WeekDay`, `CardStatus`, `AnimeEpisodeInfo`, `JstParseResult`, `RecencyBucket` |
 | `recs.ts` | `TasteProfile`, `RecBadge`, `RecSignal`, `RecPreset`, `RecContext`, `HistoryItem`, `RecAction` |
 | `persistence.ts` | `ScheduleDocument`, `IdbStoreName` |
 
-> Règle absolue : aucun type n'est inventé ailleurs. Tout vient de `TYPES_CONTRACT.md`.
-> Confirmé s16 : pas de `syncStatus` dans `AnimeEntry`.
+> Aucun type n'est défini ailleurs. Tout vient de `TYPES_CONTRACT.md`.
 
-### 3.2 Utils purs (`src/utils/`) — zéro Vue, 100 % testés
-| Fichier | Exports clés | Tests |
+### 4.2 Utils purs (`src/utils/`) — zéro Vue
+
+| Fichier | Exports clés |
+|---|---|
+| `jst.ts` | `parseJSTToLocal` (ancre 1970, JST → local) |
+| `normalize.ts` | `normalizeAnime` — forme canonique, produit **toujours** `studios: string[]` (DEC-86), **ne produit jamais `day` ni `airsTime`** (DEC-115) |
+| `episodeInfo.ts` | `getAnimeEpisodeInfo`, `getCardStatus`, `isOnHiatus` (**seuil hiatus 14 j — source unique**) |
+| `helpers.ts` | `fetchWithRetry` (backoff 429), `getWeekNumber`, `escapeHTML`, `dedupeByMalId`, `BASE_URL` |
+| `recEngine.ts` | `buildTasteProfile`, `scorePool`, `assignBadge`, `extractBecauseYouWatched`, `buildNextBatch`, `applyPreset`, `RelationMemory` |
+| `ics.ts` | `buildICSContent` (génération de texte pure) |
+| `malImport.ts` | `parseMalXml` (DOMParser, pur) |
+| `idb.ts` | `idbGet`, `idbSet` (wrapper IndexedDB, import statique) |
+| `constants.ts` | `POSTER_PLACEHOLDER` (source unique, DEC-84) |
+| `onboardingFilter.ts` | `buildSeedEntry`, `selectOnboardingSuggestions` (limite 8) — voir §9 |
+
+### 4.3 Stores Pinia (`src/stores/`)
+
+| Store | Responsabilité | I/O |
 |---|---|---|
-| `jst.ts` | `parseJSTToLocal` (ancre 1970, JST→local) | ✅ |
-| `normalize.ts` | `normalizeAnime` (forme canonique, **produit toujours `studios: string[]`** — DEC-86) | ✅ |
-| `episodeInfo.ts` | `getAnimeEpisodeInfo`, `getCardStatus`, `isOnHiatus` (**seuil hiatus 14j — source unique**) | ✅ ⚠️ `getCardStatus` ne gère pas `'Continuing'` → US-154 |
-| `helpers.ts` | `fetchWithRetry` (backoff 429), `getWeekNumber`, `escapeHTML`, `dedupeByMalId`, `BASE_URL` | ✅ |
-| `recEngine.ts` | `buildTasteProfile`, `scorePool`, `assignBadge`, `extractBecauseYouWatched`, `buildNextBatch`, `applyPreset`, `RelationMemory` | ✅ |
-| `ics.ts` | `buildICSContent` (génération texte pure) | ✅ |
-| `malImport.ts` | `parseMalXml` (DOMParser, pur) | ✅ |
-| `idb.ts` | `idbGet`, `idbSet` (wrapper IndexedDB, import statique) | — |
-| `constants.ts` | `POSTER_PLACEHOLDER` (**source unique** — US-132/DEC-84) | — |
+| `anime.ts` | `animeCalendarData[]`, `currentDate`, `currentView` + actions `addAnime` (upsert), `addAnimeSilent`, `removeAnime`, `setDate`, `setData`, `clearAll`. Transitions de state, auto-vault | **Aucun** |
+| `ui.ts` | État des overlays : modal ouvert + contexte, sheet recency, panneau ep-override | Aucun |
 
-### 3.3 Stores Pinia (`src/stores/`)
-| Store | Responsabilité | I/O ? |
+### 4.4 Composables (`src/composables/`)
+
+| Composable | Rôle | Réseau |
 |---|---|---|
-| `anime.ts` | `animeCalendarData[]`, `currentDate`, `currentView` + actions `addAnime` (upsert, reset `episodeOverride` — DEC-84), `addAnimeSilent`, `removeAnime`, `setDate`, **`setData`**, `clearAll`. Transitions de state, auto-vault. | **Aucun** (pur) |
-| `ui.ts` | État des overlays : modal ouvert + contexte, sheet recency, panneau ep-override. | Aucun |
+| `useFirebaseAuth.ts` | Auth email-link, `signOut`, `onAuthStateChanged` **au niveau module** (sinon listeners empilés) | — |
+| `useFirestore.ts` | `schedules/{uid}` brut + `handleFirestoreError` (`loadSchedule`, `saveSchedule`) | — |
+| `usePersistence.ts` | `loadFromDatabase` (migration des clés + réconciliation), `saveToDatabase`, `watchDebounced`, `staleDataWarning`, fallback localStorage | — |
+| `useJikanApi.ts` | `searchAnime`, `fetchAnimeById`, `fetchCurrentSeason`, `fetchUpcomingSeason`, `fetchAnimeRelations(WithMeta)`, `fetchAnimeRecommendations(WithMeta)`, `readLocalCache`/`writeLocalCache` | Jikan |
+| `useSync.ts` | `syncAnimeUpdates` (batch 2 / 2 s), `startBackgroundRelationFetch` (throttle conditionnel), `isSyncing`, `clearSyncTimestamp` | Jikan |
+| `useRecommendations.ts` | `fetchRecPool`, `getNextBatch`, `reScorePool`, `buildRelationMemory`, `getBecauseYouWatchedBatch`, `getSlotFillSuggestions`, `getSeasonNudges`, `saveRec`, `saveAsCompleted`, `fetchTopFinishedAnime` (encore inline) | Jikan (cache) |
+| `useEpisodeInfo.ts` | Wrappe `utils/episodeInfo` | — |
+| `useStats.ts` | Agrégation « Mon année anime » — `topGenres` **scoped `completedThisYear`** (DEC-89), garde `genres ?? []` contre le cache legacy | — |
+| `useICS.ts` | `downloadICS` (Blob + iOS) | — |
+| `useMalImport.ts` | `parseMalXml` + `importMalFile` (FileReader, `addAnimeSilent`) | — |
+| `useToast.ts` | `showToast`, `hideToast` | — |
+| `useTheme.ts` | `useDark()` → classe `dark` sur `<html>`, `toggleDarkMode`, `isDark` | — |
 
-> Confirmé s16 : l'action de remplacement de tableau est **`setData`** (+ `clearAll`).
-> Il n'existe **pas** de `setAllData`.
+> **Singleton Firebase :** `src/lib/firebase.ts` initialise `initializeApp` / `getAuth` /
+> `getFirestore` **une seule fois**. Les composables consomment ce singleton, jamais de
+> réinitialisation. Un guard Vue Router n'appelle jamais `useFirebaseAuth()` (hors contexte
+> `setup`) : il utilise le singleton `auth` + `await auth.authStateReady()`.
 
-### 3.4 Composables services (`src/composables/`)
-| Composable | Rôle | Réseau | Auth |
-|---|---|---|---|
-| `useFirebaseAuth.ts` | Auth email-link, `onAuthStateChanged` (niveau module) | — | initie |
-| `useFirestore.ts` | `schedules/{uid}` brut + `handleFirestoreError` (`loadSchedule`, `saveSchedule`) | — | oui |
-| `usePersistence.ts` | `loadFromDatabase` (+ migration clés `aanime_*` + réconciliation), `saveToDatabase`, `watchDebounced`, `staleDataWarning`, fallback localStorage | — | dégrade |
-| `useJikanApi.ts` | `searchAnime`, `fetchAnimeById`, `fetchCurrentSeason`, `fetchUpcomingSeason`, `fetchAnimeRelations(WithMeta)`, `fetchAnimeRecommendations(WithMeta)` | Jikan | non |
-| `useSync.ts` | `syncAnimeUpdates` (batch 2/2s), `startBackgroundRelationFetch` (throttle conditionnel réseau), `isSyncing`, `clearSyncTimestamp` | Jikan | non |
-| `useRecommendations.ts` | `fetchRecPool`, `getNextBatch`, `reScorePool`, `buildRelationMemory`, `getBecauseYouWatchedBatch`, `getSlotFillSuggestions`, `getSeasonNudges`, `saveRec`, `saveAsCompleted` ; `fetchTopFinishedAnime` encore inline (extraction = US-165) | Jikan (cache) | non |
-| `useEpisodeInfo.ts` | wrappe `utils/episodeInfo` : `getEpisodeInfo`, `getStatus`, `checkIsOnHiatus` | — | non |
-| `useICS.ts` | `downloadICS` (Blob + iOS) | — | non |
-| `useMalImport.ts` | `parseMalXml` + `importMalFile` (FileReader, `addAnimeSilent`) | — | non |
-| `useToast.ts` | `showToast`, `hideToast` | — | non |
-| `useTheme.ts` | `useDark()` → classe `dark` sur `<html>`, `toggleDarkMode`, `isDark` | — | non |
+### 4.5 Composants (`src/components/`)
 
-> **Singleton Firebase :** `src/lib/firebase.ts` initialise `initializeApp`/`getAuth`/`getFirestore`
-> une seule fois. Les composables consomment ce singleton (jamais de réinit).
-> ⚠️ **Audit s16 — couverture de tests** : aucun de ces composables n'a de `.spec` adjacent
-> (`usePersistence`/`firebase`/`router`/`store`/`utils` ont des specs ; pas `useRecommendations`,
-> `useSync`, `useJikanApi`, `useFirebaseAuth`, `useMalImport`, `useEpisodeInfo`, etc.). → US-156 (P1).
-
-### 3.5 Composants (`src/components/`)
-- **layout/** : `AppLayout.vue` (header + navs + `<KeepAlive><router-view>`), `AuthLayout.vue`.
-- **pages/** : 1 par route (10 pages + 1 stub `CalendarListPage`).
-- **ui/** : ~30 composants atomiques réutilisables (cards, navs, modals, sheets, toast…).
+- **layout/** : `AppLayout.vue` (header + navs + `<KeepAlive><router-view>`), `AuthLayout.vue`
+- **pages/** : 1 par route, dont `CalendarWeekPage`, `CalendarMonthPage`, `DiscoverExplorePage`,
+  `DiscoverSeasonPage`, `DiscoverComingUpPage`, `LibraryExplorePage`, `LibraryPlanToWatchPage`,
+  `LibraryCompletedPage`, `LoginPage`, `StatsPage`, `OnboardingPage`, + stub `CalendarListPage`
+- **ui/** : composants atomiques (cards, navs, modals, sheets, toast). Trois modales partagent
+  la classe `.modal-backdrop` : `AnimeModal`, `LogoutConfirmModal`, `RecEngineModal`
 
 ---
 
-## 4. Graphe de dépendances réel (boot & flux principal)
+## 5. Graphe de dépendances (boot & flux principal)
 
 ```
 main.ts
@@ -145,112 +172,120 @@ AppLayout.vue
 
 ---
 
-## 5. Séquence de boot (orchestration `App.vue`)
+## 6. Séquence de boot
 
-Cœur corrigé par **US-102 (P0)** et **DEC-49/50**. Ordre **strict** :
+**Ordre d'orchestration contractuel (DEC-50), couvert par `src/App.spec.ts` :**
 
-```ts
-onMounted(async () => {
-  try {
-    await loadFromDatabase()          // 1. Firestore → store (+ migration aanime_*, réconciliation, fallback localStorage)
-    await syncAnimeUpdates()          // 2. sync Jikan (batch 2/2s) — AWAIT (le rescore en dépend)
-    await buildRelationMemory()       // 3. reconstruit le graphe de relations (IDB)
-    reScorePool()                     // 4. re-score les pools de recommandations
-    startBackgroundRelationFetch()    // 5. worker de fond — FIRE-AND-FORGET (throttlé)
-  } catch (e) {
-    console.error('[App] boot error', e)
-  } finally {
-    isBooting.value = false           // libère LoadingOverlay
-    document.getElementById('boot-loader')?.remove()   // loader pré-Vue (DEC-72)
-  }
-})
+```
+1. loadFromDatabase()          // Firestore → store (+ migration aanime_*, réconciliation, fallback localStorage)
+2. syncAnimeUpdates()          // sync Jikan (batch 2 / 2 s) — le rescore en dépend
+3. buildRelationMemory()       // graphe de relations depuis IDB
+4. reScorePool()               // re-score des pools de recommandations
+5. startBackgroundRelationFetch()   // worker de fond — FIRE-AND-FORGET (throttlé)
+
+finally:
+   isBooting.value = false                            // libère LoadingOverlay
+   document.getElementById('boot-loader')?.remove()   // loader pré-Vue (DEC-72)
 ```
 
-> **Filet de régression :** `src/App.spec.ts` (smoke test, US-109) monte App et asserte
-> que les 5 fonctions d'orchestration sont appelées. Ne pas casser cet ensemble.
->
-> ⚠️ **Finding audit s16 (US-155, P1) — boot bloquant.** L'`await syncAnimeUpdates()`
-> (batchs réseau throttlés 2 s) retarde `isBooting=false` → l'overlay plein écran reste
-> affiché pendant toute la sync, proportionnellement à la taille de la liste. *Impact user :
-> spinner de plusieurs secondes au démarrage.* Piste : lever l'overlay après le load local,
-> garder la sync en arrière-plan. À spécifier avec un E2E R4 (overlay disparaît avant fin de sync).
+**Deux écrans de chargement distincts, pour deux fenêtres distinctes :**
+- **`#boot-loader`** — HTML/CSS statique inline dans `index.html`, **hors de `<div id="app">`**.
+  Couvre la fenêtre pré-mount (bundle pas encore parsé, aucun composant Vue ne peut s'afficher).
+  Supprimé par `.remove()` dans le `finally` — exception R-CODE-4 documentée. Il est
+  `position: fixed` et **intercepte tous les pointer events** tant qu'il est là.
+- **`<LoadingOverlay>`** — composant Vue monté **au niveau racine d'`App.vue`**, hors de la
+  gate `v-if="route.meta.requiresAuth"`. Ce placement est la correction de DEC-59 : le bug
+  n'était pas une injection ratée mais un **placement** sous gate auth.
+
+**Architecture 2 phases (US-155) :** le paint est immédiat depuis le cache localStorage
+(phase 1), la réconciliation Firestore se fait en fond par comparaison de timestamps
+(phase 2), ce qui a supprimé l'écran blanc d'environ 6 s au démarrage.
+
+> ⚠️ **À confirmer par lecture du code (R3) avant toute US touchant le boot :** l'articulation
+> exacte entre l'ordre DEC-50 ci-dessus et l'architecture 2 phases n'a jamais été
+> re-documentée après US-155. La question précise : `isBooting` est-il libéré après l'étape 1
+> ou après l'étape 2 ? Ne pas spécifier de correctif sur le boot sans avoir tranché.
 
 ---
 
-## 6. Flux de données & réactivité (remplacement du bus DOM vanilla)
-
-| Ancien événement DOM | Remplacement Vue |
-|---|---|
-| `store:changed` → save | `watchDebounced(animeCalendarData, saveToDatabase, {deep, 1000ms})` dans `usePersistence` |
-| `ui:refresh` | réactivité Pinia native |
-| `anime:add` / `anime:added` | actions du store + appel direct composable |
-| `recs:heart` / `recs:remove` | `emit` composant → handler page → `useRecommendations` |
-| `nav:next` / `nav:prev` | `useSwipe` (@vueuse) → `store.setDate` |
-
-**Persistance :** `usePersistence` porte le `watchDebounced` (flag module `watchInitialized`).
-Le store reste sans I/O (DEC-26). `suppressPersist` permet les mutations silencieuses (import MAL).
-
----
-
-## 7. Couche réseau (Jikan), cache & registre des clés localStorage
+## 7. Réseau, cache & registre des clés
 
 | Aspect | Implémentation |
 |---|---|
-| Retry / 429 | `fetchWithRetry` (helpers) — 3 tentatives, backoff exponentiel |
+| Retry / 429 | `fetchWithRetry` — 3 tentatives, backoff exponentiel |
 | Batch sync | `useSync` : batch de 2, intervalle 2 s |
-| Throttle worker | 1,1 s par requête, **uniquement si `fromNetwork === true`** (US-106, pattern `*WithMeta`) |
-| Cache relations | IndexedDB, persistant — ⚠️ **sans expiration** (finding audit s16, P2 : relations périmées indéfiniment) |
+| Throttle worker | 1,1 s par requête, **uniquement si `fromNetwork === true`** (pattern `*WithMeta`, DEC-51) |
+| Cache relations | IndexedDB, persistant — **sans expiration** |
 | Cache recommandations | IndexedDB, TTL 7 j |
-| Cache saisons | localStorage, TTL 24 h (`aanime_seasons_now`, `aanime_seasons_upcoming`) |
-| Timestamps sync | localStorage `aanime_sync_ts`, TTL 6 h |
+| Cache saisons | localStorage, TTL 24 h. **Le cache périmé est servi si le fetch échoue** ; `error.value` est renseigné mais jamais affiché (DEC-114) |
+| Timestamps de sync | localStorage `aanime_sync_ts`, TTL 6 h |
 
-### Registre des clés localStorage (toutes préfixées `aanime_` — US-133/DEC-85)
+### Registre des clés localStorage
 
-| Clé actuelle | Ancienne clé (migrée au boot) | Usage |
+Toutes préfixées `aanime_` (DEC-85), avec migration transparente au boot : lecture de
+l'ancienne clé si la nouvelle est absente, réécriture sous le préfixe, suppression de
+l'ancienne. Migration portée par `usePersistence.loadFromDatabase`.
+
+| Clé actuelle | Ancienne clé (migrée) | Usage |
 |---|---|---|
 | `aanime_calendar` | `animeCalendar` | Document de planning (cache local du store) |
-| `aanime_sync_ts` | `anime_sync_ts_v1` | Timestamp dernière sync Jikan |
+| `aanime_sync_ts` | `anime_sync_ts_v1` | Timestamp de dernière sync Jikan |
 | `aanime_negative_removed_ids` | `negative_removed_ids` | IDs « pas intéressé » |
 | `aanime_email_for_signin` | `emailForSignIn` | Email magic-link |
 | `aanime_recs_incoming` | `recs_incoming_v3` | Cache recos Discover |
 | `aanime_recs_library` | `recs_library_v2` | Cache recos Library |
-| `aanime_season_nudges` | `season_nudges_v1` | Nudges séquelles |
+| `aanime_season_nudges` | `season_nudges_v1` | Nudges de séquelles |
 | `aanime_season_nudge_dismissed` | `season_nudge_dismissed_v1` | Nudges écartés |
 | `aanime_seasons_now` | `seasons_now_v1` | Cache saison en cours |
 | `aanime_seasons_upcoming` | `seasons_upcoming_v1` | Cache saison à venir |
 
-> Migration transparente dans `usePersistence.loadFromDatabase` : lecture de l'ancienne clé
-> si la nouvelle est absente, ré-écriture sous le préfixe `aanime_`, suppression de l'ancienne.
-> **TTL généralisé sur le cache `aanime_*`** = idée reportée au **Vault fonctionnalités** (ROADMAP).
+> 🔴 **Changer une clé = une US dédiée, avec migration.** Jamais au fil d'une autre US.
 
 ---
 
-## 8. Pipeline du moteur de recommandations
+## 8. Flux de données & réactivité
+
+Le bus DOM du vanilla a été intégralement remplacé :
+
+| Ancien événement DOM | Remplacement Vue |
+|---|---|
+| `store:changed` → save | `watchDebounced(animeCalendarData, saveToDatabase, { deep, 1000 })` dans `usePersistence` |
+| `ui:refresh` | réactivité Pinia native |
+| `anime:add` / `anime:added` | actions du store + appel direct du composable |
+| `recs:heart` / `recs:remove` | `emit` composant → handler page → `useRecommendations` |
+| `nav:next` / `nav:prev` | `useSwipe` (@vueuse) → `store.setDate` |
+
+`usePersistence` porte le `watchDebounced` derrière un flag de module (`watchInitialized`) —
+sans ce flag, les listeners s'empilent. `suppressPersist` permet les mutations silencieuses
+(import MyAnimeList).
+
+---
+
+## 9. Pipeline du moteur de recommandations
 
 ```
 1. fetchRecPool(context)        → pools bruts (saison upcoming / top finished)
 2. buildTasteProfile(history)   → profil de goûts (genres, thèmes, studios, négatifs)
-3. buildRelationMemory()        → graphe relations depuis IDB (séquelles/préquelles)
+3. buildRelationMemory()        → graphe de relations depuis IDB (séquelles / préquelles)
 4. scorePool(pool, profile)     → _relevanceScore par item
 5. applyPreset(preset)          → _presetScore (chips : Hidden gems, Trending…)
-6. getNextBatch(context, size)  → batch paginé (dédup via dedupeByMalId AVANT slice — DEC-74)
+6. getNextBatch(context, size)  → batch paginé — dédup via dedupeByMalId AVANT le slice (DEC-74)
 7. extractBecauseYouWatched()   → section « parce que vous avez vu X »
-8. getSlotFillSuggestions(list) → suggestions de remplissage des jours vides (semaine)
+8. getSlotFillSuggestions(list) → remplissage des jours vides de la semaine
 ```
 
-> ✅ **Dette P8-01 RÉSOLUE (US-134/DEC-86).** `scorePool` lit `item.studios` ; `normalizeAnime`
-> produit désormais toujours `studios: string[]` → dimension studio du scoring **active**.
+**Onboarding (`utils/onboardingFilter.ts`)** : `selectOnboardingSuggestions` produit
+**8 suggestions** scorées sur les genres choisis ; `buildSeedEntry` retourne
+`{ ...anime, id, state }` — **il ne pose jamais `day`** (DEC-115), ce qui est la piste
+principale du défaut d'atterrissage sur le calendrier.
 
 ---
 
-## 9. Qualité, CI & dette technique ouverte
+## 10. Qualité & CI
 
-**Filet (US-109) :** `ci.yml` (`npm ci` → `vue-tsc --noEmit` → `vitest run` → `build`) + `src/App.spec.ts`.
+`ci.yml` rejoue à chaque push : `npm ci` → `vue-tsc --noEmit` → `vitest run` → `build`.
+Filet de régression du boot : `src/App.spec.ts` (smoke test) monte `App` et asserte que les
+5 fonctions d'orchestration sont appelées. **Ne pas casser cet ensemble.**
 
-**Règles process gravées (R1–R6) :** voir `AGENTS.md` + `CLAUDE.md §7`.
-
-**Dette technique ouverte (détail `ROADMAP.md` / `BACKLOG.md`) :**
-- **Findings dual audit s16** (P0/P1) : `saveToDatabase` sans try/catch (US-153, **P0**) · `getCardStatus` `Continuing→Finished` (US-154) · boot bloquant (US-155) · zéro test unit composables (US-156) · persistance mute le store hors action (US-157) · cast legacy non normalisé (US-158).
-- **Fichiers parasites racine** : `diff.cjs`, `replace.js`, `size.cjs`, `find_usages.cjs`, `sme.json`, `e2e_out.txt`, `test_out.txt`, `test_output.txt`, `test_pid.txt` → US-159-CLEANUP (R-SCOPE-1).
-- **Dette CSS F18–F24** → US CSS groupée.
-- ✅ **Résolu s15** : `onHiatus?` supprimé du type (US-132) ; `POSTER_PLACEHOLDER` source unique (US-132) ; clés `aanime_*` (US-133) ; studios (US-134).
+Les compteurs, l'état de la suite E2E et la dette technique ouverte vivent dans `STATE.md`.
+Les règles de test opposables à Gemini vivent dans `AGENTS.md`.
