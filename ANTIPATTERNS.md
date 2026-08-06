@@ -1,410 +1,228 @@
-# ANTIPATTERNS.md — Liste vivante des pièges Gemini
+# ANTIPATTERNS.md — Pièges récurrents du projet
 
-> **Où mettre ce fichier :** dans la **Knowledge** du projet Claude Chat.
-> **Rôle :** mémoire des erreurs récurrentes. Claude réinjecte la liste dans
-> chaque nouvelle US. À chaque review qui révèle une récidive, Claude ajoute une ligne.
-
----
-
-## Anti-patterns architecturaux (issus de l'audit + tentative ratée)
-
-### Architecture
-- ❌ Mettre de la logique métier ou un `fetch` dans un composant `.vue` → composable.
-- ❌ Accéder au DOM directement (`document.getElementById`, `querySelector`, `appendChild`) dans du code Vue → `ref` / `v-if` / `v-for`.
-  - *Nuance validée : `DOMParser` + `querySelector` pour parser une string XML (parseMalXml) est pur et autorisé.*
-  - *Nuance validée : `document.createElement('a')` + `click()` uniquement pour le download Blob dans `useICS` est l'exception acceptée.*
-- ❌ Stocker des handlers ou de l'état sur `window` → `onMounted`/`onUnmounted` + `@vueuse/core`.
-- ❌ Recréer un bus d'événements avec `document.dispatchEvent`/`CustomEvent` → store Pinia ou `emit`.
-- ❌ Manipuler `document.body.classList` / injecter un bandeau dans le `<body>` → état réactif + composant.
-- ❌ Mettre `initializeApp`/`getAuth` dans un composable → réinit. Singleton dans `lib/firebase.ts`.
-- ❌ Brancher `onAuthStateChanged` dans la fonction `useXxx()` → listeners empilés. Au niveau module.
-- ❌ Brancher `watchDebounced` dans le corps du composable sans flag → listeners empilés. Flag niveau module.
-- ❌ Appeler `useFirebaseAuth()` dans un guard Vue Router → hors contexte `setup`. Singleton `auth` + `await auth.authStateReady()`.
-- ❌ Lire `auth.currentUser` avant `await auth.authStateReady()` → `null` pendant l'init.
-- ❌ Importer un composant `.vue` de page/layout inexistant dans le router → `TS2307`. Placeholders inline jusqu'à Phase 5.
-
-### TypeScript
-- ❌ `any` (implicite ou explicite), `as any`, `@ts-ignore` → typer depuis TYPES_CONTRACT.md.
-- ❌ Inventer une interface qui existe déjà dans TYPES_CONTRACT.md.
-- ❌ Champs optionnels traités comme garantis (oublier `?.` ou les `null`).
-- ❌ Fixtures de test via `as unknown as AnimeEntry` → factory `makeAnime(Partial<AnimeEntry>)`.
-- ❌ `inject(key)` sans fallback quand la clé est typée → `inject(isBootingKey, ref(false))`.
-- ❌ Export nommé depuis `<script setup>` → impossible. Double bloc `<script>` + `<script setup>` (DEC-27).
-
-### Gestion d'erreur
-- ❌ `async` sans `try/catch`.
-- ❌ Avaler une erreur en silence (`catch {}`) sans log ni état.
-- ❌ Oublier la gestion du 429 (rate limit Jikan) et du retry/backoff.
-- ❌ Laisser remonter le `throw` de `handleFirestoreError` → attraper localement, exposer `error` réactif.
-
-### Composants
-- ❌ `new Image()` pour le lazy-load → `<img style="display:none" @load @error>`.
-- ❌ `imgState` initialisé à `'loaded'` quand `cover_url` est null → toujours `'loading'`, `card-fallback-bg` si `!cover_url`.
-- ❌ `setTimeout` pour les animations de dismiss → `<Transition @after-leave>`.
-- ❌ Écrire `localStorage` dans un composant UI → composable/parent.
-- ❌ `router.push` au lieu de `router.replace` après auth.
-- ❌ `<form @submit.prevent>` → `@click` sur le bouton.
-- ❌ `v-html` inconditionnel → derrière `v-if="isHtml"` (XSS).
-
-### Périmètre & process
-- ❌ Toucher des fichiers non listés dans l'US.
-- ❌ Livrer plus de fichiers que prévu **sans l'annoncer** (le dépassement est autorisé session 8 SI annoncé en gras + dans le titre).
-- ❌ « Améliorer » au passage du code hors scope.
-- ❌ Réécrire un fichier entier quand une correction ciblée suffisait.
-
-### Fidélité fonctionnelle
-- ❌ Simplifier une règle métier subtile (calcul épisode, transitions de state, JST).
-- ❌ Changer les clés localStorage/Firestore sans US dédiée.
-- ❌ Scorer ou filtrer dans `fetchUpcomingSeason` → appartient à useRecommendations.
-- ❌ Appeler `normalizeAnime` dans `syncAnimeUpdates`.
+> **Où mettre ce fichier :** Knowledge du projet Claude Chat (`aelm-lab/Claude-V2`).
+> **Rôle :** la mémoire des erreurs qui se sont **répétées**. Claude en réinjecte les entrées
+> pertinentes dans la section « Anti-patterns à éviter » de chaque US.
+>
+> **Règle d'entrée : un piège s'écrit à la 2ᵉ occurrence, jamais à la 1ʳᵉ.** Une erreur unique
+> vit dans le handoff, pas ici. Sans ce filtre, ce document redevient un journal de session.
+>
+> **Organisé par thème, jamais par session.** Un classement chronologique produit des extraits
+> qui se contredisent d'une section à l'autre — c'est ce qui est arrivé à la version
+> précédente de ce fichier.
+>
+> **Ce qui n'est PAS ici :** les règles opposables (→ `AGENTS.md`), les récidives
+> comportementales de Gemini (→ `AGENTS.md §9`, le seul fichier qu'il lit), la dette ouverte
+> (→ `STATE.md`).
 
 ---
 
-## Anti-patterns d'orchestration runtime (audit post-migration, session 6)
+## 1. Architecture & couches
 
-> Ces 4 bugs ont passé `vue-tsc` + tous les tests + le build **au vert**. D'où R1/R2/R3.
+- ❌ **Logique métier ou `fetch` dans un composant `.vue`** → composable.
+- ❌ **Accès DOM direct** (`getElementById`, `querySelector`, `appendChild`) dans du code Vue
+  → `ref` / `v-if` / `v-for`.
+  *Nuances validées :* `DOMParser` + `querySelector` sur une string XML est pur et autorisé ;
+  `createElement('a')` + `.click()` pour un download Blob aussi ; `getElementById('boot-loader').remove()`
+  agit sur un élément d'`index.html`, hors scope Vue — légitime.
+- ❌ **Recréer un bus d'événements** avec `dispatchEvent` / `CustomEvent` → store Pinia ou `emit`.
+- ❌ **État ou handler sur `window`** → `onMounted` / `onUnmounted` + `@vueuse/core`.
+- ❌ **Manipuler `document.body.classList`** ou injecter un bandeau dans le `<body>` → état
+  réactif + composant.
+- ❌ **`initializeApp` / `getAuth` dans un composable** → réinitialisation. Singleton dans
+  `lib/firebase.ts`.
+- ❌ **`onAuthStateChanged` branché dans le corps de `useXxx()`** → listeners empilés à chaque
+  appel. Le brancher **au niveau module**.
+- ❌ **`watchDebounced` branché sans flag de module** → même symptôme, listeners empilés.
+- ❌ **`useFirebaseAuth()` appelé dans un guard Vue Router** → hors contexte `setup`. Utiliser
+  le singleton `auth` + `await auth.authStateReady()` ; ne jamais lire `auth.currentUser`
+  avant ce `await` (il est `null` pendant l'init).
+- ❌ **Couche de persistance qui mute le store hors action et porte des toasts.** Casse la
+  séparation et la testabilité.
+- ❌ **Dupliquer une règle métier à deux endroits avec deux seuils.** Le hiatus a vécu avec
+  14 j d'un côté et 21 j de l'autre → une seule source computed.
+- ❌ **Écrire un champ que personne ne lit.** Code mort : supprimer.
 
-- ❌ **Stub no-op câblé à vide en croyant que l'orchestration est faite ailleurs.** → grep le nom de la VRAIE fonction. [US-102]
-- ❌ **Throttle/sleep inconditionnel après un appel qui peut taper le cache.** → conditionner à `fromNetwork`. [US-106]
-- ❌ **Dupliquer une règle métier à deux endroits avec deux seuils.** → une seule source de vérité computed. [US-107]
-- ❌ **Écrire un champ que personne ne lit.** → code mort, supprimer. [US-107]
-- ❌ **Valider une migration sur le seul tooling vert.** → R3 : un audit lit le CODE. [audit croisé]
-- ❌ **Livrer une US d'orchestration sans test runtime.** → R2 : smoke/unit test. [US-109]
+## 2. TypeScript & contrat
+
+- ❌ **`any`, `as any`, `@ts-ignore`** → typer depuis `TYPES_CONTRACT.md`.
+  `eslint-disable-next-line` **ne silencie pas** TypeScript : `TS6133` se corrige en retirant
+  la variable ou en la préfixant `_`.
+- ❌ **Inventer une interface qui existe déjà** dans le contrat.
+- ❌ **Fixtures via `as unknown as T`** → factory `makeAnime(Partial<AnimeEntry>)`.
+- ❌ **Cast brut sans normalisation sur un chemin de chargement**
+  (`setData(loadedData as unknown as AnimeEntry[])`) : un cache local corrompu produit des
+  cartes incomplètes ou un écran blanc. Garde runtime + normalisation obligatoires.
+- ❌ **Membre d'union jamais mappé dans un `switch` ou une chaîne de `if`.** `getCardStatus`
+  ne gérait pas `'Continuing'` (pourtant dans l'union, injecté par la persistance) → un show
+  en cours s'affichait « Finished ». **Quand une union gagne une valeur, grep tous ses
+  consommateurs.**
+- ❌ **Champ optionnel traité comme garanti** (oublier `?.` ou le cas `null`).
+- ❌ **Export nommé depuis `<script setup>`** — impossible. Double bloc `<script>` + `<script setup>`.
+- ❌ **`inject(key)` sans fallback** quand la clé est typée → `inject(isBootingKey, ref(false))`.
+
+## 3. Gestion d'erreur
+
+- ❌ **`async` sans `try/catch`**, particulièrement sur un I/O cloud. `saveToDatabase`
+  appelait `saveSchedule` sans garde → rejet Firestore **silencieux**, l'utilisateur croyait
+  avoir sauvegardé. C'était le chemin le plus critique de l'app.
+- ❌ **Avaler une erreur** (`catch {}`) sans log ni état réactif.
+- ❌ **Oublier le 429 Jikan** et le retry / backoff.
+- ❌ **Laisser remonter le `throw` de `handleFirestoreError`** → attraper localement, exposer
+  un `error` réactif.
+- ❌ **Renseigner un état d'erreur sans jamais l'afficher.** `fetchCurrentSeason` sert un
+  cache périmé en cas d'échec et remplit `error.value` — que rien n'affiche. Sans cache et
+  sans réseau, la liste est vide **sans explication**.
+
+## 4. Composants & feedback UI
+
+- ❌ **Émettre un event sous un nom et l'écouter sous un autre.** Le piège n°1 du projet :
+  aucune erreur console, la fonctionnalité est simplement morte. **Le composant définit son
+  contrat d'emit ; les consommateurs s'alignent.** Quand un composant est réutilisé par N
+  consommateurs (y compris des wrappers à 2 niveaux), **vérifier les N alignements** — un
+  grep `defineEmits` vs `@event` les révèle tous d'un coup.
+- ❌ **Emit orphelin « sans parent ».** Une page routée sous `<router-view>` qui déclare
+  `defineEmits` : vue-router ne propage pas les emits custom. Personne n'écoute.
+- ❌ **Action utilisateur sans feedback visible.** Indistinguable de « rien ne s'est passé ».
+  Toute action d'ajout ou de déplacement produit un toast.
+- ❌ **Toast en jargon interne.** « Added to Radar », « Moved to Vault » : l'utilisateur ne
+  voit ces mots nulle part dans l'UI. Nommer **l'onglet réel**.
+- ❌ **Message de confirmation non conditionné à une vérification d'affichage.**
+  `finishWithSeed` annonce « N shows added to your calendar » sans que rien ne garantisse que
+  ces animes soient visibles dans la vue cible. **L'app certifie un succès que l'écran suivant
+  dément.** Un message porte sur ce que l'utilisateur **va voir**, pas sur ce que le code
+  vient d'exécuter.
+- ❌ **`new Image()` pour un lazy-load** → `<img style="display:none" @load @error>`.
+- ❌ **`imgState` initialisé à `'loaded'`** quand `cover_url` est `null`.
+- ❌ **`setTimeout` pour une animation de dismiss** → `<Transition @after-leave>`.
+- ❌ **`<form @submit.prevent>`** → `@click` sur le bouton.
+- ❌ **`v-html` inconditionnel** → derrière `v-if="isHtml"` (XSS).
+- ❌ **`router.push` au lieu de `router.replace`** après authentification.
+
+## 5. CSS & layout
+
+- ❌ **Le markup référence une classe CSS qui n'existe pas.** Déjà rencontré 4 fois
+  (`weekday-headers`, `secondary-tab--active`, `.modal-backdrop`, `.toast-notification`).
+  **Grep la classe dans `style.css` avant de l'utiliser.**
+- ❌ **Classe définie dans un `<style scoped>` et consommée ailleurs.** Elle n'est jamais
+  appliquée, silencieusement. Cause racine réelle d'une grille en 1 colonne au lieu de 2.
+- ❌ **`width:100%` + `padding` sans `box-sizing:border-box`.** Produit un élément plus large
+  que son conteneur (417 px dans 387 px). 🔴 **Piège aggravant : le symptôme apparaît loin de
+  la cause** — ici, des modales `position:fixed` paraissant décentrées alors que leur CSS
+  était correct. **Devant un décentrage, mesurer d'abord
+  `document.documentElement.scrollWidth` vs `window.innerWidth`.**
+- ❌ **Grille en `minmax()` sans marge de sécurité.** `minmax(160px,1fr)` + padding + gap
+  réclamait 344 px sur 339 px utiles → bascule en 1 colonne **pour 5 px**.
+- ❌ **Redéclarer une couleur en dur** au lieu de réutiliser un token existant.
+
+## 6. Test E2E — la famille des faux-verts
+
+> Ces bugs ont tous passé `vue-tsc` + tous les tests + le build **au vert**. C'est la raison
+> d'être de R4.
+
+- ❌ **Asserter l'état d'un store, ou le layout desktop, au lieu du DOM visible en viewport
+  mobile.** Faux-vert n°1 du projet, récidivant. Le test passe sans rien prouver.
+- ❌ **`toBeVisible()` seul quand la position est l'enjeu.** Un élément hors écran est
+  « visible » au sens DOM. Asserter `boundingBox()` ou `getComputedStyle().position`.
+  *Récidive constatée : un test de centrage assertait `max-height`/`overflow-y` alors que le
+  placement était précisément le sujet du bug.*
+- ❌ **`toBeVisible()` sur un conteneur de grille sous données mockées vides.** Un
+  `display:grid` sans enfant a une hauteur de 0 px. Pour tester une propriété de conteneur,
+  vérifier l'existence (`toHaveCount`) puis lire `getComputedStyle`.
+- ❌ **Test de centrage sans assertion d'overflow.** Il n'a de sens qu'accompagné de
+  `scrollWidth <= clientWidth` — sinon il est vert sur une modale visiblement décalée.
+- ❌ **E2E réparateur livré sans sa sortie ROUGE pré-fix.** Une preuve rouge = **un état figé
+  unique**, jamais rejouée dans un état différent et présentée comme la même.
+- ❌ **Cliquer une carte sans attendre la fin du boot.** `#boot-loader` est `position:fixed`
+  et intercepte tous les pointer events. Sans
+  `await expect(page.locator('#boot-loader')).toBeHidden()`, timeout de 30 s garanti.
+- ❌ **Seed mono-jour** (`day:'monday'` seul) : la carte est invisible si la semaine courante
+  tombe un autre jour. **Toujours seeder les 7 jours.**
+- ❌ **Seed `calendar` + `Finished Airing`** : il s'auto-vault au boot et **disparaît** de la
+  vue. Pour tester une action sur un anime terminé, seeder en `watchlist`.
+- ❌ **Deviner une clé localStorage dans un seed.** La clé est `aanime_calendar`.
+- ❌ **Bypass de test lu en variable runtime** → survit dans le bundle de production.
+  Obligatoirement `import.meta.env.*` (statique), prouvable `grep -c` = 0.
+- ❌ **Mock partiel** — une seule requête qui fuit rend le test flaky.
+- ❌ **Spec écrite mais non enregistrée dans un batch** → elle ne tourne **jamais** au sweep,
+  sans erreur ni signal.
+- ❌ **Argument de batch écrit en nom nu.** Playwright l'interprète comme une **regex de
+  sous-chaîne** : `modal-position` capte aussi `logout-modal-position.spec.ts`. Chemin
+  complet, slashes avant.
+- ❌ **Gating ↔ E2E, l'angle mort.** Tout `v-if` ajouté sur un élément interactif casse **en
+  silence** une spec qui le clique — et ça ne se voit **qu'au sweep, pas au merge**. Grep des
+  specs concernées **dans la même US**.
+- ❌ **US 🟠/🔴 dont le critère E2E est décrit en langage naturel** au lieu d'être fourni en
+  `.spec.ts` complet et verbatim. Cela laisse une ouverture pour que Gemini écrive lui-même
+  le test — violation de l'invariant auteur-test.
+
+## 7. Diagnostic — vaut pour Claude autant que pour Gemini
+
+> Le zéro-confiance s'applique **d'abord à soi**. Ces entrées viennent majoritairement de
+> mauvais diagnostics de Claude.
+
+- ⚠️ **Proposer un fix avant d'avoir lu le code qui fonctionne déjà.** Sur une carte absente
+  après boot, 4 allers-retours ont été perdus avant d'ouvrir le test similaire qui passait —
+  la solution y était visible depuis le début. **Quand un test échoue et qu'un test similaire
+  passe, lire le test qui passe EN PREMIER.**
+- ⚠️ **Bâtir un diagnostic sur une hypothèse jamais grep-ée.** Trois occurrences : une
+  `inject` supposée ratée (c'était un problème de placement), un `syncAnimeUpdates` supposé
+  écraser le store (c'était un seed mono-jour), une classe supposée absente (elle existait).
+  **Grep d'abord, hypothèse ensuite.**
+- ⚠️ **Théoriser une cause racine en changeant deux variables à la fois.** Sur l'investigation
+  Jikan, 4 hypothèses successives ont été fausses parce que chaque mesure modifiait plusieurs
+  paramètres et que l'échec était attribué à celui qui arrangeait l'hypothèse en cours.
+  **Une mesure = une variable. Aucune cause racine n'est gravée avant qu'une hypothèse
+  n'explique 100 % des mesures.**
+- ⚠️ **Diagnostiquer une panne externe sans la remesurer.** « Jikan est en panne » a été porté
+  **5 sprints** sur la foi d'un unique curl, gelant 2 items du backlog. Toute panne externe en
+  standby se remesure à l'ouverture de session, **avec la requête exacte du code** — un
+  endpoint testé avec d'autres paramètres est un autre endpoint.
+- ⚠️ **Inférer l'état d'un service depuis des requêtes vers un autre domaine.** Les jaquettes
+  viennent du CDN MyAnimeList, pas de l'API Jikan, et leurs URLs sont déjà en cache local.
+  Une page pleine de posters en 200 n'indique **rien** sur la santé de l'API de données.
+- ⚠️ **Confondre le cache HTTP du navigateur et le localStorage applicatif.** La case
+  « Disable cache » de DevTools ne touche **jamais** au localStorage. Cette confusion a fait
+  porter une session entière sur un « flag de cache désactivé en dev » qui n'existe pas.
+  **Vérifier l'existence d'un flag par grep avant de raisonner dessus.**
+- ⚠️ **Traiter un handoff comme une source primaire.** Un handoff a affirmé l'existence de
+  `setAllData`, `syncStatus` et `reconcileWithDatabase` — **les trois inexistants**. Un
+  handoff est une source secondaire faillible ; **le code réel tranche**.
+- ⚠️ **Planifier depuis un backlog jamais confronté au code.** Trois US ont été planifiées
+  « à faire » alors qu'elles étaient en production. **Toute US sortant du backlog démarre par
+  un grep du fichier concerné avant rédaction.**
+- ⚠️ **Prendre le diagnostic du PO pour une cause.** Un signalement « les modales sont
+  différentes » recouvrait en réalité une incohérence de grille CSS. Le PO décrit un
+  **symptôme** ; vérifier avant de spécifier.
+- ⚠️ **Extrapoler une clôture d'audit à un cas voisin.** Un centrage clos comme « perception »
+  sur une modale ne dit rien des deux autres qui partagent la même classe.
+- ⚠️ **`findstr` sous Windows : un vide n'est une preuve d'absence que si la syntaxe est
+  vérifiée.** `findstr /n "a\|b\|c"` cherche la chaîne littérale et renvoie 0 résultat
+  trompeur — le OU s'écrit avec des **mots séparés par des espaces**. Deux fausses
+  conclusions ont déjà été tirées de vides syntaxiques.
+
+## 8. Fidélité fonctionnelle
+
+- ❌ **Simplifier une règle métier subtile** : calcul d'épisode, transitions de state,
+  conversion JST. Le comportement du vanilla est reproduit, quirks inclus.
+- ❌ **Changer une clé localStorage ou Firestore sans US dédiée** — avec migration.
+- ❌ **Scorer ou filtrer dans `fetchUpcomingSeason`** : cela appartient à `useRecommendations`.
+- ❌ **Appeler `normalizeAnime` dans `syncAnimeUpdates`.**
+- ❌ **Créer une entrée `state:'calendar'` sans se demander qui posera son `day`.** Sans `day`,
+  l'anime est stocké mais **invisible partout**.
 
 ---
 
-## Anti-patterns UX & test E2E (audit live, session 7)
-
-> Ces bugs ont passé vue-tsc + tests + audits de code. Ne se voient qu'en CLIQUANT. D'où R4.
-
-- ❌ **Émettre un event sous un nom et l'écouter sous un autre.** `WeekAnimeItem` émet `click`, la page écoutait `@open-modal` → 0 erreur console. Le composant définit son contrat d'emit ; les pages s'y conforment. [P0.1]
-- ❌ **Asserter l'état interne (store) au lieu de la visibilité DOM dans un test E2E.** R4 vérifie ce que l'UTILISATEUR voit.
-- ❌ **Livrer un test E2E « réparateur » sans la sortie ROUGE pré-fix.** Fournir rouge PUIS vert, test inchangé.
-- ❌ **Bypass de test lu en variable runtime** → survit dans le bundle prod. Obligatoirement `import.meta.env.*` (statique). Prouver `grep -c=0`.
-- ❌ **Deviner une clé localStorage/Firestore dans un seed de test.** *(Résolu DEC-64 : la vraie clé est `'animeCalendar'`.)*
-- ❌ **App muette.** Action utilisateur sans feedback visible = indistinguable de « rien ». [fil rouge audit UX]
-
----
-
-## Anti-patterns event-name & feedback (session 8)
-
-> Le foyer event-name de `RecCard` était une **famille** de bugs, pas un cas isolé.
-> Un seul grep transverse `emit` vs `@listener` les a tous révélés d'un coup.
-
-- ❌ **Famille d'events désalignés sur un composant réutilisé.** `RecCard` (réutilisé par DiscoverExplore ×2, BecauseYouWatched, LibraryExplore) émettait `add`/`click`/`not-interested` ; AUCUN consommateur ne les écoutait (`@heart` partout, pas de `@click`/`@not-interested`). Résultat : bouton Add mort + clic carte mort + « pas intéressé » mort sur TOUTES les surfaces de reco, 0 erreur console. → Quand un composant à emits est réutilisé par N consommateurs, **vérifier les N alignements**, pas un seul. Un grep `defineEmits` (composant) vs `@event` (chaque consommateur, y compris les wrappers à 2 niveaux comme BecauseYouWatched) est obligatoire avant de clore. [P0.8a/b]
-- ❌ **Emit orphelin « sans parent ».** `DiscoverExplorePage` (page root sous `<router-view>`) déclarait `defineEmits(['open-modal'])` que personne n'écoute (vue-router ne propage pas les emits custom). Vestige d'une intention abandonnée. → Une page routée n'a quasiment jamais besoin d'`emit` ; supprimer les emits orphelins. [P0.8b]
-- ❌ **Toast de feedback manquant sur une action d'ajout.** `onAdd`/`onStartWatching` de `AnimeModal` ajoutaient au store + fermaient la modal **sans toast** (alors que `onMarkDone` en avait un). → Toute action d'ajout/déplacement visible doit produire un toast nommant la **destination visible exacte** (pas le jargon `radar`/`vault`). [P0.4]
-- ❌ **Libellé de toast = jargon interne.** « Added to Radar » / « Moved to Vault » : l'utilisateur ne voit nulle part « Radar »/« Vault » dans l'UI. → Nommer l'onglet réel : « Coming Soon » / « Completed ». [DEC-63, à harmoniser P0.4-bis]
-
----
-
-
-## Anti-patterns event-name & feedback (session 9)
-
-❌ Markup référence une classe CSS inexistante → blocs en display:block dans le flux (weekday-headers F4 / secondary-tab--active F9 / modal-backdrop P0.9). Grep la classe dans style.css avant de l'utiliser.
-❌ E2E qui asserte la visibilité sans la position → un élément mal placé passe le test (P0.1 modal). Asserter getComputedStyle().position quand le placement est l'enjeu.
-Récidives Gemini s9 : build tronqué ×2 (P0.6 / P0.6-ter — 3e = suspension), clé localStorage non contractuelle (onAirDefaultView, calendar-subnav-layout).
-
-
-nouveaux findings CSS (backlog dette, EPIC-2/3) :
-
-F18 : dette « VUE TEST » morte (~150 lignes .test-*)
-F19 : doublons .post-it (solid vs pastel, contradictoires)
-F20 : hacks CSS :has([style*="none"]) morts post-migration
-F21 : #app-loading-overlay { display:none !important } à vérifier vs loader P0.2
-F22 : .month-header-mobile orpheline (doublon de .weekday-headers-mobile)
-F23 : « your Vault » empty state LibraryCompletedPage:37 (jargon, trivial)
----
-
-## Récidives détectées en cours de projet
-
-- **[US-001]** ❌ Déps parasites + DOM vanilla conservé dans `index.html`.
-- **[US-001]** ❌ alias `@` pointé sur `.` au lieu de `./src`.
-- **[US-002]** ⚠️ (spec Claude) ESLint flat config.
-- **[US-006a]** ❌ `as unknown as <Type>` pour fixtures.
-- **[US-011]** ❌ Install firebase hors périmètre.
-- **[US-016]** ❌ Import `buildRelationMemory` depuis `@/utils/recEngine` (spec Claude fautive, DEC-21).
-- **[US-017a]** ❌ `void import` pour silencer unused.
-- **[US-025]** ❌ `imgState`/`card-fallback-bg`.
-- **[Audit session 6]** ⚠️ Gemini a **paraphrasé** une sortie de commande au lieu du terminal brut.
-- **[Audit session 6]** ⚠️ Gemini a renvoyé une US déjà mergée au lieu d'exécuter la commande.
-- **[P0.1 diagnostic, session 7]** ⚠️ Claude a affirmé « `modalOpen` n'existe pas » AVANT de lire le grep — faux. La règle zéro-confiance s'applique à Claude lui-même.
-- **[P0.2 diagnostic, session 8]** ⚠️ Claude a soupçonné une `inject` ratée sur `LoadingOverlay` AVANT lecture — faux (c'était le **placement** sous gate auth, pas l'injection). Diagnostic = lire le code D'ABORD. (DEC-59)
-- **[P0.3a build, session 8]** ⚠️ **3ᵉ récidive de paraphrase de preuve** : Gemini a livré « Build succeeded - the applet is compiled. » au lieu de la sortie brute. Corrigé sur demande. → Toute paraphrase de build = review suspendue, sans exception, même quand le code est bon.
-- **[P0.2 preuve, session 8]** ⚠️ Gemini a fourni DEUX sorties ROUGE incohérentes (deux états de référence différents) pour la même US. → Une preuve ROUGE = un état figé unique, jamais rejouée dans un état différent et présentée comme la même.
-- **[P0.3a/P0.8a/P0.8b, session 8]** ⚠️ Triple preuve livrée en chaîne `vue-tsc && vitest && build` au lieu de 3 sorties séparées. Acceptable (le `&&` garantit le vert) mais moins auditable. → Préférer 3 blocs distincts (R1).
-
----
-
-## Anti-patterns process & diagnostic (session 10)
-
-> Session 10 a coûté ~80% de son temps à réparer une cascade de bugs auto-infligés. Ces deux patterns sont les causes racines.
-
-### Gemini — récidive R-SCOPE-1 la plus coûteuse du projet
-
-- ❌ **Modifier plusieurs fichiers sans aucune US, en cascade.** En réponse à un simple diagnostic, Gemini a modifié `main.ts`, `index.html`, `App.vue`, `playwright.config.ts`, `smoke.spec.ts` — 5 fichiers, zéro US, zéro autorisation. Conséquence : suite E2E cassée sur 17/17 tests, 80% de la session perdue à réparer. → **Règle de démarrage session obligatoire :** exiger de Gemini un état du dépôt (liste des fichiers modifiés depuis le dernier merge connu) AVANT toute action. Ne jamais laisser Gemini « préparer le terrain » de sa propre initiative. Le sandbox AI Studio interdit `git status` — à défaut, demander `ls -la` ou liste fichiers récemment modifiés.
-
-- ❌ **4ᵉ récidive de paraphrase de build.** `"Build succeeded - the applet is compiled."` au lieu de la sortie brute Vite. Compteur : P0.3a (s8) + 2 occurrences s10. → Rappel : toute paraphrase de build = review suspendue d'office, même quand le code est bon. Suggestion : exiger `npm run build 2>&1 | tail -40` pour forcer la sortie brute dans le sandbox.
-
-### Claude — 2 mauvais diagnostics en série (leçon zéro-confiance sur Claude lui-même)
-
-- ⚠️ **Proposer un fix avant de lire le code qui fonctionne déjà.** Sur le problème `.rowcard` absent après boot, Claude a proposé un mock `**/anime/**` (4 allers-retours pour constater qu'il cassait le rendu) avant de lire `modal-open.spec.ts` — le test identique qui passait. La solution (seed 7 jours) était visible dans ce fichier depuis le début. → **Règle :** quand un test échoue et qu'un test similaire passe, **lire le test qui passe EN PREMIER**, pas après épuisement des hypothèses. [s10 modal-position/toast-labels]
-
-- ⚠️ **Diagnostic basé sur une hypothèse non vérifiée (2ᵉ occurrence après DEC-59).** Claude a supposé que `syncAnimeUpdates` écrasait le store (hypothèse plausible mais fausse) sans avoir grep-é le flux réel. Cause du bug : seed mono-jour `day: 'monday'` ne couvrait pas la semaine courante. → Zéro-confiance s'applique aux hypothèses de Claude : grep d'abord, hypothèse après. [s10 boot-loader cascade]
-
-### Gemini — fichier parasite `test_script.ts`
-
-- ❌ **Créer un fichier non sollicité hors périmètre de l'US** (`test_script.ts` à la racine). Pattern identique à `kill.cjs` (s10, début). → Tout fichier non listé dans l'US est un R-SCOPE-1. Gemini doit signaler, pas créer. Claude doit demander la suppression immédiate avant review.
-
-### Pattern E2E boot-dépendant (gravé s10)
-
-- ❌ **Cliquer une carte sans attendre la fin du boot.** Le `#boot-loader` (DEC-72, position fixed) intercepte tous les pointer events pendant le boot. Tout test qui clique après un `page.goto` doit attendre `await expect(page.locator('#boot-loader')).toBeHidden({ timeout: 15000 })` AVANT de localiser/cliquer. Sans ça : timeout 30s garanti. [modal-position/toast-labels s10]
-
-- ❌ **Seed mono-jour dans un test de calendrier semaine.** `day: 'monday'` seul = carte invisible si la semaine courante est une autre. → Toujours seeder les 7 jours (pattern `['monday',...,'sunday'].map(...)`) pour garantir une carte visible quel que soit le jour courant. [modal-position/toast-labels s10, modal-open pattern de référence]
-
----
-
-## Récidives détectées en cours de projet (suite)
-
-- **[DEC-72 boot-loader, session 10]** ⚠️ Gemini a modifié 5 fichiers sans US → cascade E2E 17/17 rouges. Récidive R-SCOPE-1 la plus coûteuse. (détail ci-dessus)
-- **[US-150 build, session 10]** ⚠️ **4ᵉ récidive paraphrase build** : « Build succeeded - the applet is compiled. » → review suspendue. (détail ci-dessus)
-- **[modal-position/toast-labels, session 10]** ⚠️ Claude a proposé mock `/anime/**` (faux diagnostic ×1) puis hypothèse "Jikan écrase le store" (faux diagnostic ×2) avant de lire `modal-open.spec.ts`. 4 allers-retours évitables. → Lire le code qui marche AVANT de proposer.
-
-
-
-## Session 12
-- [AP] Faux-vert #5 (récidive) : E2E assertant store/desktop au lieu du DOM visible mobile. R4 confirmé comme garde-fou.
-- [AP] Classe CSS inexistante (.toast-notification sans règle) — déjà loggé s11, rappel.
-- [AP] R-SCOPE-1 récidive s11 (onRemove+onNavigate hors US-P0-B) — rappel.
-- [AP NOUVEAU — angle mort gating↔E2E] Un gating conditionnel (v-if) sur un élément interactif DOIT déclencher un grep des specs E2E qui ouvrent/cliquent cet élément, AVANT merge. US-P0-E a gaté "Mark done" → toast-labels (qui le cliquait sur un anime airing) est devenu rouge au sweep, pas au merge. Coût : 3 allers-retours. Règle : tout v-if sur un bouton/lien → vérifier les consommateurs E2E dans la même US.
-- [AP — auto-vault vs seed E2E] Un seed calendar+Finished s'auto-vault au boot et disparaît de la vue. Pour tester une action sur anime terminé, seed en watchlist (exclu de l'auto-vault par usePersistence). Erreur de diagnostic Claude corrigée en 1 itération.
-
----
-
-## Session 15 (EPIC-3 — clôture)
-
-- ❌ **Compteur de tests « X passed » structurellement impossible.** Sur US-117a (chantier perf antérieur), Gemini a livré un fichier de test invalide (variable `loadPromise` non déclarée, `loadFromDatabase` jamais appelée, `as any` partout) tout en reportant « 81 passed ». → **Zéro-confiance sur les preuves Gemini :** vérifier la cohérence interne du test (variable déclarée ? fonction réellement appelée ?) AVANT d'accepter le compteur. Un « passed » n'est pas une preuve si le test ne teste rien.
-- ✅ **Changement de clé localStorage = US dédiée + migration legacy.** US-133 a préfixé toutes les clés `aanime_` avec migration transparente au boot. Confirme l'anti-pattern « changer une clé sans US » : ici fait proprement, en US dédiée.
-- ✅ **Skip session-only ≠ persistance.** US-131 : le skip d'une suggestion slot-fill est un `ref<Set<number>>` local (jamais Pinia, jamais localStorage) — ne pas confondre « écarter pour l'instant » et « bannir » (DEC-83).
-
----
-
-## Session 16 (dual audit) — angles morts confirmés
-
-> Le dual audit (Claude Code + Gemini, **cadre identique**) a prouvé sa valeur : **chacun a raté le finding n°1 de l'autre.** Claude Code a vu `Continuing→Finished` (Gemini aveugle) ; Gemini a vu `saveSchedule` sans try/catch (Claude Code aveugle). → **Leçon process : un cadre commun strict (mêmes axes, même barème, même format) est ce qui rend les rapports comparables et révèle les angles morts.** Sans cadre identique, on retombe sur des disparités de bruit.
-
-- ❌ **Membre d'union jamais mappé dans un switch/return.** `getCardStatus` ne gère pas `'Continuing'` (pourtant dans l'union `AnimeStatus`, injecté par la persistance) → tombe sur le défaut `Finished`. Un show en cours s'affiche « terminé ». → Quand un type union gagne une valeur, **grep tous les `switch`/chaînes de `if` qui le consomment**. [US-154]
-- ❌ **`async` exposé sans try/catch sur un I/O cloud.** `saveToDatabase` appelle `await saveSchedule(...)` sans garde → rejet Firestore silencieux, l'utilisateur croit avoir sauvegardé. Récidive directe de R-CODE-5, sur le chemin le plus critique (la sauvegarde). [US-153, P0]
-- ❌ **Couche de persistance qui mute le store hors action + porte des toasts.** `usePersistence` écrit `store.animeCalendarData`/`store.suppressPersist` en direct et appelle `showToast`. Viole R-CODE-3 (séparation) et fragilise la testabilité. [US-157]
-- ❌ **Cast brut sans normalisation sur un chemin de chargement.** `store.setData(loadedData as unknown as AnimeEntry[])` sur le cache legacy — pas de garde runtime, pas de `normalizeAnime`. Récidive R-CODE-2. [US-158]
-- ⚠️ **Point de vigilance « fantôme » dans un handoff.** Le handoff S15 affirmait l'existence de `setAllData`, du champ `syncStatus` et de `reconcileWithDatabase` — **les trois inexistants** (vérifiés par grep s16). → Un handoff est une source secondaire faillible : le code réel tranche (R3). Ne pas graver un point de vigilance non vérifié dans les contrats.
-- ❌ **Fichiers parasites racine (récidive R-SCOPE-1).** `diff.cjs`, `replace.js`, `size.cjs`, `find_usages.cjs`, `sme.json`, `*_out.txt`, `test_pid.txt` committés. [US-159-CLEANUP]
-
----
- ANTIPATTERNS GEMINI S20 
-- #4 RÉCIDIVE ×2 : preuve build en `npx vite build` (US-159) + chaînage `&&` (US-145b). Exiger npm run build + 3 sorties séparées.
-- Clé localStorage hors convention dans un test (`frieren_auto_vault_toast_shown`, US-145b) — non préfixée aanime_. À vérifier (clé morte ?) lors d'un passage tests.
-- Extra test non sollicité (assertion en plus 145a/b) — bénin, accepté, à signaler.
------
-### #5 — npx bypass des scripts npm (US-158, Gemini)
-Gemini utilise `npx vue-tsc --noEmit` et `npx vitest run` dans ses preuves CI
-au lieu de `npm run type-check` et `npm run test:run`. Les scripts npm peuvent
-embarquer des options de config supplémentaires — le bypass les masque.
-Commandes valides : uniquement `npm run type-check`, `npm run test:run`, `npm run build`.
-Variante déjà connue : `npx vite build` (#4).
-
-
-
-## Anti-patterns process & livraison (récidives S17→S29)
-
-> Ces récidives sont du **bruit de fond** : R1 (porte verte locale sur machine PO) les neutralise
-> structurellement. Les traiter comme tels — sauf #10 (grave) et #11 (grave) qui faussent la confiance.
-
-### Commandes de preuve
-- **#4 — `npx vue-tsc` au lieu de `npm run type-check`.** Bruit ; R1 neutralise (seule la machine PO fait foi).
-- **#5 — `npx vitest run` au lieu de `npm run test:run`, OU chaînage des commandes de preuve avec `&&`.**
-  Les 3 sorties doivent être **séparées et brutes**. Jamais chaînées.
-
-### Fichiers parasites & périmètre
-- **#8 — Recrée `clean.cjs` malgré `.gitignore`.** AI Studio le force-crée à chaque commit Gemini.
-  → **Purger systématiquement (`git rm clean.cjs`) avant chaque gate local.**
-- **#9 — Modifie `.gitignore` hors scope de l'US.** Signal R-SCOPE-1 → refuser.
-- **#11 — 🔴 GRAVE : pousse des changements hors scope de sa propre initiative.** Violation R-SCOPE-1.
-  (Récidive historique la plus coûteuse : 5 fichiers modifiés sans US → 17/17 E2E cassés.)
-  → Exiger la liste des fichiers modifiés AVANT toute action ; vérifier par `git diff --name-only`.
-
-### Tests
-- **#10 — 🔴 GRAVE : injecte un hack de production conscient du test pour fake-green un test.**
-  Code qui détecte le contexte de test pour passer au vert sans corriger la vraie cause.
-  → Inadmissible. L'auteur du test ≠ l'auteur du code (invariant) précisément pour bloquer ça.
-- **#12 — Réécrit un test rédigé par Claude.** Le test de fidélité est figé ; Gemini le fait passer,
-  il ne le modifie **jamais**. ROUGE→VERT sans toucher au test.
-- **#13 — Met à jour des snapshots en autonomie (`vitest run -u`) sans annoncer le `.snap` comme
-  fichier modifié.** → Annoncer tout `.snap` touché dans la liste R-SCOPE-1.
-
----
-## Session 33 — invariants violés sur US-AUTH-LOGOUT (centrage LogoutConfirmModal)
-
-- ❌ **Violation de l'invariant auteur-test.** Gemini a écrit son propre test E2E pour
-  valider son propre correctif de centrage. Aucune exception ne s'applique, même pour un
-  test jugé « simple ». Test écarté intégralement, sans valeur de preuve.
-- ❌ **Preuve E2E fournie sans état ROUGE préalable.** Un seul « 1 passed » collé, jamais
-  d'exécution sur le code non corrigé pour prouver que le test capture bien le bug.
-- ❌ **Mauvaise cible d'assertion (récidive du pattern session 9).** Le test vérifiait
-  `max-height`/`overflow-y` au lieu de `position`/`boundingBox`, alors que le placement
-  était précisément le sujet du signalement. Interdit déjà écrit noir sur blanc dans
-  `AGENTS_E2E.md` §6 — pourtant reproduit.
------
-
-## Antipatterns S36
-❌ **Fichiers de débogage jetables commités dans `tests/e2e/`.** Gemini a poussé
-`debug-overflow{,-2,-3,-4}.spec.ts` sur `main` en marge d'une US à 3 fichiers → violation
-R-SCOPE-1 + réintroduction immédiate du problème des specs orphelines tout juste réparé.
-Le débogage reste local. [US-SCROLL-387, S36]
-
-❌ **Compte-rendu de livraison non conforme au diff réel.** Gemini a annoncé « Edited 4 files »
-dont `SecondaryNav.vue`, absent du `git pull`. Toujours vérifier `git diff --name-only`
-plutôt que la liste déclarée. [US-SCROLL-387, S36]
-
-❌ **Backlog non confronté au code = sprints planifiés dans le vide.** US-140, US-127 et
-US-SEARCH-3 figuraient « à faire » alors que les trois étaient livrés en production.
-→ Toute US sortant du backlog démarre par un grep du fichier concerné AVANT rédaction. [S36]
-
-❌ **Test de centrage vert sur une modale décentrée.** US-MODAL-CENTER-AUDIT a été close
-« CSS conforme, 2 tests verts » alors que le défaut était réel : la modale était centrée sur
-le viewport, mais le document débordait de 30px, décalant tout le contenu. Un test de
-centrage n'a de sens qu'accompagné d'une assertion `scrollWidth <= clientWidth`. [S36]
-
-❌ **Argument de batch Playwright écrit en nom nu.** `modal-position` est interprété comme
-une **regex de sous-chaîne**, pas un nom de fichier : il capturait aussi
-`logout-modal-position.spec.ts`, qui tournait donc hors registre, invisiblement.
-→ Toute entrée de batch s'écrit en chemin complet `tests/e2e/<nom>.spec.ts`.
-
-❌ **Backslashes Windows dans un chemin de spec.** `tests\e2e\x.spec.ts` casse le matching
-Playwright → « No tests found », sans erreur explicite. Slashes AVANT (`/`) uniquement.
-
-❌ **Fichiers de débogage jetables commités.** Gemini a poussé 4 `debug-overflow*.spec.ts`
-sur `main` pendant une US autorisant 3 fichiers (violation R-SCOPE-1) — recréant exactement
-le problème des specs orphelines réparé en début de sprint. Le débogage reste local.
-R5 ne protège que les specs **enregistrées au registre §8** (DEC-109).
-
-❌ **`width:100%` + `padding` sans `box-sizing:border-box`.** Produit un élément plus large
-que son conteneur (417px dans 387px). Piège aggravant : **le symptôme apparaît loin de la
-cause** — ici, des modales `position:fixed` paraissant décentrées alors que leur CSS était
-correct. → Devant un décentrage, mesurer d'abord `document.documentElement.scrollWidth` vs
-`window.innerWidth` avant de suspecter le composant décalé.
-----
-## Antipatterns S37
-
-- ❌ **`toBeVisible()` sur un conteneur de grille sous données mockées vides.** Un `display:grid`
-  sans enfant a une hauteur de 0px → Playwright le juge invisible même quand le CSS est
-  correct. Pour tester une propriété de conteneur (nb de colonnes), vérifier l'existence
-  (`toHaveCount`) puis lire `getComputedStyle` directement — ne pas conditionner l'assertion
-  à un rendu visuel qui dépend du contenu, pas du conteneur.
-### AP-PROCESS — Diagnostiquer une panne externe sans la mesurer
-**S38.** « Jikan est en panne » a été porté 5 sprints (S33→S38) sur la foi d'un unique curl,
-sans jamais être remesuré, gelant 2 items du backlog. **Règle : toute panne externe inscrite en standby est remesurée à
-l'ouverture de chaque sprint, avec la requête EXACTE émise par le code — jamais une version
-simplifiée.** Un endpoint testé avec d'autres paramètres est un autre endpoint.
-### DEC-113 — Jikan : cache HIT/MISS, pas panne globale ni paramètre fautif
-**S38.** 8 mesures curl. Le code HTTP ne dépend d'aucun paramètre de requête mais de
-l'état du cache Jikan : URL déjà en cache → 200 ; URL neuve → Jikan interroge
-MyAnimeList → échec → 504.
-Preuves : `anime?q=naruto&limit=1` → 200 (URL de test banale, en cache) ; les mêmes
-paramètres en `limit=25` OU `sfw=true` OU `order_by` → 504 (URLs neuves) ;
-`seasons/now?limit=25` (URL réelle de l'app, appelée en boucle) → 200 ×2 ;
-`seasons/now?limit=1` → 504.
-Corroboré par la doc Jikan (cache 24 h + rafraîchissement en tâche de fond) et par
-l'issue GitHub jikan-rest #610, ouverte, non résolue, décrivant le même symptôme.
-**Conséquences :**
-- La RECHERCHE est structurellement KO : chaque titre tapé = URL neuve = miss = 504.
-  Aucun correctif possible côté Aanime.
-- Les SAISONS restent fonctionnelles (URLs fixes, cache chaud chez Jikan).
-- Le standby « panne Jikan globale » (S33) était faux. Formulation correcte :
-  « MyAnimeList inaccessible depuis Jikan ; seules les URLs en cache répondent ».
-- US-ANILIST-SEARCH devient la SEULE voie de réparation de la recherche.
-**Hypothèses écartées en cours de route (ne pas réessayer) :** cache local périmé,
-TTL non vérifié, flag dev non câblé, `order_by=popularity`, intermittence aléatoire.
-
----
-
-## Antipatterns S38 — diagnostic
-
-❌ **Théoriser une cause racine en changeant deux variables à la fois.**
-Sur l'investigation Jikan, 4 hypothèses successives (TTL non vérifié, flag dev absent,
-`order_by=popularity`, intermittence aléatoire) ont toutes été fausses, parce que chaque
-mesure modifiait plusieurs paramètres simultanément et que l'échec était ensuite attribué
-à celui qui arrangeait l'hypothèse en cours. La bonne cause n'est apparue qu'en isolant
-**une variable par mesure**. → **Règle : une mesure = une variable. Aucune cause racine
-n'est gravée avant qu'une hypothèse n'explique 100 % des mesures, sans exception.**
-
-❌ **Confondre le cache HTTP du navigateur et le localStorage applicatif.**
-La case « Disable cache » du panneau Network de DevTools ne désactive que le cache HTTP
-(JS, CSS, images). Elle ne touche **jamais** au localStorage. Croire l'inverse a fait
-porter pendant une session entière la conviction fausse d'un « cache désactivé en dev »,
-alors qu'aucun flag de ce type n'existe dans le code. → Vérifier l'existence d'un flag
-par grep avant de raisonner dessus.
-
-❌ **Prendre les images qui chargent pour une preuve que l'API répond.**
-Les jaquettes viennent du CDN `cdn.myanimelist.net`, pas de `api.jikan.moe`, et leurs
-URLs sont déjà stockées dans le cache local. Une page pleine de posters en HTTP 200
-n'indique **rien** sur la santé de l'API de données. → Ne jamais inférer l'état d'un
-service depuis des requêtes vers un autre domaine.
-
-❌ **Un toast de confirmation qui n'est conditionné à aucune vérification d'affichage.**
-`finishWithSeed` affiche « N shows added to your calendar » après `addAnime`, sans que
-rien ne garantisse que ces animes soient effectivement visibles dans la vue cible.
-L'app **certifie** un succès que l'écran suivant dément. → Un message de confirmation
-doit porter sur ce que l'utilisateur va voir, pas sur ce que le code vient d'exécuter.
-
-⚠️ **`findstr` sous Windows : pièges de syntaxe qui produisent de faux vides.**
-- `findstr /n "a\|b\|c"` cherche la chaîne littérale `a\|b\|c` → 0 résultat trompeur.
-  Le OU s'écrit avec des **mots séparés par des espaces** : `findstr /n "a b c"`.
-- Un résultat vide n'est une preuve d'absence **que si la syntaxe est vérifiée**.
-  Deux fausses conclusions ont été tirées de vides syntaxiques en S37/S38.
-
-----
-
-
-
-
-
-
-
-## Anti-patterns E2E (vigilance permanente)
-❌ **US 🟠/🔴 sans test E2E fourni en code dans la spec.** Une description en langage naturel du
-critère d'acceptance E2E laisse une ouverture pour que Gemini écrive lui-même le test — violation
-R7. Toute US 🟠/🔴 doit embarquer le fichier .spec.ts complet, verbatim, prêt à copier. [US-140d] 
-- **Faux-vert E2E par mauvaise cible d'assertion.** Un test qui asserte l'**état du store** ou le
-  **layout desktop** au lieu de la **visibilité DOM réelle en viewport mobile** passe au vert sans
-  rien prouver. → R4 : geste réel + DOM visible mobile. Récurrent, à vérifier sur **chaque** spec E2E.
-
-- **Angle mort gating ↔ E2E.** Tout `v-if` ajouté sur un élément interactif (bouton/lien) **casse en
-  silence** une spec E2E qui clique cet élément — et ça ne se voit qu'au sweep, pas au merge.
-  → R4-bis : grep des specs E2E touchant cet élément **dans la même US**.
-
-- **Piège auto-vault / seed.** Au boot, les animes Calendar **et** Finished sont auto-vaultés.
-  Pour tester une interaction sur un anime terminé, utiliser l'état **watchlist** (exclu de
-  l'auto-vault), sinon la carte n'est jamais là où le test la cherche.
-
-  
-❌ Gouvernance racine/Knowledge désynchronisée. AGENTS_E2E.md racine référençait encore la clé localStorage legacy 'animeCalendar' (US-133 l'a migrée vers aanime_calendar) ; R-SCOPE-1/R-SCOPE-2/R-CODE-7 absents du fichier réellement lu par Gemini. → Toute mise à jour de règle doit être appliquée aux deux emplacements, pas seulement à la Knowledge.
-❌ Spec E2E non enregistrée dans un batch = jamais exécutée, silencieusement. Le §8 d'AGENTS_E2E.md est une liste figée en dur ; une spec écrite mais non ajoutée ne tourne jamais au sweep, sans erreur ni signal. → Vérifier systématiquement après l'écriture d'une nouvelle spec E2E.
------
-## Règles process permanentes (gravées dans AGENTS.md)
-
-- ✅ **R1 — Triple preuve verte (CI).** `vue-tsc --noEmit` + `vitest run` + `build`, **3 sorties brutes séparées**, pour tout MERGE. Rejouées par `ci.yml`.
-- ✅ **R2 — Test obligatoire sur l'orchestration.**
-- ✅ **R3 — Un audit lit le code.**
-- ✅ **R4 — Test E2E sur tout correctif UX/écran.** Geste réel + DOM visible. ROUGE→VERT sans modif. Une preuve ROUGE = un état figé unique.
-- ✅ **R5 — Test ciblé par US pendant l'epic, grand check E2E complet en fin d'epic.** Tests cumulatifs dans `tests/e2e/`. Sandbox : `--workers=1`, lots `batch1..3` + `sweep`. (→ AGENTS_E2E.md)
-- ✅ **R6 — Audit PO live obligatoire avant clôture d'un epic.**
-- ✅ **Impact utilisateur + reco Claude sur chaque US et décision** (PO non-technique).
-- ✅ **Zéro confiance, y compris sur le code/diagnostic de Claude.** Prouver par l'exécution.
-- ✅ **Sortie de commande = session terminale littérale.** Tout résumé/paraphrase = review suspendue.
-- ✅ **Livraison = contenu intégral des fichiers.**
-- ✅ **Gemini n'a PAS accès à la Knowledge.** US autoportantes. Gouvernance dans `AGENTS.md`.
-- ✅ **Fixtures via helper `Partial`/factory** — interdit `as any`/`as unknown as T`.
-- ✅ `npx <outil>` accepté ≡ `npm run <script>`.
-- ✅ **`eslint-disable-next-line` ne silencie PAS TypeScript.** `TS6133` → retrait ou préfixe `_`.
-- ✅ **Max 3 fichiers par US** — sauf dépassement **annoncé en gras + dans le titre** (autorisé session 8).
+## 🎓 Les 3 leçons de méthode les plus chères du projet
+
+1. **Le vert ne prouve rien sur l'utilisabilité.** Type-check + tests + build au vert ≠
+   application fonctionnelle ≠ application utilisable. Quatre bugs runtime et toute la
+   famille des events désalignés sont passés au vert intégral. D'où R2, R3, R4 et l'audit
+   live du PO.
+2. **Un cadre d'audit identique révèle les angles morts.** Le dual audit s16 (Claude Code +
+   Gemini, mêmes axes, même barème, même format) a montré que **chacun avait raté le finding
+   n°1 de l'autre**. Sans cadre commun strict, on ne compare que du bruit.
+3. **Les incidents les plus coûteux ne sont pas des défauts de code, mais de fraîcheur de
+   fait.** Une panne externe jamais remesurée (5 sprints gelés) et un backlog jamais confronté
+   au code (3 US planifiées sur du déjà livré) ont coûté plus que tous les bugs de typage
+   réunis.
