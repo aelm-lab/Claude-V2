@@ -220,7 +220,10 @@ un extrait de recherche qui aurait pu porter la bonne information.
 | **H7** | **Plafond : 250 lignes par document de Knowledge.** Le critère réel est la **dispersion thématique** : au-delà de 250 lignes, un document mêle en général plusieurs intentions et renvoie des extraits sans rapport avec la question. Deux exceptions nommées, parce qu'elles sont **mono-intention à titres stables** : `AGENTS.md` (lecture linéaire par Gemini, plafond 350) et `TYPES_CONTRACT.md` (document de référence pur, plafond 350). Aucune autre exception sans validation PO | Continu | Claude alerte |
 | **H8** | **Titres thématiques, jamais chronologiques.** Un document organisé par session produit des extraits qui se contredisent d'une section à l'autre | À l'écriture | Claude |
 | **H9** | **Purge tous les 5 sprints.** Tout document dont l'état de référence a plus de 3 sprints de retard est relu ou marqué périmé | S40, S45… | PO déclenche |
-
+- **Exception au plafond de 250 lignes : `STATE.md` est plafonné à 350.** C'est le seul
+  document qui indexe l'ensemble du projet (versions, sessions, métriques, backlog, trous)
+  au lieu de traiter un sujet unique. Au-delà de 350, sortir une section entière vers un
+  doc satellite hors ordre de lecture, sur le modèle d'`AUDIT.md` (SE-051).
 ### Carte des documents
 
 | Doc | Rôle | Lu par |
