@@ -280,7 +280,7 @@ nom nu : Playwright interprète l'argument comme une **regex de sous-chaîne**, 
 registre. **Slashes avant (`/`) uniquement** — sous Windows les `\` cassent le matching et
 produisent « No tests found » sans erreur explicite.
 
-**État de référence : 38 fichiers sur disque / 38 enregistrés, mapping 1:1 vérifié.**
+**État de référence : 41 fichiers sur disque / 41 enregistrés, mapping 1:1 vérifié.**
 
 - **batch1** (9) : `auto-vault-toast` · `boot-loader` · `calendar-subnav-layout` ·
   `discover-season-dedup` · `foryou-dedup` · `login-styled` · `modal-add-appears-on-week` ·
@@ -293,8 +293,9 @@ produisent « No tests found » sans erreur explicite.
 - **batch4** (9) : `logout-modal-position` · `nav-scroll-hide` · `onboarding-fullscreen` ·
   `onboarding-genres` · `onboarding-seed` · `onboarding-toast` · `onboarding-welcome` ·
   `search-enriched` · `search-hides-nav`
-- **batch5** (4) : `search-quick-add` · `week-empty-day-cta` · `more-like-this-modal` ·
-  `no-horizontal-overflow`
+- **batch5** (7) : `search-quick-add` · `week-empty-day-cta` · `more-like-this-modal` ·
+  `no-horizontal-overflow` · `grid-two-columns` · `onboarding-toast-destination` ·
+  `day-guard-plan-to-watch`
 
 **Dette connue :** `more-like-this-modal` n'a aucun `page.route()` et tape l'API Jikan live →
 viole la règle du réseau déterministe. Rouge tant que l'endpoint `/anime/{id}/recommendations`
