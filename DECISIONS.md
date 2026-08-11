@@ -246,3 +246,12 @@ spécifier de correctif avant d'avoir tranché.**
 **Piste non vérifiée :** `day` serait rempli par `syncAnimeUpdates` via `parseJSTToLocal`
 depuis le `broadcast` Jikan — donc dépendant de `/anime/{id}`, endpoint en 504 (DEC-113). Si
 confirmé, le défaut d'onboarding et la panne Jikan ont **la même cause aval**.
+
+
+## DEC-120 → DEC-124 — Beta réelle, gouvernance Gemini, garde `day`
+
+- **DEC-120** L'app est en **beta avec des testeurs réels**. Tout P0 sur un parcours d'entrée devient bloquant, plus seulement gênant.
+- **DEC-121** **`AGENTS.md` en lecture seule pour l'agent implémenteur** (R-AGENTS-1). Mise à jour uniquement par US dédiée avec patch verbatim (R-AGENTS-2). Sens de circulation unique : AI Studio → repo → CMD. *Motif : 3ᵉ occurrence de R-SCOPE-1 sur ce fichier.*
+- **DEC-122** **La gate 🔴 peut être satisfaite par un test unitaire dédié quand l'E2E est structurellement impossible.** Motivé au cas par cas, non généralisable. Cas fondateur : AUD-02 — le SDK Firestore met les écritures en file locale hors-ligne, `setDoc` résout, aucun rejet n'est observable depuis le navigateur.
+- **DEC-123** Clé primaire `mal_id` conservée. `US-BETA-DATA-MIGRATION` annulée.
+- **DEC-124** 🔴 **`normalizeAnime` pose `day` et `airsTime` depuis `broadcast`.** ⛔ **SUPERSEDE DEC-118.** DEC-118 interdisait de corriger le mapping au motif que J-04 le réécrirait. Elle reposait sur une prémisse fausse : la donnée de diffusion était supposée absente, alors qu'elle est présente dans `/seasons/now` **et** `/anime/{id}` (mesure SE-053) et simplement ignorée. Cascade retenue : (1) valeur existante jamais écrasée, (2) `broadcast` JST → jour + heure locale, (3) jour de semaine de `aired.from`, **sans heure** — l'absence d'heure signale honnêtement l'approximation. Le résidu (aucune source) est marqué `awaitingSchedule` et repromu par `useSync`. *Leçon : une décision « ne corrigez pas ici » doit citer la mesure qui la fonde, sinon elle survit à sa prémisse.*
