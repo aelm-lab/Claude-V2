@@ -98,6 +98,9 @@ export interface AnimeEntry {
   episodes: number | null;
   day?: WeekDay;                  // jour de diffusion LOCAL — voir note ci-dessous
   airsTime?: string | null;       // "HH:mm" local
+/** Entrée démotée en 'watchlist' faute de jour de diffusion connu.
+   *  useSync la repromeut en 'calendar' dès que `day` est renseigné. (DEC-124) */
+  awaitingSchedule?: boolean;
   episodeOverride?: number;       // épisode forcé par l'utilisateur — RESET à undefined à chaque upsert (DEC-84)
   recencyBucket?: RecencyBucket;
 
