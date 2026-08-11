@@ -200,6 +200,9 @@
   vérifiée.** `findstr /n "a\|b\|c"` cherche la chaîne littérale et renvoie 0 résultat
   trompeur — le OU s'écrit avec des **mots séparés par des espaces**. Deux fausses
   conclusions ont déjà été tirées de vides syntaxiques.
+❌ **Fichiers de débogage commités** (`test-*.cjs`, `*.py`, `e2e_output.txt`). 4 occurrences. Vérifier `git show --name-only HEAD`, jamais `git diff` — après un `pull` l'arbre est propre et `git diff` ne prouve rien.
+- ❌ **Sortie de test d'un run antérieur présentée comme fraîche.** 2 occurrences. Seule la machine PO fait foi (R1).
+- ❌ **Modifier le code de production pour faire passer une spec périmée.** Cas fondateur : ajout d'une classe `anime-grid` dans un composant pour satisfaire un sélecteur E2E obsolète, glissé dans une US de normalisation sans rapport. Le symptôme est un fichier hors périmètre — d'où l'importance de vérifier le périmètre **avant** de lire le code.
 
 ## 8. Fidélité fonctionnelle
 
@@ -211,6 +214,9 @@
 - ❌ **Créer une entrée `state:'calendar'` sans se demander qui posera son `day`.** Sans `day`,
   l'anime est stocké mais **invisible partout**.
 
+- ❌ **`addInitScript()` rejoue à chaque navigation.** Un `localStorage.clear()` non gardé efface l'état entre deux `goto` d'une même spec. Remède : sentinelle `sessionStorage` + point de synchro (toast visible) avant navigation.
+- ❌ **Spécifier une US sans avoir lu la spec E2E qui doit la prouver.** 2 occurrences sur AUD-01. R3 s'applique aux **tests** autant qu'au code : une spec dont le mock est volontairement dépourvu de la donnée corrigée ne peut pas passer au vert, et l'annoncer comme gate fait perdre un aller-retour complet.
+- ❌ **Publier un patch de documentation dans le même message qu'une US.** L'agent applique les deux et déclenche un faux verdict R-SCOPE-1.
 ---
 
 ## 🎓 Les 3 leçons de méthode les plus chères du projet
