@@ -66,6 +66,7 @@ Forme canonique renvoyée par `normalizeAnime`, enrichie des champs runtime util
 vues et le moteur de recommandations.
 
 ```ts
+
 // src/types/anime.ts
 import type { RecBadge, RecSignal } from './recs';
 
@@ -75,7 +76,9 @@ export interface AnimeEntry {
   id: number;
 
   // Métadonnées de base
-  title: string;
+  title: string;                  // titre primaire (rōmaji en source AniList)
+  title_english?: string | null;  // titre anglais — null si la source n'en fournit pas
+  synopsis?: string;              // texte de présentation (DEC-47) — confirmé par lecture SE-055
   cover_url: string | null;
   cover_url_hd: string | null;
   studio: string | null;          // SINGULIER — null si inconnu, jamais "Unknown Studio". Conservé pour l'AFFICHAGE.
@@ -96,9 +99,9 @@ export interface AnimeEntry {
   // Classement & planning
   state: AnimeState | null;
   episodes: number | null;
-  day?: WeekDay;                  // jour de diffusion LOCAL — voir note ci-dessous
-  airsTime?: string | null;       // "HH:mm" local
-/** Entrée démotée en 'watchlist' faute de jour de diffusion connu.
+  day?: WeekDay;                  // jour de diffusion LOCAL — posé par normalizeAnime (DEC-124)
+  airsTime?: string | null;       // "HH:mm" local — posé par normalizeAnime (DEC-124)
+  /** Entrée démotée en 'watchlist' faute de jour de diffusion connu.
    *  useSync la repromeut en 'calendar' dès que `day` est renseigné. (DEC-124) */
   awaitingSchedule?: boolean;
   episodeOverride?: number;       // épisode forcé par l'utilisateur — RESET à undefined à chaque upsert (DEC-84)
@@ -115,7 +118,7 @@ export interface AnimeEntry {
   _triggerTitle?: string;
 
   // Moteur de recommandations
-  studios: string[];              // PLURIEL — lu par scorePool. TOUJOURS peuplé par normalizeAnime (DEC-86).
+  studios?: string[];             // PLURIEL — lu par scorePool. OPTIONNEL : toujours tester avant de mapper.
   popularityScore?: number;       // fallback popularité quand historyCount < 5
   _relevanceScore?: number;       // produit par scorePool
   _presetScore?: number;          // produit par applyPreset
