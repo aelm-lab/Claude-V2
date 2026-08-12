@@ -232,8 +232,10 @@ fetch échoue — comportement **délibéré**, documenté en commentaire, fidè
 Sans cache et sans réseau → liste vide **silencieuse**.
 **Décision : comportement conservé.** Dette UX enregistrée sous `US-CACHE-STALE-WARNING`.
 
-### DEC-115 — Le champ `day` n'est produit par aucun chemin de normalisation
-
+### DEC-115 — Le champ `day` n'est produit par aucun chemin de normalisation⛔ **SUPERSEDED PAR DEC-124.** La cascade de résolution livrée en S38 pose `day` et `airsTime`
+dans `normalizeAnime`. La piste « dépendant de `/anime/{id}` en 504 » était fausse : la donnée
+était présente et ignorée. *Leçon : une hypothèse marquée « NON close » doit être re-testée à
+sa clôture, pas citée comme un fait dans les autres documents — elle l'a été 3 fois.*
 `normalizeAnime` ne produit **jamais** `day` ni `airsTime`. Or `CalendarWeekPage` filtre sur
 `state === 'calendar' && day === dayClass` : **sans `day`, un anime en `state:'calendar'` est
 stocké mais invisible partout** — ni dans la semaine, ni en Library.
@@ -255,3 +257,16 @@ confirmé, le défaut d'onboarding et la panne Jikan ont **la même cause aval**
 - **DEC-122** **La gate 🔴 peut être satisfaite par un test unitaire dédié quand l'E2E est structurellement impossible.** Motivé au cas par cas, non généralisable. Cas fondateur : AUD-02 — le SDK Firestore met les écritures en file locale hors-ligne, `setDoc` résout, aucun rejet n'est observable depuis le navigateur.
 - **DEC-123** Clé primaire `mal_id` conservée. `US-BETA-DATA-MIGRATION` annulée.
 - **DEC-124** 🔴 **`normalizeAnime` pose `day` et `airsTime` depuis `broadcast`.** ⛔ **SUPERSEDE DEC-118.** DEC-118 interdisait de corriger le mapping au motif que J-04 le réécrirait. Elle reposait sur une prémisse fausse : la donnée de diffusion était supposée absente, alors qu'elle est présente dans `/seasons/now` **et** `/anime/{id}` (mesure SE-053) et simplement ignorée. Cascade retenue : (1) valeur existante jamais écrasée, (2) `broadcast` JST → jour + heure locale, (3) jour de semaine de `aired.from`, **sans heure** — l'absence d'heure signale honnêtement l'approximation. Le résidu (aucune source) est marqué `awaitingSchedule` et repromu par `useSync`. *Leçon : une décision « ne corrigez pas ici » doit citer la mesure qui la fonde, sinon elle survit à sa prémisse.*
+
+## DEC-125 → DEC-126 — Fin de vie Jikan & périmètre du breaker
+
+- **DEC-125** 🔴 **Jikan ferme en octobre 2026.** Fait apporté par le PO, absent du corpus.
+  La migration AniList cesse d'être une réparation de la recherche pour devenir un **full
+  switch** de toutes les lectures externes, avec échéance dure. C'est ce qui a défini le
+  Sprint Goal S39. *Impact utilisateur : sans ce switch, l'app cesse purement de fonctionner
+  en octobre.*
+- **DEC-126** **`AUD-04` est ANNULÉE, pas reportée.** Le constat visait la contamination du
+  circuit-breaker entre endpoints d'un même hôte. AniList n'expose **qu'un seul endpoint**
+  (`graphql.anilist.co`) : un breaker global y est le comportement correct, pas un défaut.
+  La seule leçon transposable a été gravée dans `anilistClient` : **un 429 n'incrémente
+  jamais le compteur de panne** (une limite de débit n'est pas une panne).
