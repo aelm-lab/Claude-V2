@@ -102,8 +102,7 @@ Deux conséquences structurantes souvent oubliées :
 | Fichier | Exports clés |
 |---|---|
 | `jst.ts` | `parseJSTToLocal` (ancre 1970, JST → local) |
-| `normalize.ts` | `normalizeAnime` — forme canonique, produit **toujours** `studios: string[]` (DEC-86), **ne produit jamais `day` ni `airsTime`** (DEC-115) |
-| `episodeInfo.ts` | `getAnimeEpisodeInfo`, `getCardStatus`, `isOnHiatus` (**seuil hiatus 14 j — source unique**) |
+| `normalize.ts` | `normalizeAnime` — forme canonique, produit **toujours** `studios: string[]` (DEC-86) et pose **`day` + `airsTime`** depuis `broadcast` par cascade (DEC-124) || `episodeInfo.ts` | `getAnimeEpisodeInfo`, `getCardStatus`, `isOnHiatus` (**seuil hiatus 14 j — source unique**) |
 | `helpers.ts` | `fetchWithRetry` (backoff 429), `getWeekNumber`, `escapeHTML`, `dedupeByMalId`, `BASE_URL` |
 | `recEngine.ts` | `buildTasteProfile`, `scorePool`, `assignBadge`, `extractBecauseYouWatched`, `buildNextBatch`, `applyPreset`, `RelationMemory` |
 | `ics.ts` | `buildICSContent` (génération de texte pure) |
