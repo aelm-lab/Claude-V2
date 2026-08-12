@@ -16,12 +16,12 @@
 
 | | Valeur |
 |---|---|
-| **Sprint** | **S38 — CLOS.** Goal atteint, Outcome Gate répondue |
-| **Sprint suivant** | **S39 — à ouvrir**, Goal non défini |
-| **Session courante** | **SE-053** — AUD-01 réparée en 2 US + clôture S38 |
-| **Dernière version livrée** | **v0.32.0 (S38)** |
-| **Dernier DEC** | **DEC-124** |
-| **Commit `main`** | `2ff2753` *(2026-08-11 12:35)* |
+| **Sprint** | **S39 — EN COURS.** Goal : *Aanime lit AniList, la recherche fonctionne* |
+| **Session courante** | **SE-055** |
+| **Dernière version livrée** | **v0.32.0 (S38)** — S39 non clos, aucun bump |
+| **Dernier DEC** | **DEC-126** |
+| **Commit `main`** | `27f9908` |
+| **Échéance dure** | **Jikan ferme en octobre 2026** (DEC-125) — le full switch AniList n'est pas négociable |
 
 ---
 
@@ -29,11 +29,11 @@
 
 | Session | Sprint | Objet | Sortie |
 |---|---|---|---|
-| **SE-053** | S38 | AUD-01 réparée (FIX + PROMOTE) · DEC-118 réouverte · clôture S38 | **v0.32.0** |
+| **SE-055** | S39 | Sync documentaire · 5 dérives de contrat traitées · US-ANILIST-J05-E2E | — |
+| SE-054 | S39 | J02→J05 AniList livrés · DEC-125 · DEC-126 | 199 tests |
+| SE-053 | S38 | AUD-01 réparée (FIX + PROMOTE) · DEC-118 réouverte · clôture S38 | **v0.32.0** |
 | SE-052 | S38 | AUD-01-E2E · AUD-02 · registre E2E réconcilié 41/41/41 | 164 tests |
 | SE-051 | S38 | Rédaction des US S38 · AUDIT.md créé | 161 tests |
-| SE-050 | S38 | Dual audit réconcilié · décision API | 0 code livré |
-| SE-049 | — (hors sprint) | Refonte du corpus documentaire | 13 → 9 docs |
 
 ---
 
@@ -60,15 +60,13 @@
 
 | Métrique | Valeur | Preuve | Fraîcheur |
 |---|---|---|---|
-| Tests unitaires | **169 passed** (21 fichiers) | `npm run test:run`, machine PO | **SE-053** |
-| Type-check | **vert** | `npm run type-check`, sortie vide | **SE-053** |
-| Build | **vite 6.4.2 · 178 modules** | `npm run build` | **SE-053** |
+| Tests unitaires | **199 passed** (24 fichiers) | `npm run test:run`, machine PO | **SE-054** |
+| Type-check | **vert** | `npm run type-check`, sortie vide | **SE-054** |
+| Build | **vert** | `npm run build` | **SE-054** |
 | E2E — fichiers sur disque | **41** | `dir /b tests\e2e\*.spec.ts` | SE-052 |
 | E2E — registre `package.json` | **41 / 41** | diff programmatique | SE-052 |
 | E2E — registre `AGENTS.md §7` | **41 / 41** | comptage 9+9+7+9+7 | SE-052 |
 | E2E — sweep complet | **45 verts / 50** | machine PO | SE-052, **à rejouer en S39** |
-| E2E — batch1 | 9/10 | machine PO | **SE-053** |
-| E2E — batch5 | 9/10 | machine PO | **SE-053** |
 
 > ⚠️ Pas de mention « zéro `any` » : `vue-tsc` ne les teste pas, ESLint n'est jamais exécuté.
 > Mesure réelle : `helpers.ts:32`. → `AUDIT.md`, `AUD-08` / `AUD-14`.
@@ -89,8 +87,8 @@
 | Jours-retour semaine 1 | **non instrumenté** — baseline 0 |
 
 > Jamais instrumentées. Définitions → `PILOTAGE.md §4`.
-> 🔴 **S38 a réparé le parcours que ces métriques mesurent, sans pouvoir le prouver.**
-> Candidat n°1 au Goal de S39.
+> 🔴 Deux sprints consécutifs (S38, S39) réparent le parcours que ces métriques mesurent,
+> sans pouvoir le prouver. **Candidat n°1 au Goal de S40.**
 
 ---
 
@@ -98,7 +96,8 @@
 
 | Sprint | Verdict |
 |---|---|
-| **S38** | ✅ **Gain ressenti.** Un anime ajouté depuis n'importe quel chemin apparaît désormais sur son jour dans le calendrier — auparavant il disparaissait sans trace. Et l'app ne dit plus « Saved » quand Firestore est en panne. **Deux P0 fermés, dont celui qui cassait le parcours d'entrée.** |
+| **S39** | ⏳ en cours |
+| **S38** | ✅ **Gain ressenti.** Un anime ajouté depuis n'importe quel chemin apparaît sur son jour dans le calendrier — auparavant il disparaissait sans trace. Et l'app ne dit plus « Saved » quand Firestore est en panne |
 | S37 | ✅ Gain ressenti. Densité de grille uniforme (2 colonnes) sur 4 surfaces |
 | S36 | ✅ Gain ressenti. Fin du scroll latéral sur mobile, popups centrées |
 
@@ -109,76 +108,70 @@
 > **Règle (`PILOTAGE.md §6`) : remesurer à l'ouverture de chaque session, avec la requête
 > EXACTE émise par le code.**
 
-### Jikan v4 — dernière mesure : **SE-053 (2026-08-11)**
+### AniList — source primaire depuis S39. Dernière mesure : **SE-054 (J01)**
+
+| Point | Résultat |
+|---|---|
+| `graphql.anilist.co` | **200.** CORS OK depuis l'origine de production (preflight + réponse) |
+| Rattachement `idMal` | **19 / 19** sur corpus de test — 0 % d'orphelins |
+
+⚠️ **Réserve :** corpus de 19 titres mainstream. Le taux d'orphelins réel sur un import MAL
+de 300 titres sera > 0 → repli titre+année prévu en **J-08**.
+
+### Jikan v4 — en fin de vie. Dernière mesure : **SE-053 (2026-08-11)**
 
 | Endpoint | Code | Note |
 |---|---|---|
-| `/seasons/now` | **200** | 152 items, 7 pages. **Renvoie `broadcast.day` + `time` + `timezone`** |
-| `/anime/{id}` | **200** | testé sur 52991. Porte le `broadcast` complet |
-| `/anime?q=` | **504** | inchangé depuis S33 |
+| `/seasons/now` | **200** | renvoie `broadcast.day` + `time` + `timezone` |
+| `/anime/{id}` | **200** | porte le `broadcast` complet |
+| `/anime?q=` | **504** | **mort, acté — ne plus remesurer du tout** |
 
-**Diagnostic retenu (DEC-113) :** MyAnimeList est inaccessible depuis Jikan ; seules les URLs
-déjà en cache chez Jikan répondent 200. Toute URL neuve → 504. La recherche produit par
-construction des URLs neuves — d'où sa mort permanente.
+🔴 **`Jikan ferme en octobre 2026` (DEC-125).** Aucune mesure ne changera cette échéance.
 
-🔴 **Correction de fait apportée en SE-053 :** l'affirmation « la donnée de diffusion est
-absente » était fausse. Elle est présente dans les deux endpoints vivants, elle était
-**ignorée au mapping**. DEC-118, bâtie sur cette prémisse, a été réouverte → **DEC-124**.
+🔴 **Protocole de mesure :** seul le `curl` du PO fait foi. Les outils de Claude ont produit
+un **faux 504** sur `/seasons/now` en SE-054 (artefact de proxy). Ne plus mesurer via Claude.
 
 ---
 
-## 📋 Kanban — sprint S39 (à ouvrir)
+## 📋 Kanban — Sprint S39
 
-### ✅ Done — S38
+**Sprint Goal :** *Aanime lit AniList, la recherche fonctionne.*
 
-- **AUD-01** — CLOSE. Garde `day` + cascade `broadcast → aired.from` + marqueur
-  `awaitingSchedule` + repromotion auto dans `useSync`. 2 US, 5 tests unitaires,
-  1 E2E réparée
-- **AUD-02** — CLOSE. `throw error.value` dans `useFirestore` + 3 tests unitaires
-- **Registre E2E** — CLOSE. 41/41/41, mapping 1:1. Trou 🔴 de S37 fermé
-- **AGENTS.md** — déployé à la racine, §7 à jour, en lecture seule pour Gemini (DEC-121)
-- **US-ONBOARDING-REFRESH** — **absorbée par AUD-01.** La cause racine était la même ;
-  le correctif de garde la rend sans objet. Reste le libellé du toast → S39
+### ✅ Done
+- `J02` `6976c00` · `J03` `4cc0fcd` · `J04` `0622235` (+ fix `18570e5`) · `J05` `27f9908`
+- Recherche **confirmée fonctionnelle en visuel** (PO, SE-055) — modale d'anime incluse
+- Sync documentaire : 5 dérives de contrat traitées · DEC-125 / DEC-126 inscrites ·
+  DEC-115 marquée superseded · 2 antipatterns gravés
 
 ### 🔄 In Progress
+- `US-ANILIST-J05-E2E` — verrouiller la recherche par E2E
 
-*(vide)*
-
-### 📝 To Do — S39, à composer
-
-1. **[TEST] Sweep complet + purge des 4 specs rouges** 🟢 — dette, plafond §5 à surveiller
-   - `discover-season-dedup` : sélecteur `.anime-grid` périmé depuis US-GRID-FIX (S37).
-     **Requalifié en SE-053** — ce n'était pas de la dette réseau
-   - `onboarding-toast` : libellé changé en SE-051, assertion non mise à jour
-   - `search-hides-nav` : **non qualifié**, jamais instruit
-   - `more-like-this-modal` : dette réseau réelle, `/recommendations` en 504 → `US-E2E-MLT-MOCK`
-2. **[UX] Libellé du toast d'onboarding** 🟢 — doit nommer la destination réelle
-3. **[MESURE] Instrumenter le TTFA** ⬆️ — S38 a réparé le parcours sans pouvoir le prouver
+### 📝 To Do — S39
+- `US-ANILIST-J06` — détail anime sur AniList (synopsis, studio, prochain épisode + heure)
+- Sweep des 3 specs E2E rouges restantes
+- Libellé du toast d'onboarding
+- Vérifier `useEpisodeInfo.getStatus` vs `getCardStatus` (contrat §8) — **avant J06**
 
 ### 🗂️ Backlog
 
-#### Condition de lancement public
-
-- **[US-ANILIST-J01]** ⬆️⬆️ 🔴 — **Spike bloquant, go/no-go du lot.** (1) CORS réel depuis
-  l'origine de production, preflight **et** réponse ; (2) taux d'`idMal` null sur le corpus
-  réel. Seuils : `< 2 %` on avance · `2–10 %` US de rattrapage · `> 10 %` on rouvre la décision.
-  **Planification non tranchée — décision PO attendue.**
-- **[US-ANILIST-J02→J12]** 🔴 — lot de migration phasé. Phase 1 = coexistence (recherche +
-  détail sur AniList, surfaces mortes donc zéro régression), feature flag, réversible en
-  un commit. `AUD-08` est un prérequis de la phase 1.
+#### Migration AniList
+- `J-08` — repli titre+année pour les orphelins d'import MAL
+- `J07` → `J12` — suite du lot de migration phasé
 
 #### Audit S38 — reste à convertir
-
-`AUD-03` à `AUD-20`, contenu dans `AUDIT.md`. Prioritaires : `AUD-04` (coupe-circuit global,
-bloquant migration) · `AUD-05` (mode dégradé, à fusionner avec `US-CACHE-STALE-WARNING`) ·
-`AUD-08` (CI sans Playwright ni ESLint).
+`AUD-03` à `AUD-20`, contenu dans `AUDIT.md`. Prioritaires : `AUD-05` (mode dégradé, à
+fusionner avec `US-CACHE-STALE-WARNING`) · `AUD-08` (CI sans Playwright ni ESLint).
 `AUD-12`, `AUD-19`, `AUD-20` : ⏸️ à vérifier avant conversion.
+**`AUD-04` est ANNULÉE** (DEC-126).
 
 #### Backlog produit (captures d'onboarding)
-
 - Titres affichés en japonais/rōmaji au lieu de l'anglais
 - Cartes d'onboarding désalignées
 - Lien « Clear my data » dans la modale de déconnexion
+- Instrumentation TTFA
+
+#### Test
+- `J05-E2E-bis` 🟢 — couvrir les états `empty` et `error` du dropdown de recherche
 
 ---
 
@@ -186,8 +179,10 @@ bloquant migration) · `AUD-05` (mode dégradé, à fusionner avec `US-CACHE-STA
 
 | Trou | Gravité | État |
 |---|---|---|
-| 4 specs E2E rouges | 🟠 | 3 qualifiées, 1 non instruite. → S39 |
-| CI sans Playwright ni ESLint | 🟠 | `AUD-08`, prérequis migration |
+| 3 specs E2E rouges | 🟠 | → S39 |
+| CI sans Playwright ni ESLint | 🟠 | `AUD-08` |
 | Métriques produit non instrumentées | 🟠 | Aucune baseline depuis leur création |
-| `AUD-17` — stubs `_syncAnimeUpdates` / `_startBackgroundRelationFetch` | 🟢 | Doublons morts, vérifiés inoffensifs en SE-053 |
+| `studios` optionnel dans le code vs DEC-86 « toujours peuplé » | 🟢 | Contrat aligné sur le code en SE-055 ; `normalize.ts` non relu |
+| `getStatus` vs `getCardStatus` | 🟢 | Détecté SE-055, non tranché |
+| `AUD-17` — stubs `_syncAnimeUpdates` / `_startBackgroundRelationFetch` | 🟢 | Doublons morts, inoffensifs |
 | Détail des versions S23→S27 | 🟢 | Perdu, ne pas reconstituer |
