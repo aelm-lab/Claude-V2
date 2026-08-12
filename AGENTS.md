@@ -280,7 +280,8 @@ nom nu : Playwright interprète l'argument comme une **regex de sous-chaîne**, 
 registre. **Slashes avant (`/`) uniquement** — sous Windows les `\` cassent le matching et
 produisent « No tests found » sans erreur explicite.
 
-**État de référence : 41 fichiers sur disque / 41 enregistrés, mapping 1:1 vérifié.**
+**État de référence : 42 fichiers sur disque / 42 enregistrés, mapping 1:1 vérifié.**
+
 
 - **batch1** (9) : `auto-vault-toast` · `boot-loader` · `calendar-subnav-layout` ·
   `discover-season-dedup` · `foryou-dedup` · `login-styled` · `modal-add-appears-on-week` ·
@@ -288,8 +289,8 @@ produisent « No tests found » sans erreur explicite.
 - **batch2** (9) : `modal-content-centered-mobile` · `modal-open` · `modal-position` ·
   `modal-status-gating` · `month-layout` · `nav-active-state` · `onair-subnav` · `reccard-add` ·
   `reccard-click-dismiss`
-- **batch3** (7) : `search-dedup` · `smoke` · `snap-to-today` · `toast-labels` ·
-  `toast-visible-mobile` · `week-no-duplicate-period` · `week-progress-bar`
+- **batch3** (8) : `modal-next-episode` · `search-dedup` · `smoke` · `snap-to-today` ·
+  `toast-labels` · `toast-visible-mobile` · `week-no-duplicate-period` · `week-progress-bar`
 - **batch4** (9) : `logout-modal-position` · `nav-scroll-hide` · `onboarding-fullscreen` ·
   `onboarding-genres` · `onboarding-seed` · `onboarding-toast` · `onboarding-welcome` ·
   `search-enriched` · `search-hides-nav`
@@ -301,7 +302,10 @@ produisent « No tests found » sans erreur explicite.
 viole la règle du réseau déterministe. Rouge tant que l'endpoint `/anime/{id}/recommendations`
 répond 504. **Ce rouge n'est pas une régression** — ne pas retirer la spec du batch pour faire
 passer le sweep.
-
+**Seed calendrier :** la clé de persistance est `aanime_calendar`. Une migration legacy au boot
+recopie `animeCalendar` vers elle, donc d'anciennes specs sèment encore sur l'ancienne clé —
+ce n'est pas un bug. **Toute nouvelle spec sème sur `aanime_calendar`.** Enveloppe attendue :
+`{ timestamp: number, data: AnimeEntry[] }`.
 ---
 
 ## 8. Interdits
