@@ -126,14 +126,16 @@ export interface AnimeEntry {
 ```
 
 **`studio` vs `studios` — les deux coexistent volontairement.** `studio` (singulier) sert
-l'**affichage** ; `studios: string[]` sert le **scoring** (`scorePool`). `normalizeAnime`
-produit toujours `studios` (fallback sur le singulier, filtre `"Unknown"`), d'où le typage
-non optionnel.
+l'**affichage** ; `studios?: string[]` sert le **scoring** (`scorePool`).
 
-🔴 **`day` n'est produit par aucun chemin de normalisation.** `normalizeAnime` ne pose ni
-`day` ni `airsTime`. Or `CalendarWeekPage` filtre sur `state === 'calendar' && day === …` :
-**une entrée sans `day` est stockée mais invisible partout**. Toute fonction qui crée une
-entrée `state:'calendar'` doit se demander qui posera son `day` (DEC-115).
+⚠️ **`studios` est OPTIONNEL dans le code** (lecture SE-055), alors que DEC-86 affirme que
+`normalizeAnime` le peuple toujours. Le contrat suit le code : **jamais `anime.studios.map()`
+sans garde**. Tension enregistrée, à trancher par une lecture de `normalize.ts` (pas d'US
+ouverte : le typage optionnel est déjà le comportement sûr).
+
+✅ **`day` et `airsTime` SONT produits par `normalizeAnime`** depuis `broadcast`, par cascade
+(DEC-124, livré S38). L'ancienne interdiction (DEC-115) est **superseded**. Le résidu sans
+source est marqué `awaitingSchedule` et repromu par `useSync`.
 
 ❌ **`onHiatus?` a été SUPPRIMÉ du type** (DEC-84). Le hiatus est un calcul dérivé
 (`isOnHiatus`, source unique). Ne pas le réintroduire.
@@ -340,7 +342,6 @@ ajouté ci-dessus par une US « types ».**
 
 | Élément | Source documentaire | Ce qui manque |
 |---|---|---|
-| `AnimeEntry.synopsis?` | DEC-47 — « `synopsis?` ajouté à AnimeEntry » | Le champ **n'apparaît pas** dans l'interface §2. Type exact à confirmer |
 | `useStats` | DEC-88, EPIC 11 — `completedThisYear`, `topGenres` | Aucune signature contractualisée |
 | `useOnboarding` / `finishWithSeed` / `markOnboarded` | EPIC 9 (livré) | Aucune signature contractualisée |
 | `utils/onboardingFilter.ts` — `buildSeedEntry`, `selectOnboardingSuggestions` | EPIC 9, DEC-115 | `buildSeedEntry` retourne `{ ...anime, id, state }` et **ne pose jamais `day`**. Signature exacte à confirmer |
