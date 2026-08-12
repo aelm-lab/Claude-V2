@@ -331,6 +331,7 @@ importMalFile(file: File): Promise<MalImportResult>
 > **`getAnimeEpisodeInfo`** : l'util sous-jacent impose `targetDate: Date` **obligatoire**.
 > `useEpisodeInfo` fournit `new Date()` à l'appel pour exposer un `targetDate?` optionnel.
 
+| `useEpisodeInfo` | `getStatus(anime): CardStatus` — **et non `getCardStatus`**. Confirmé par ModalCalendarTop.vue:92 et ModalVersionTop.vue:102 | 
 ---
 
 ## 9. ⚠️ Lacunes assumées du contrat
@@ -339,6 +340,8 @@ Ces éléments **existent dans le code** d'après la documentation du projet mai
 été contractualisés ici. Ils sont listés pour éviter que Gemini n'invente un type en leur
 absence. **Aucun ne doit être utilisé dans une US avant d'avoir été relu dans le code et
 ajouté ci-dessus par une US « types ».**
+| `AniListMedia` | `src/types/anilist.ts` existe et n'est décrit nulle part dans ce contrat. À documenter avant toute US touchant le mapping AniList. |
+
 
 | Élément | Source documentaire | Ce qui manque |
 |---|---|---|
