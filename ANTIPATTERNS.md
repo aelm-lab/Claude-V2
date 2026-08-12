@@ -75,6 +75,7 @@
   sans réseau, la liste est vide **sans explication**.
   | **AP-HYGIENE-1** | **Fichiers de travail commités.** `wait.txt` (SE-054), après les 3 fichiers de debug de SE-052. | 🟠 | Le débogage reste local. Le PO vérifie `git status` avant la gate ; tout fichier hors périmètre déclaré = correction mineure d'office. |
 | **AP-TS-1** | **`as unknown as` posé sans qu'aucune erreur de compilation ne l'exige.** J04 (SE-054), après AUD-14. | 🟠 | Un double cast n'est légitime qu'en réponse à une erreur `vue-tsc` **citée dans le rapport de livraison**. Sans citation : à retirer. |
+| **AP-PROCESS-2** | **Inférence promue en fait par son entrée dans un document.** Un test déclaré « rouge qualifié » sur la seule lecture de son code (SE-055, `modal-open`) — il était vert. Un chemin de fichier déduit d'un handoff au lieu d'être lu (SE-056, `src/components/ui/`). 2ᵉ famille d'occurrence après « Jikan est en panne » porté 5 sprints. | 🟠 | **Un test n'est rouge que sur sa sortie d'exécution**, jamais sur la lecture de son code : sans sortie collée par le PO, on écrit « suspecté », jamais « qualifié ». **Un chemin de fichier se lit, ne se déduit pas.** Le mot choisi dans `STATE.md` engage : il sera lu comme un fait mesuré à la session suivante. |
 
 ## 4. Composants & feedback UI
 
