@@ -73,6 +73,8 @@
 - ❌ **Renseigner un état d'erreur sans jamais l'afficher.** `fetchCurrentSeason` sert un
   cache périmé en cas d'échec et remplit `error.value` — que rien n'affiche. Sans cache et
   sans réseau, la liste est vide **sans explication**.
+  | **AP-HYGIENE-1** | **Fichiers de travail commités.** `wait.txt` (SE-054), après les 3 fichiers de debug de SE-052. | 🟠 | Le débogage reste local. Le PO vérifie `git status` avant la gate ; tout fichier hors périmètre déclaré = correction mineure d'office. |
+| **AP-TS-1** | **`as unknown as` posé sans qu'aucune erreur de compilation ne l'exige.** J04 (SE-054), après AUD-14. | 🟠 | Un double cast n'est légitime qu'en réponse à une erreur `vue-tsc` **citée dans le rapport de livraison**. Sans citation : à retirer. |
 
 ## 4. Composants & feedback UI
 
