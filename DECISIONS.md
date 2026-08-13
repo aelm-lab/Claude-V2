@@ -276,3 +276,24 @@ confirmé, le défaut d'onboarding et la panne Jikan ont **la même cause aval**
 - **DEC-128** **Les micro-patchs ne passent plus par Gemini.** Tout changement ≤ 10 lignes sur 1 fichier, entièrement dictable verbatim, est produit par Claude et collé par le PO. Corollaire de gouvernance : **la dictée verbatim est réservée aux changements sans logique métier** (import, déplacement d'appel, renommage). Dès qu'une US porte une décision de comportement, la spec décrit le comportement et Gemini implémente — pour qu'un second lecteur puisse attraper une erreur de spec. Origine : la garde `day` mal placée en SE-053 était une erreur de Claude qu'une dictée verbatim aurait rendue indétectable.
 - **DEC-129** **Ligne « prochain épisode » : pas de repli textuel.** La modale calendrier affiche `Next episode · Wednesday at 18:30` uniquement si `airsTime` existe et que la série n'est pas terminée. `airsTime` sans `day` → `Next episode · 18:30`. Pas d'`airsTime` → **aucune ligne**, jamais « time unknown ». Se cale sur `airsTime`, **jamais sur `day` seul**, qui peut venir du repli fautif d'`AUD-21`. Aligné sur le bloc synopsis (`v-if="synopsisText"`) : le composant se tait quand il ne sait pas. Revient sur la note SE-055 qui prévoyait « time unknown ».
 - **DEC-130** ⛔ **`US-MODAL-OPEN-SEED-KEY` annulée — sans objet.** `usePersistence.loadFromDatabase` exécute au boot une **migration de clés legacy (US-133)** qui recopie `animeCalendar` → `aanime_calendar` avant lecture. Un seed E2E sur l'ancienne clé atteint donc le store, et l'enveloppe `{timestamp, data}` est exactement `ScheduleDocument`. `modal-open.spec.ts` n'a jamais été rouge. **`DEC-85` reste actif** : toute nouvelle spec sème sur `aanime_calendar`. 3ᵉ US annulée par lecture du code après `US-MODAL-UNIFY` (DEC-110) et `US-SEARCH-3` — mais la 1ʳᵉ dont la cause est une inférence de Claude inscrite en Knowledge, pas un backlog vieilli.
+## DEC-131 → DEC-132 — S39, clôture
+
+- **DEC-131** 🔴 **Pas de date de diffusion prouvée, pas de créneau.** `normalizeAniList` ne
+  déduit plus jamais un jour de semaine depuis `aired_from` (première diffusion). Sans
+  `nextAiringEpisode`, une série `Currently Airing` (donc `RELEASING` ou `HIATUS`) reçoit
+  `awaitingSchedule = true` et sort de la grille ; `useSync` la repromeut dès qu'un `day`
+  arrive. Tout autre statut : ni jour, ni attente.
+  *Origine :* `AUD-21`. Une série en pause entre deux cours occupait un créneau tiré d'une date
+  parfois vieille de plusieurs années. **Une case fausse ne se détecte pas à l'œil : elle
+  discrédite toute la grille, pas seulement sa ligne.** Option écartée : conserver le repli pour
+  les séries en cours — elle ne corrigeait pas le cas d'origine, elle le déguisait.
+  ⚠️ Arme enfin le mécanisme de DEC-124, jusque-là jamais posé sur le chemin AniList
+  (`awaitingSchedule` était retourné `undefined` en dur).
+
+- **DEC-132** **`description` AniList est du HTML, jamais affichable brut.** Règle de nettoyage
+  gravée dans `normalizeAniList`, en TypeScript pur, **sans DOM** : `<br>` → `\n`, dépouillement
+  des autres balises, **puis** décodage des entités, `\n{3,}` → `\n\n`, `trim`. Résultat vide →
+  `synopsis: undefined`, jamais `null` ni `''`.
+  *L'ordre dépouillement → décodage est structurant :* une description contenant `&lt;i&gt;` veut
+  afficher `<i>` littéralement. Décoder d'abord supprimerait ce texte voulu par l'auteur.
+  ⚠️ N'agit qu'à la normalisation : les entrées déjà persistées restent sans synopsis jusqu'à `J10`.
