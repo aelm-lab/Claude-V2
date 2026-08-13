@@ -189,6 +189,12 @@ a touché une règle de gouvernance (nouvel antipattern, décision d'architectur
 clé ou de contrat), le document concerné (`AGENTS.md` / `ANTIPATTERNS.md` / `DECISIONS.md` /
 `TYPES_CONTRACT.md`) est mis à jour dans la **même** session — jamais reporté. Un handoff qui
 ne touche aucun document est un signal d'alerte, pas un raccourci.
+**Isolation du déploiement `AGENTS.md` (`AP-PROCESS-3`).** Le redéploiement d'`AGENTS.md` à la
+racine de `A-Anime` se **commite seul**, en clôture de session, **avant** l'envoi de toute
+nouvelle US. Un fichier de gouvernance qui traîne non commité dans l'arbre de travail sera
+embarqué par le prochain commit de Gemini et produira un faux signal `R-SCOPE-1` contre lui.
+Corollaire : **`git status` vide est condition d'ouverture d'une livraison**, pas seulement de
+sa fermeture. Et un fichier inattendu dans un diffstat se **lit** avant d'être imputé.
 
 **Double checklist obligatoire.** Chaque handoff répond explicitement à deux questions, même
 si la réponse est « rien à changer » :
