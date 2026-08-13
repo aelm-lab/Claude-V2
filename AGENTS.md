@@ -308,6 +308,15 @@ ce n'est pas un bug. **Toute nouvelle spec sème sur `aanime_calendar`.** Envelo
 `{ timestamp: number, data: AnimeEntry[] }`.
 ---
 
+**Rouges connus au dernier sweep complet — 3 sur 52 cas. Aucun n'est une régression à corriger
+en passant. Ne retire jamais une spec d'un batch pour faire passer le sweep.**
+- `more-like-this-modal` — dépend de `/anime/{id}/recommendations` Jikan, en 504. Viole la règle
+  du réseau déterministe. Tombera avec le retrait de Jikan.
+- `discover-season-dedup` — dédoublonnage de la page saison. Non diagnostiqué.
+- `onboarding-toast` — compte du toast de bienvenue avant redirection. Non diagnostiqué.
+
+⚠️ **Ne lance jamais `test:e2e:sweep`** : il chaîne les batches en `&&` et s'arrête au premier
+rouge. Les 5 batches se lancent séparément.
 ## 8. Interdits
 
 - ❌ Asserter un état de store → asserter le DOM visible.
