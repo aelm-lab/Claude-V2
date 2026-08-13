@@ -78,7 +78,7 @@ export interface AnimeEntry {
   // Métadonnées de base
   title: string;                  // titre primaire (rōmaji en source AniList)
   title_english?: string | null;  // titre anglais — null si la source n'en fournit pas
-  synopsis?: string;              // texte de présentation (DEC-47) — confirmé par lecture SE-055
+synopsis?: string;              // texte de présentation (DEC-47). Source AniList : nettoyé du HTML (DEC-132). Jamais null ni ''
   cover_url: string | null;
   cover_url_hd: string | null;
   studio: string | null;          // SINGULIER — null si inconnu, jamais "Unknown Studio". Conservé pour l'AFFICHAGE.
@@ -333,14 +333,35 @@ importMalFile(file: File): Promise<MalImportResult>
 
 | `useEpisodeInfo` | `getStatus(anime): CardStatus` — **et non `getCardStatus`**. Confirmé par ModalCalendarTop.vue:92 et ModalVersionTop.vue:102 | 
 ---
+## 8bis. DTO AniList — `src/types/anilist.ts`
 
+Forme **brute** renvoyée par `graphql.anilist.co`. Ne décrit **pas** l'entité applicative :
+la forme canonique reste `AnimeEntry` (§2). Conversion portée par `utils/normalizeAniList.ts`.
+
+Pièges structurants, à rappeler dans toute US touchant ce mapping :
+- **`AniListFuzzyDate`** — `{year, month, day}` chacun `null` **indépendamment**. Ce n'est pas
+  une chaîne ISO. Une date partielle (année seule) est courante. Les trois nulls sont à gérer.
+- **`nextAiringEpisode.airingAt`** — timestamp UNIX en **secondes, UTC**, donc déjà absolu :
+  `new Date(airingAt * 1000)` donne l'heure locale sans passer par le parsing JST.
+- **`studios`** — connexion `edges` / `nodes`, **jamais** un tableau plat.
+- **`averageScore`** — échelle **/100**, pas /10. Diviser par 10.
+- **`description`** — contient du **HTML** + entités. Nettoyage obligatoire (DEC-132).
+- **`idMal`** — peut être `null` (titre absent de MAL) → l'entrée est rejetée (DEC-123).
+- **`AniListResponse.errors`** — AniList renvoie **HTTP 200** avec un tableau `errors` peuplé
+  sur requête invalide. **Le code HTTP seul ne prouve rien.**
+- **Vocabulaire de statut différent de Jikan** : `FINISHED` / `RELEASING` / `NOT_YET_RELEASED` /
+  `CANCELLED` / `HIATUS`. Table de correspondance dans `normalizeAniList` — `HIATUS` mappe sur
+  `'Currently Airing'`, donc **une série en pause est traitée comme en cours** (DEC-131).
+
+Le fichier fait autorité pour les interfaces exactes ; il est copié verbatim dans les US.
+
+---
 ## 9. ⚠️ Lacunes assumées du contrat
 
 Ces éléments **existent dans le code** d'après la documentation du projet mais n'ont jamais
 été contractualisés ici. Ils sont listés pour éviter que Gemini n'invente un type en leur
 absence. **Aucun ne doit être utilisé dans une US avant d'avoir été relu dans le code et
 ajouté ci-dessus par une US « types ».**
-| `AniListMedia` | `src/types/anilist.ts` existe et n'est décrit nulle part dans ce contrat. À documenter avant toute US touchant le mapping AniList. |
 
 
 | Élément | Source documentaire | Ce qui manque |
