@@ -12,10 +12,10 @@
 
 | | Valeur |
 |---|---|
-| **Sprint** | **S39 — CLOS.** Goal atteint. **S40 à ouvrir** |
-| **Session courante** | **SE-057** |
+| **Sprint** | **S39 — CLOS.** **S40 ouvert au Sprint Planning de SE-059** |
+| **Session courante** | **SE-058 — hors sprint (tri benchmark). Aucun bump de version** |
 | **Dernière version livrée** | **v0.33.0 (S39)** |
-| **Dernier DEC** | **DEC-132** |
+| **Dernier DEC** | **DEC-133** |
 | **Commit `main`** | `b381e2f` |
 | **Échéance dure** | **Jikan ferme en octobre 2026** (DEC-125) |
 | **Cadence** | **4 à 8 US par sprint**, davantage si elles servent un même sujet |
@@ -26,11 +26,11 @@
 
 | Session | Sprint | Objet | Sortie |
 |---|---|---|---|
-| **SE-057** | S39 | `J07` synopsis · `AUD-21` faux jour · sweep E2E complet · **clôture S39** | **v0.33.0**, 205 tests, 2 MERGE |
+| **SE-058** | **hors sprint** | Tri A/B du benchmark concurrentiel · 3 corrections de faits · DEC-133 · création de `BENCHMARK.md` | **Aucun code.** Backlog S41+ non modifié, benchmark mis en attente par décision PO |
+| SE-057 | S39 | `J07` synopsis · `AUD-21` faux jour · sweep E2E complet · **clôture S39** | **v0.33.0**, 205 tests, 2 MERGE |
 | SE-056 | S39 | `US-SEARCH-DEDUP-ANILIST` · `J06` · `US-MODAL-OPEN-SEED-KEY` annulée · DEC-127→130 | 199 tests, 2 MERGE |
 | SE-055 | S39 | `J05-E2E` · `US-SEARCH-SPECS-ANILIST` · 5 dérives de contrat · `AUD-21` ouvert | 199 tests, 2 MERGE |
 | SE-054 | S39 | J02→J05 AniList livrés · DEC-125 · DEC-126 | 199 tests |
-| SE-053 | S38 | AUD-01 réparée · DEC-118 réouverte · clôture S38 | v0.32.0 |
 
 ---
 
@@ -62,6 +62,7 @@
 | E2E — cas exécutés | **52** | sweep 5 batches séparés | **SE-057** |
 | E2E — **rouges = 3, qualifiés** | voir §Rouges E2E | sweep complet, sorties PO | **SE-057** |
 
+> SE-058 n'a livré aucun code : tous les compteurs ci-dessus restent datés SE-057.
 > ⚠️ Pas de mention « zéro `any` » : `vue-tsc` ne les teste pas, ESLint n'est jamais exécuté.
 > **CI :** `npm ci` → `vue-tsc --noEmit` → `vitest run` → `build`. **Ni Playwright, ni ESLint** (`AUD-08`).
 > **Install :** `npm install` en direct, `--legacy-peer-deps` inutile.
@@ -94,6 +95,9 @@
 
 > 🔴 Quatre sprints consécutifs réparent le parcours que ces métriques mesurent, sans pouvoir
 > le prouver. **Priorité n°1 de S41.**
+> Le benchmark de SE-058 confirme le trou par l'extérieur : dans les conditions du 10 août, le
+> TTFA n'était pas seulement non mesuré, il était **non atteignable** (calendrier vide après un
+> onboarding complet). Détail → `BENCHMARK.md`.
 
 ---
 
@@ -114,12 +118,13 @@
 > EXACTE émise par le code.** 🔴 Seule une mesure du PO fait foi. Les outils de Claude ont
 > produit un faux 504 en SE-054.
 
-### AniList — source primaire. Dernière mesure : SE-057 (visuel PO)
+### AniList — source primaire. Dernière mesure : **SE-058** (visuel PO)
 
 | Point | Résultat |
 |---|---|
 | `graphql.anilist.co` | **200.** CORS OK depuis l'origine de production |
-| Recherche + ajout + modale | **fonctionnels bout en bout**, constatés SE-057 |
+| Recherche | **fonctionnelle**, revérifiée SE-058 |
+| Recherche + ajout + modale bout en bout | **fonctionnels**, constatés SE-057 |
 | Rattachement `idMal` | **19 / 19** sur corpus de test (SE-054) |
 
 ⚠️ Corpus de 19 titres mainstream. Le taux d'orphelins réel sur un import MAL de 300 titres
@@ -129,16 +134,20 @@ sera > 0 → repli titre+année prévu en **J08**.
 GraphQL multi-lignes, inéchappable proprement en `cmd` — une recherche qui rend des résultats
 à l'écran est une mesure plus forte qu'un `curl` simplifié.
 
-### Jikan v4 — en fin de vie. Dernière mesure : SE-053
+### Jikan v4 — en fin de vie. Dernière mesure : SE-053, complétée SE-058
 
 | Endpoint | Code |
 |---|---|
-| `/seasons/now` | 200 |
+| `/seasons/now?limit=25` | **200** — page 1 seulement |
+| `/seasons/now?limit=25&page=2` | **504** — pagination morte (mesure externe, 10 août) |
+| `/seasons/upcoming?limit=25` | **504** (mesure externe, 10 août) |
 | `/anime/{id}` | 200 |
 | `/anime?q=` | **504 — mort, acté, ne plus remesurer** |
 | `/anime/{id}/recommendations` | **504** — confirmé indirectement par `more-like-this-modal` (SE-057) |
 
 🔴 **Ferme en octobre 2026** (DEC-125).
+📌 La ligne « page 1 passe, page 2 tombe » est **importante pour `AUD-05`** : l'app a 25 séries
+en main et n'affiche rien quand même — elle échoue en bloc dès qu'une page de pagination tombe.
 
 ---
 
@@ -151,23 +160,28 @@ GraphQL multi-lignes, inéchappable proprement en `cmd` — une recherche qui re
 ⛔ `US-MODAL-OPEN-SEED-KEY` annulée (DEC-130) · ⛔ `US-SYNOPSIS-LINEBREAKS` absorbée (P3 S41)
 
 ### 🔄 In Progress
-*(vide — S39 clos, S40 non ouvert)*
+*(vide — S40 s'ouvre en SE-059)*
 
-### 📝 S40 proposé — Goal : *Jikan est débranché avant sa fermeture*
-1. `J08` repli titre+année
-2. `J09` saisons sur AniList 🔴 — **traiter `AUD-22` dans le même passage**
-3. `J10` sync/détail sur AniList 🔴 — **débloque le synopsis de la bibliothèque existante**
-4. `J11` retrait de Jikan — **fait tomber `more-like-this-modal`**
-5. `AUD-05` mode dégradé visible — **valeur augmentée par AUD-21** : une série qui quitte la
-   grille faute de date ne l'explique à personne
+### 📝 S40 — Goal : *Jikan est débranché avant sa fermeture*
+| Ordre | US | Risque | Note |
+|---|---|---|---|
+| 1 | `J08` — repli titre+année sur `idMal` | 🟠 | Ouvre le sprint. `J09`→`J11` supposent le rattachement fiable |
+| 2 | `J09` — saisons sur AniList | 🔴 | **Traiter `AUD-22` dans le même passage** — un diagnostic posé avant serait jetable |
+| 3 | `J10` — sync / détail sur AniList | 🔴 | **Débloque le synopsis de la bibliothèque existante** |
+| 4 | `J11` — retrait de Jikan | 🔴 | **Fait tomber `more-like-this-modal`** |
+| 5 | `AUD-05` — mode dégradé visible | 🟠 | Valeur augmentée par `AUD-21` **et** par le benchmark : une série qui quitte la grille faute de date ne l'explique à personne |
 
-### 🗂️ S41 proposé — Goal : *mesurer et réparer le parcours d'entrée*
+> 🚫 **Aucun item du benchmark n'entre en S40** (décision PO, SE-058). S40 porte 3 US 🔴 sur
+> le point de contrat unique : y ajouter du CSS diluerait le Goal.
+
+### 🗂️ S41 — Goal proposé : *mesurer et réparer le parcours d'entrée*
 `US-TTFA-INSTRUMENT` **P1** · `US-SYNOPSIS-VERSIONTOP` 🟠 **P2** · `US-ONBOARDING-REFRESH` 🔴 ·
-`AUD-23` (rouge onboarding-toast) · `US-TOAST-ONBOARDING` · `US-MODAL-NEXTEP-HIERARCHY` 🟢 **P3** ·
+`AUD-23` (rouge `onboarding-toast`) · `US-TOAST-ONBOARDING` · `US-MODAL-NEXTEP-HIERARCHY` 🟢 **P3** ·
 `US-CARDS-ALIGN` · `US-CLEAR-DATA`
 
-> **`US-SYNOPSIS-VERSIONTOP` 🟠 promue P2** (constat visuel SE-057) : la modale ouverte depuis
-> un résultat de recherche — donc **au moment de la décision d'ajout** — n'affiche aucun résumé.
+> **Composition non figée.** Le benchmark n'a rien ajouté ni retiré ici — voir `BENCHMARK.md`.
+> **`US-SYNOPSIS-VERSIONTOP` 🟠 P2** (constat visuel SE-057) : la modale ouverte depuis un
+> résultat de recherche — donc **au moment de la décision d'ajout** — n'affiche aucun résumé.
 > Composant `ModalVersionTop.vue`. Concerne aussi Plan to watch / Completed / Coming soon.
 > ≥ 4 surfaces → **à couper en deux US**.
 > **`US-MODAL-NEXTEP-HIERARCHY` 🟢 P3** : « Next episode » rendu comme une légende grise alors
@@ -177,15 +191,13 @@ GraphQL multi-lignes, inéchappable proprement en `cmd` — une recherche qui re
 ### Non planifié
 `US-DEMOGRAPHICS` (champ absent d'AniList — devrait être **dérivé des tags**, décision produit,
 lu par le moteur de reco donc 🔴 déguisé) · `AUD-08` (CI sans Playwright ni ESLint) ·
-`AUD-03`→`AUD-20` dans `AUDIT.md`
+`AUD-03`→`AUD-20` dans `AUDIT.md` · **candidats issus du benchmark** dans `BENCHMARK.md`
 
-### Benchmark concurrentiel
-Livrable **déjà produit** hors projet (Claude Cowork). À traiter en **session dédiée hors
-sprint (SE-058)**, rapport collé en premier message. N'entre pas dans le corpus des 10 documents.
-🔴 **Réalisé pendant que l'API était morte** → tri obligatoire en deux piles avant tout usage :
-**A exploitable** (navigation, grille, calendrier sur cache, stats, mise en page) ·
-**B à jeter ou rejouer** (recherche, découverte, ajout, saisons, TTFA, premier lancement).
-La pile B n'est rejouable qu'**après S40**. Aucune US S41 n'est écrite avant ce tri.
+### Benchmark concurrentiel — ⏸️ EN ATTENTE (décision PO, SE-058)
+Rapport trié en SE-058 : **10 écarts sur 12 exploitables**, aucun n'entre au backlog pour
+l'instant. **Le PO refuse d'arbitrer sur un benchmark partiel.** Reprise de la discussion
+**après S40**, une fois les surfaces manquantes (Library, Discover, calendrier chargé)
+observables. Tri complet, corrections de faits et candidats → **`BENCHMARK.md`**.
 
 ---
 
@@ -193,13 +205,22 @@ La pile B n'est rejouable qu'**après S40**. Aucune US S41 n'est écrite avant c
 
 | Trou | Gravité | État |
 |---|---|---|
-| `AUD-22` — `discover-season-dedup` rouge | 🟠 | Non diagnostiqué. À traiter **avec `J09`**, qui réécrit la page saison — un diagnostic posé avant serait jetable |
+| `AUD-22` — `discover-season-dedup` rouge | 🟠 | Non diagnostiqué. À traiter **avec `J09`**, qui réécrit la page saison |
 | `AUD-23` — `onboarding-toast` rouge | 🟠 | Non diagnostiqué. Terrain S41 |
-| **Bibliothèque existante sans synopsis** | 🟠 | `J07` n'agit qu'à la normalisation → seuls les **nouveaux ajouts** ont un résumé. Les entrées déjà persistées n'en auront qu'après `J10` (sync/détail sur AniList) |
-| Specs au **seed décoratif** | 🟠 | `snap-to-today` sème un calendrier mais n'asserte qu'un en-tête de jour : passerait avec un store vide. Couverture plus faible qu'annoncée. Non requalifié au sweep (vert ≠ probant) |
+| **Bibliothèque existante sans synopsis** | 🟠 | `J07` n'agit qu'à la normalisation → seuls les **nouveaux ajouts** ont un résumé. Les entrées déjà persistées n'en auront qu'après `J10` |
+| Specs au **seed décoratif** | 🟠 | `snap-to-today` sème un calendrier mais n'asserte qu'un en-tête de jour : passerait avec un store vide. Couverture plus faible qu'annoncée |
 | `AUD-05` mode dégradé invisible | 🟠 | Une série sans date prouvée quitte la grille **en silence**. Planifié S40 |
+| **Benchmark partiel** | 🟠 | 3 surfaces jamais observées avec du contenu. Remesure ciblée à la clôture de S40 → `BENCHMARK.md §Remesures` |
 
-> ✅ **Fermé en SE-057 :** trou « titres japonais/rōmaji » — constaté résolu en visuel,
-> `normalizeAniList` préfère `title.english`. Aucune US ouverte.
-> ✅ **Fermé en SE-057 :** trou « état des rouges E2E inconnu » — sweep complet, 3 rouges qualifiés.
-> ✅ **Fermé en SE-057 :** `AniListMedia` absent de `TYPES_CONTRACT.md` — contractualisé.
+> ✅ **Fermé en SE-057 :** trou « titres japonais/rōmaji » · trou « état des rouges E2E inconnu » ·
+> `AniListMedia` absent de `TYPES_CONTRACT.md`.
+> ✅ **Fermé en SE-058 :** trou « chiffre de boot contradictoire » → tranché par DEC-133.
+
+---
+
+## 🛰️ Documents satellites (hors ordre de lecture)
+
+| Doc | Contenu | Statut |
+|---|---|---|
+| `AUDIT.md` | Constats `AUD-03`→`AUD-20`, findings écartés | Actif |
+| `BENCHMARK.md` | Tri A/B du benchmark concurrentiel, corrections de faits, candidats d'US non planifiés | **Créé SE-058** |
