@@ -297,3 +297,18 @@ confirmé, le défaut d'onboarding et la panne Jikan ont **la même cause aval**
   *L'ordre dépouillement → décodage est structurant :* une description contenant `&lt;i&gt;` veut
   afficher `<i>` littéralement. Décoder d'abord supprimerait ce texte voulu par l'auteur.
   ⚠️ N'agit qu'à la normalisation : les entrées déjà persistées restent sans synopsis jusqu'à `J10`.
+### DEC-133 — Le chiffre de boot de référence est celui de la production (SE-058)
+
+**Décision :** le temps de démarrage de référence d'Aanime est **2,5 s en production**, avec
+un bundle prêt à **152 ms** et 15 requêtes. Le chiffre de **8 045 ms / 77 requêtes** porté par
+les notes internes est une mesure du **serveur Vite de développement** hébergé à Singapour,
+servant 59 fichiers `/src/*` un par un. Rapport 3,2 : 1.
+
+**Conséquence :** **aucun chantier de réduction de bundle n'est ouvert.** Le découpage par
+route existe et fonctionne déjà en production. La perte de 2,3 s est entièrement dans
+l'orchestration du boot (910 ms mortes entre la réponse d'authentification et le chargement du
+chunk de route), pas dans le poids du code.
+
+**Pourquoi c'est inscrit ici :** c'est le même défaut que « Jikan est en panne » porté 5 sprints
+sur un curl jamais rejoué — un défaut de **fraîcheur de fait**, pas de code. Un chantier de
+bundle décidé sur le chiffre de dev aurait visé un fantôme.
