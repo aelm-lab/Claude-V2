@@ -79,6 +79,27 @@
 | **AP-TS-1** | **`as unknown as` posé sans qu'aucune erreur de compilation ne l'exige.** J04 (SE-054), après AUD-14. | 🟠 | Un double cast n'est légitime qu'en réponse à une erreur `vue-tsc` **citée dans le rapport de livraison**. Sans citation : à retirer. |
 | **AP-PROCESS-2** | **Inférence promue en fait par son entrée dans un document.** Un test déclaré « rouge qualifié » sur la seule lecture de son code (SE-055, `modal-open`) — il était vert. Un chemin de fichier déduit d'un handoff au lieu d'être lu (SE-056, `src/components/ui/`). 2ᵉ famille d'occurrence après « Jikan est en panne » porté 5 sprints. | 🟠 | **Un test n'est rouge que sur sa sortie d'exécution**, jamais sur la lecture de son code : sans sortie collée par le PO, on écrit « suspecté », jamais « qualifié ». **Un chemin de fichier se lit, ne se déduit pas.** Le mot choisi dans `STATE.md` engage : il sera lu comme un fait mesuré à la session suivante. |
 | **AP-PROCESS-3** | **Modification documentaire non isolée → faux signal de dérive de périmètre.** 1ʳᵉ : SE-052, patch doc envoyé dans le même message qu'une US → faux flag `R-SCOPE-1` contre Gemini. 2ᵉ : SE-057, déploiement d'`AGENTS.md` à la racine **non commité**, embarqué mécaniquement par le commit de J07 → Claude accuse Gemini d'avoir modifié son propre canon de règles, sur la seule lecture d'un diffstat de `git pull`. | 🟠 | Le déploiement d'`AGENTS.md` se **commite en clôture de session, seul, avant toute nouvelle US**. Un `git status` vide est **condition d'ouverture** d'une livraison, pas seulement de sa fermeture. Corollaire : un fichier inattendu dans un diffstat se **lit** avant d'être imputé (`git --no-pager diff <a> <b> -- <fichier>`). |
+
+### AP-TEST-x — Un test qui ne peut pas échouer pour la bonne raison
+
+**Le motif :** une spec continue de tourner (verte ou rouge) longtemps après que son sujet a
+disparu. Elle n'atteste plus rien, mais sa présence dans le registre fait croire à une
+couverture.
+
+**Occurrences :**
+1. `snap-to-today` — sème un calendrier complet mais n'asserte qu'un en-tête de jour :
+   **passerait avec un store vide.** Verte pour une raison sans rapport avec son sujet.
+2. `discover-season-dedup` (SE-059) — ciblait `.anime-grid`, classe renommée en S37, et
+   mockait la pagination Jikan supprimée en S40. **Rouge depuis S37 sans que personne le
+   sache**, et le dédoublonnage qu'elle prétendait couvrir n'a jamais été testé.
+
+**Règle :** toute US qui renomme une classe CSS, change une route réseau ou supprime un
+mécanisme (pagination, cache, endpoint) doit **lister les specs E2E qui en dépendent** dans
+sa section « fichiers », ou déclarer explicitement qu'aucune n'en dépend.
+
+**Corollaire de vérification :** un test dont on ne peut pas décrire *le scénario exact qui le
+ferait passer au rouge* n'est pas un filet. Se poser la question avant de l'inscrire au
+registre.
 ## 4. Composants & feedback UI
 
 - ❌ **Émettre un event sous un nom et l'écouter sous un autre.** Le piège n°1 du projet :
