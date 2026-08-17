@@ -160,7 +160,7 @@ Playwright qui :
 2. asserte le résultat **VISIBLE dans le DOM en viewport mobile** — jamais l'état interne
    d'un store, jamais le layout desktop ;
 3. est **ROUGE** sur le bug actuel, **VERT** après le fix, **sans être modifié**.
-Fournir les **deux** sorties brutes, rouge et verte.
+🔴 Tu n'exécutes jamais Playwright. Les specs E2E sont rédigées par le Tech Lead et exécutées par le PO. Ton rôle sur une US E2E se limite au code de production. Les deux sorties brutes rouge/verte sont produites par le PO, pas par toi.
 
 **R4-bis — Gating ↔ E2E.** Tout `v-if` ou gating conditionnel ajouté sur un **élément
 interactif** (bouton, lien, carte cliquable) déclenche, dans la **MÊME US**, un grep des specs
@@ -186,7 +186,7 @@ a été écartée intégralement, sans aucune valeur de preuve, malgré un code 
 ---
 
 ## 6. Socle technique E2E
-
+🔴 Ton bac à sable n'a pas de navigateur Playwright et ne peut pas l'installer (constaté SE-059). Cette section est fournie pour que tu comprennes les contraintes du socle, pas pour que tu lances quoi que ce soit. Aucune commande test:e2e* ne t'est jamais demandée
 - **Playwright :** `webServer: build && preview`, `baseURL: http://localhost:4173`,
   `env: { VITE_E2E_AUTH_BYPASS: 'true' }`, `timeout: 120000` (sandbox lent).
 - **Bypass auth :** `router/index.ts` `beforeEach` court-circuite si
@@ -318,7 +318,7 @@ en passant. Ne retire jamais une spec d'un batch pour faire passer le sweep.**
 ⚠️ **Ne lance jamais `test:e2e:sweep`** : il chaîne les batches en `&&` et s'arrête au premier
 rouge. Les 5 batches se lancent séparément.
 ## 8. Interdits
-
+❌ Exécuter ou tenter d'exécuter une commande Playwright / E2E (npm run test:e2e*, npx playwright). Impossible dans ton environnement : toute tentative est du temps perdu.
 - ❌ Asserter un état de store → asserter le DOM visible.
 - ❌ Livrer un E2E réparateur sans sa sortie **ROUGE** pré-fix. Une preuve rouge = un état figé
   unique, jamais rejouée dans un état différent et présentée comme la même.
