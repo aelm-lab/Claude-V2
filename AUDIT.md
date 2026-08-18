@@ -219,3 +219,34 @@ quatre promesses fausses**, qui vivent dans du code qu'elle ne touche pas.
   fonctionnelle silencieuse** → P1 backlog S41.
 - **ESLint n'est jamais exécuté.** La règle « zéro `any` » (R-CODE-1) n'est vérifiée par
   aucun outil de la porte verte : `vue-tsc` ne la teste pas.
+## SE-063 — deux constats ouverts
+
+- **`AUD-24` — 12 specs E2E vertes qui tapent le réseau réel.** Découvert au grep de `J12-0` :
+  23 specs portaient des routes mortes sur des chemins REST Jikan, pas 11. Les 11 rouges sont
+  soldées par `J12`. Les 12 autres sont **vertes pour la mauvaise raison** — elles assertent de
+  la nav ou du layout que le contenu réel satisfait par accident, et frappent `graphql.anilist.co`
+  en vrai à chaque sweep. Un 429 ou un déclenchement du disjoncteur les vire rouges sans qu'aucun
+  code n'ait bougé. Liste : `calendar-subnav-layout` · `foryou-dedup` · `grid-two-columns` ·
+  `login-styled` · `modal-status-gating` · `month-layout` · `nav-active-state` ·
+  `no-horizontal-overflow` · `onair-subnav` · `onboarding-genres` · `week-no-duplicate-period`.
+  *(`week-empty-day-cta` route `**/*` et reste sain.)*
+  **Impact utilisateur : aucun. Impact projet : le sweep n'est pas déterministe.**
+  → Migration mécanique vers `installAniListMock` en S41 (DEC-153).
+
+- **`AUD-25` — asymétrie d'action entre This Season et For You.** Signalé par le PO sur captures
+  SE-063, **absent de toute la Knowledge** (vérifié : `EPICS`, `BENCHMARK` piles A et B, `AUDIT`,
+  `STATE`, `DECISIONS`).
+
+  | Écran | Composant | Coût d'un ajout |
+  |---|---|---|
+  | For You | `RecCard` | **1 tap** (Skip / Add en surface) |
+  | Library › Upcoming | `RecCard` | **1 tap** |
+  | This Season | carte distincte | **2 taps + modale** |
+
+  Ce n'est pas une incohérence de style mais **d'action**. Elle contredit une intention produit
+  écrite (`BENCHMARK §8` : *« This Season et Coming Soon restent des sources d'ajout, pas des
+  destinations »*) — une source d'ajout sans bouton d'ajout est contradictoire.
+  🔴 **Ne pas rédiger d'US en l'état.** Lire le composant d'abord : `DEC-110` est né exactement
+  de ce raccourci (*« le diagnostic du PO pointe un symptôme, pas une cause »*). L'absence de
+  trace n'est pas une preuve d'accident — le choix peut être délibéré.
+  → À instruire au triage benchmark, avec `B-07`.
