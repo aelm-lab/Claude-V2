@@ -41,6 +41,7 @@
 | SE-060 | S40 | `J10a` `J10b` · DEC-137→140 · `J10` éclatée en 5 slices | 2 MERGE |
 | SE-061 | S40 | `J10d` · `J11a-1/2/3` · `useRecommendations` doté de ses 2 premières specs · DEC-141→145 | **4 MERGE au 1ᵉʳ coup**, 280 tests |
 | **SE-062** | **S40** | **`J11b-1/2/3` — Jikan intégralement retiré du dépôt.** Dette `AGENTS.md` E2E classée (patch déjà déployé en `4b99eeb`, handoff SE-061 erroné). Sweep complet : 12 rouges, cause unique → epic `J12`. DEC-146→149. Création de ce fichier | **3 MERGE au 1ᵉʳ coup**, 265 tests, **Sprint Goal S40 atteint, sprint non clos** |
+| **SE-063** | S40 | `J12-a` (helper `installAniListMock` + 2 specs pilotes) · `J12-b` (9 specs) | **2 MERGE au 1ᵉʳ coup, 0 correction.** Sweep **52/52 verts — premier sweep intégralement vert du projet.** Diagnostic du handoff SE-062 corrigé : aucune des 11 rouges ne routait `api.jikan.moe`. Découverte `AUD-24` (12 specs démockées) et `AUD-25`. DEC-150→153. **Sprint S40 CLOS** |
 
 ---
 
@@ -58,4 +59,4 @@
 | v0.31.0 | S37 | US-GRID-FIX · US-MODAL-UNIFY annulée (DEC-110) |
 | v0.32.0 | S38 | AUD-01 · AUD-02 · registre E2E · purge debug |
 | v0.33.0 | S39 | Migration AniList `J02`→`J07` · recherche · synopsis nettoyé · `AUD-21` |
-| *(attendue)* | **S40** | Migration AniList `J09`→`J11b` · **Jikan intégralement retiré** — bump bloqué par `J12` |
+| **v0.34.0** | **S40** | Migration AniList `J09`→`J11b` — **Jikan intégralement retiré** — + `J12` harnais E2E AniList |
