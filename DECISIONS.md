@@ -686,3 +686,32 @@ bundle décidé sur le chiffre de dev aurait visé un fantôme.
   mordent plus depuis `J11b`. Un mock réseau dupliqué dans N fichiers fait payer le prix fort
   à chaque changement de fournisseur → `tests/e2e/_helpers/anilistMock.ts` devient la source
   unique. Ouvre l'epic **`J12`**. **Gemini n'est pas impliqué : zéro code de production.** *(SE-062)*
+  ## DEC-150 → DEC-153 — Harnais E2E AniList & arbitrages de clôture S40 (SE-063)
+
+- **DEC-150** 🔴 **Le mock E2E AniList discrimine par corps de requête, pas par URL.**
+  AniList n'expose qu'un endpoint en POST : les cinq requêtes de `useAniListApi` y arrivent
+  toutes. `installAniListMock` lit `route.request().postDataJSON()` et applique quatre règles
+  ordonnées — `variables.search` → recherche ; `variables.season` → saison (courante ou
+  suivante selon la valeur) ; `variables.idMal` **+ `query` contenant `relations`** → relations ;
+  `variables.idMal` seul → détail ; aucune variable → top finished. Le jeton `relations` est
+  nécessaire car détail et relations partagent la variable `idMal`.
+  **Le helper importe `resolveSeason` / `resolveNextSeason` depuis `useAniListApi.ts`** plutôt
+  que de recopier la règle mois→saison : deux seuils pour une même règle métier violeraient
+  DEC-52, et une spec passerait au vert un 30 juin, au rouge un 1ᵉʳ juillet. *Vérifié en
+  SE-063 : l'import résout côté Playwright.* *(SE-063)*
+- **DEC-151** **`AUD-05` sort de S40 et passe en S41.** Elle n'a aucun lien avec le Sprint Goal
+  « Jikan est débranché », lui-même atteint depuis `2a24b3c`. Elle exige un DEC d'arbitrage sur
+  la source unique du signal `stale`, une US 🟠 avec code de production, une boucle Gemini et
+  une spec R4. La garder dans le chemin de clôture retardait un bump déjà mérité. *(SE-063)*
+- **DEC-152** ⛔ **« More like this » n'est PAS masqué par micro-patch.** Masquer le point
+  d'entrée ajoute un `v-if` sur un élément cliquable, or `more-like-this-modal.spec.ts` clique
+  précisément cet élément et vient de repasser au vert. C'est donc 2 fichiers, une US 🟠, hors
+  périmètre de DEC-128 — et le rouge n'apparaîtrait qu'au sweep, l'étape même qu'on cherchait à
+  franchir. **Le geste correct n'est pas de masquer mais de rebrancher** sur
+  `fetchRelationsByMalIdWithMeta` : le bouton redevient utile au lieu de disparaître.
+  P1 en tête de S41. *(SE-063)*
+- **DEC-153** **Les 12 specs vertes-mais-démockées migrent en S41, pas avant la gate.**
+  Toucher 12 specs vertes juste avant une Sprint Outcome Gate est le meilleur moyen d'en
+  fabriquer trois rouges et de faire déraper la clôture. → `AUD-24`, migration mécanique une
+  fois le helper prouvé. *(SE-063)*
+  
