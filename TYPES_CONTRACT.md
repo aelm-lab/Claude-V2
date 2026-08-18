@@ -24,7 +24,19 @@
 
 Ces trois affirmations ont été inscrites à tort dans un handoff antérieur, puis réfutées par
 grep. Un handoff est une source secondaire faillible : **le code réel tranche** (R3).
-
+- 🔴 **`normalizeAniList` renvoie `state: null`**, omet `startedAt` / `completedAt` /
+  `episodeOverride`, et renvoie **`awaitingSchedule: true`** pour tout anime `Currently Airing`
+  sans `nextAiringEpisode`.
+  **Liste close des champs interdits en écriture depuis un objet normalisé :**
+  `state`, `awaitingSchedule`, `title`, `startedAt`, `completedAt`, `episodeOverride`.
+  Toute écriture globale d'un objet normalisé sur une entrée de bibliothèque **vide en silence
+  tous les onglets utilisateur**. Mutation champ par champ obligatoire, liste close de
+  9 champs mutables (parade livrée en `J10d`, avec test bloquant).
+- 🔴 **Les variantes `WithMeta` ne lèvent jamais** : elles renvoient `{ data, failed }`
+  (+ `stale` sur les fonctions à cache). **C'est la forme par défaut de toute nouvelle
+  fonction réseau** (voir `AP-CATCH-1`).
+- **`mal_id ?? id` partout** — compatibilité des entrées legacy.
+- **`setSyncTimestamp` utilise `anime.id`, pas `malId`** — préserve les clés localStorage.
 ---
 
 ## 1. États & statuts
