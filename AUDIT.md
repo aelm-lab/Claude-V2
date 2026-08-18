@@ -192,3 +192,30 @@ quatre promesses fausses**, qui vivent dans du code qu'elle ne touche pas.
 
 - **s16 — dual audit.** Leçon conservée dans `ANTIPATTERNS §🎓-2`. Findings non réimportés ici
   (antérieurs à la création de ce document, corpus perdu).
+
+## SE-061 / SE-062 — constats sans US
+
+- **`usePersistence.ts:14-15,287` — stub mort.** `_startBackgroundRelationFetch` (`TODO US-016`
+  jamais fait) n'est appelé que par lui-même. Grep complet des appelants : la vraie sync est
+  câblée en 4 points vivants — `App.vue:52`, `AnimeModal.vue:134` et `:145`,
+  `DiscoverExplorePage.vue:225`. **Code mort confirmé, pas un chemin concurrent.** N'a jamais
+  bloqué `J10d`. Aucune US ouverte.
+- **Bloc mort `if (updatedAny) { }` dans `startBackgroundRelationFetch`.** Deux commentaires,
+  zéro instruction. Le worker interrogeait deux endpoints à 504 avec 1,1 s d'attente par
+  requête et n'aurait rien fait même en cas de succès. **Tombé avec `J11b-1` (`2a24b3c`).**
+- **`useRecommendations.ts` était sans aucun test** jusqu'en SE-061 : 550 lignes, moteur de
+  Discover et de « Because you watched », zéro filet. Refermé par
+  `useRecommendations.spec.ts` (12 tests) et `useRecommendations.nudges.spec.ts` (12 tests).
+  Vérification faite au passage : aucun autre composable du projet n'était dans ce cas.
+- **Deux signaux `stale` concurrents, tous deux morts.** `useAniListApi.ts:23,338` expose
+  `stale: boolean` dans le contrat `WithMeta` ; `usePersistence.ts:18,192,305` expose
+  `staleDataWarning` en readonly. **Zéro consommateur dans un `.vue`** (grep récursif
+  `src\*.ts src\*.vue`, SE-062). Deux sources de vérité pour une même notion → viole DEC-52.
+  **`AUD-05` requiert un DEC d'arbitrage avant rédaction**, et passe de 🟢 à 🟠 (élément
+  d'écran ajouté → R4 applicable).
+- **`more-like-this-modal` : feature sans backend.** Le modal appelait
+  `/anime/{id}/recommendations`, mort en 504 puis sans code appelant depuis `J11b`. Un clic
+  utilisateur mène à du vide. **Ce n'est plus une dette de test mais une régression
+  fonctionnelle silencieuse** → P1 backlog S41.
+- **ESLint n'est jamais exécuté.** La règle « zéro `any` » (R-CODE-1) n'est vérifiée par
+  aucun outil de la porte verte : `vue-tsc` ne la teste pas.
