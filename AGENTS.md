@@ -279,9 +279,9 @@ nom nu : Playwright interprète l'argument comme une **regex de sous-chaîne**, 
 `modal-position` captait aussi `logout-modal-position.spec.ts`, qui tournait donc hors
 registre. **Slashes avant (`/`) uniquement** — sous Windows les `\` cassent le matching et
 produisent « No tests found » sans erreur explicite.
-
-**État de référence : 42 fichiers sur disque / 42 enregistrés, mapping 1:1 vérifié.**
-
+**État de référence : 42 specs sur disque / 42 enregistrées, mapping 1:1 vérifié.**
+Le dossier `tests/e2e/` contient en plus `_helpers/anilistMock.ts` — ce n'est pas une spec,
+il n'entre dans aucun batch et n'est jamais compté dans les 42.
 
 - **batch1** (9) : `auto-vault-toast` · `boot-loader` · `calendar-subnav-layout` ·
   `discover-season-dedup` · `foryou-dedup` · `login-styled` · `modal-add-appears-on-week` ·
@@ -298,25 +298,44 @@ produisent « No tests found » sans erreur explicite.
   `no-horizontal-overflow` · `grid-two-columns` · `onboarding-toast-destination` ·
   `day-guard-plan-to-watch`
 
-**Dette connue :** `more-like-this-modal` n'a aucun `page.route()` et tape l'API Jikan live →
-viole la règle du réseau déterministe. Rouge tant que l'endpoint `/anime/{id}/recommendations`
-répond 504. **Ce rouge n'est pas une régression** — ne pas retirer la spec du batch pour faire
-passer le sweep.
-**Seed calendrier :** la clé de persistance est `aanime_calendar`. Une migration legacy au boot
-recopie `animeCalendar` vers elle, donc d'anciennes specs sèment encore sur l'ancienne clé —
-ce n'est pas un bug. **Toute nouvelle spec sème sur `aanime_calendar`.** Enveloppe attendue :
-`{ timestamp: number, data: AnimeEntry[] }`.
----
+## 🔴 Mock réseau : `installAniListMock`, jamais `page.route()` sur une URL d'API
 
-**Rouges connus au dernier sweep complet — 3 sur 52 cas. Aucun n'est une régression à corriger
-en passant. Ne retire jamais une spec d'un batch pour faire passer le sweep.**
-- `more-like-this-modal` — dépend de `/anime/{id}/recommendations` Jikan, en 504. Viole la règle
-  du réseau déterministe. Tombera avec le retrait de Jikan.
-- `discover-season-dedup` — dédoublonnage de la page saison. Non diagnostiqué.
-- `onboarding-toast` — compte du toast de bienvenue avant redirection. Non diagnostiqué.
+**Toute spec qui a besoin de données AniList passe par le helper unique**
+`tests/e2e/_helpers/anilistMock.ts`. Une spec ne connaît **jamais** une URL d'API ni un schéma
+GraphQL — elle décrit du contenu métier, le helper possède la forme (DEC-149, DEC-150).
+
+```ts
+import { installAniListMock } from './_helpers/anilistMock'
+
+await installAniListMock(page, {
+  season:      [{ malId: 101, title: 'Show A', genres: ['Action'], popularity: 50000, score: 8 }],
+  nextSeason:  [],
+  topFinished: [],
+  detail:      { 101: { malId: 101, title: 'Show A' } },
+  relations:   { 101: [] },
+})
+```
+
+**Pourquoi c'est une règle et pas une préférence :** 23 specs codaient leur propre mock sur des
+chemins REST Jikan. Au débranchement de Jikan, 11 sont devenues rouges d'un coup et 12 se sont
+mises à taper le réseau réel sans que rien ne le signale. Un mock dupliqué dans N fichiers fait
+payer le prix fort à chaque changement de fournisseur.
+
+**Trois pièges du helper à connaître :**
+- `averageScore` est sur **100** côté AniList. Le champ `score` de la graine est sur 10, le
+  helper convertit. Ne jamais écrire 80 pour 8.
+- **Omettre `airingAt` sur un média `RELEASING`** fait poser `awaitingSchedule: true` par
+  `normalizeAniList` : l'anime part en Plan to Watch, pas dans le calendrier. C'est voulu et
+  c'est testé — mais si une spec attend « added to your calendar », elle DOIT fournir `airingAt`.
+- Tout canal non configuré répond une page **vide**, jamais un passage réseau. Le mock est total.
 
 ⚠️ **Ne lance jamais `test:e2e:sweep`** : il chaîne les batches en `&&` et s'arrête au premier
 rouge. Les 5 batches se lancent séparément.
+
+**Dernier sweep complet : 52 / 52 verts (SE-063). Aucun rouge connu.**
+Si un rouge apparaît, c'est une régression — pas une dette héritée. Ne retire jamais une spec
+d'un batch pour faire passer le sweep.
+
 ## 8. Interdits
 ❌ Exécuter ou tenter d'exécuter une commande Playwright / E2E (npm run test:e2e*, npx playwright). Impossible dans ton environnement : toute tentative est du temps perdu.
 - ❌ Asserter un état de store → asserter le DOM visible.
