@@ -628,3 +628,61 @@ chunk de route), pas dans le poids du code.
 **Pourquoi c'est inscrit ici :** c'est le même défaut que « Jikan est en panne » porté 5 sprints
 sur un curl jamais rejoué — un défaut de **fraîcheur de fait**, pas de code. Un chantier de
 bundle décidé sur le chiffre de dev aurait visé un fantôme.
+
+
+## DEC-137 → DEC-145 — Migration AniList : relations, sync, recommandations
+
+- **DEC-137** Tri `POPULARITY_DESC` retenu pour la requête de saison. *(SE-060)*
+- **DEC-138** `J10` éclatée en 5 slices (`J10a`→`J10e`). *(SE-060)*
+- **DEC-139** 🔴 **`Page(page:1, perPage:1){ media(idMal:) }` obligatoire, jamais
+  `Media(idMal:)`.** La forme `Media()` renvoie une erreur GraphQL sur une entrée introuvable,
+  que le disjoncteur d'`anilistClient` compte comme un échec — 3 suffisent à ouvrir un
+  blackout AniList de 60 s pour l'app entière. La forme `Page` renvoie une liste vide. *(SE-060)*
+- **DEC-140** Type `AnimeRelation` normalisé ; le filtrage des types de relation vit dans le
+  composable, jamais dans le `.vue`. *(SE-060)*
+- **DEC-141** 🔴 **Suppression du throttle manuel dans `syncAnimeUpdates`**
+  (`BATCH_SIZE`, `BATCH_INTERVAL_MS`). `anilistClient` sérialise déjà à 700 ms : deux
+  régulateurs empilés = deux vérités. Sync de 30 titres : ~50 s → ~21 s. *(SE-061)*
+- **DEC-142** `J11a` éclatée en 3 slices. Motif : une US unique aurait touché 4 fichiers et
+  `useRecommendations.ts` n'avait aucun test. `J11a-1` purement additive a fourni le socle. *(SE-061)*
+- **DEC-143** **Pool `incoming` = 2 appels AniList** (saison courante + suivante, `perPage:50`)
+  au lieu de 3 requêtes Jikan. AniList sert 50 titres par page là où Jikan en servait 25 :
+  la 3ᵉ requête n'a plus d'objet. *(SE-061)*
+- **DEC-144** 🔴 **`getSeasonNudges` n'écrit ni ne lit le store IDB `relations`.** Ce store
+  contient la forme **Jikan** (`[{ relation, entry }]`) et est lu par `buildRelationMemory`
+  pour le scoring. Y écrire des `AnimeRelation` AniList corromprait le moteur de
+  recommandations **en silence**, sans erreur ni test rouge. Le cache 24 h
+  `aanime_season_nudges` suffit. *(SE-061)*
+- **DEC-145** **`J10e` reportée en S41 et éclatée en 3 slices.** `normalizeAniList.ts` rejette
+  en ligne 1 tout média sans `idMal` — or un orphelin est précisément un titre sans `idMal`.
+  Argument produit : la population d'orphelins n'a jamais été mesurée (corpus : 19/19
+  rattachés), et un mauvais rattachement par titre est **pire** que pas de rattachement —
+  l'utilisateur verrait la jaquette d'une autre série. *(SE-061)*
+
+## DEC-146 → DEC-149 — Gouvernance documentaire & fin de la dépendance Jikan
+
+- **DEC-146** 🔴 **`STATE.md` scindé en `STATE.md` (présent) + `HISTORIQUE.md` (passé clos).**
+  `STATE.md` est **régénéré intégralement à chaque clôture de session** ; `HISTORIQUE.md` est
+  **append-only**, une ligne par session, une ligne de version par sprint, jamais réécrit et
+  hors ordre de lecture. Tous les autres documents restent **patchés à chaque clôture de
+  session**, jamais batchés au sprint.
+  *Motif du refus de batcher au sprint (arbitrage PO, SE-062) : DEC-137→145 n'ont vécu que
+  dans un handoff pendant deux sessions, et ce même handoff s'est révélé faux sur la dette
+  `AGENTS.md`. Un handoff est une source secondaire faillible : il ne peut pas porter seul
+  une décision. Motif du scindage : `STATE.md` à 350 lignes coûtait trop cher à régénérer en
+  fin de session — il a sauté deux sessions d'affilée « faute de capacité ». Le format était
+  la cause, pas la discipline.* *(SE-062)*
+- **DEC-147** **Le worker `startBackgroundRelationFetch` est supprimé sans remplacement.**
+  Ses deux endpoints (`/anime/{id}/relations`, `/anime/{id}/recommendations`) sont mesurés
+  504 (SE-062), il attendait 1,1 s par requête sur toute la bibliothèque, forçait
+  `isSyncing = true` pendant ~1 min — et déposait son résultat dans un bloc vide.
+  Re-brancher un enrichissement de relations en fond est une US produit de S41, pas un
+  sous-produit du débranchement. *(SE-062)*
+- **DEC-148** `J11b` éclatée en 3 slices : suppression du worker (4 fichiers, dérogation au
+  plafond de 3 — une suppression atomique, couper en deux rendait le `type-check` rouge à
+  l'état intermédiaire), puis suppression de `useJikanApi`, puis purge de `helpers.ts`. *(SE-062)*
+- **DEC-149** 🔴 **Le harnais E2E migre vers AniList par un helper mutualisé**, pas par
+  11 patches de spec. Les `page.route()` de 11 specs interceptent `api.jikan.moe/v4/…` et ne
+  mordent plus depuis `J11b`. Un mock réseau dupliqué dans N fichiers fait payer le prix fort
+  à chaque changement de fournisseur → `tests/e2e/_helpers/anilistMock.ts` devient la source
+  unique. Ouvre l'epic **`J12`**. **Gemini n'est pas impliqué : zéro code de production.** *(SE-062)*
