@@ -279,7 +279,7 @@ DTO de plomberie, pas des types métier.
 > Les valeurs exposées vers l'extérieur sont **`readonly`** ou des `computed`.
 
 ```ts
-// useJikanApi
+// 
 searchAnime(query: string): Promise<AnimeEntry[]>
 fetchAnimeById(id: number): Promise<AnimeEntry | null>
 fetchAnimeRelations(malId: number): Promise<unknown[]>
@@ -306,8 +306,7 @@ reScorePool(): void
 buildRelationMemory(): Promise<void>
 getBecauseYouWatchedBatch(type: RecContext): AnimeEntry[]
 getSlotFillSuggestions(list: AnimeEntry[]): Partial<Record<WeekDay, AnimeEntry>>
-getSeasonNudges(): AnimeEntry[]
-fetchTopFinishedAnime(): Promise<AnimeEntry[]>     // ⚠️ vit ICI, inline — PAS dans useJikanApi (extraction = US-165)
+getSeasonNudges(): Promise<{ sequel: AnimeEntry; finishedTitle: string }[]>
 
 // useEpisodeInfo (wrappe utils/episodeInfo.ts)
 getAnimeEpisodeInfo(anime: AnimeEntry, targetDate?: Date): AnimeEpisodeInfo
@@ -366,7 +365,22 @@ Pièges structurants, à rappeler dans toute US touchant ce mapping :
   `'Currently Airing'`, donc **une série en pause est traitée comme en cours** (DEC-131).
 
 Le fichier fait autorité pour les interfaces exactes ; il est copié verbatim dans les US.
+Types : `AnimeRelationType`, `AnimeRelation`, `AniListRelationsResult`, `AniListDetailResult`,
+`AniListSeasonResult`, `AniListSearchResult`, `AniListPoolResult`.
 
+Signatures `useAniListApi` : `searchAnimeWithMeta`, `searchAnime`, `fetchCurrentSeasonWithMeta`,
+`fetchCurrentSeason`, `fetchUpcomingSeasonWithMeta`, `fetchTopFinishedWithMeta`,
+`fetchAnimeByMalIdWithMeta`, `fetchAnimeByMalId`, `fetchRelationsByMalIdWithMeta`,
+`fetchRelationsByMalId`.
+
+Fonctions module exportées : `resolveSeason(now)`, `resolveNextSeason(now)`.
+
+Signatures `useSync` (réduites en `J11b-1`) : `isSyncing` (readonly), `syncAnimeUpdates`,
+`clearSyncTimestamp`. **`startBackgroundRelationFetch` n'existe plus.**
+
+Signatures `utils/helpers` (purgé en `J11b-3`) : `escapeHTML`, `getWeekNumber`,
+`dedupeByMalId`. **`BASE_URL`, `fetchWithRetry`, `_resetJikanQueue` n'existent plus** — une
+spec de surface (`helpers.spec.ts`) échoue si un export réseau réapparaît.
 ---
 ## 9. ⚠️ Lacunes assumées du contrat
 
