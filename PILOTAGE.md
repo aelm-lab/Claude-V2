@@ -189,6 +189,19 @@ a touché une règle de gouvernance (nouvel antipattern, décision d'architectur
 clé ou de contrat), le document concerné (`AGENTS.md` / `ANTIPATTERNS.md` / `DECISIONS.md` /
 `TYPES_CONTRACT.md`) est mis à jour dans la **même** session — jamais reporté. Un handoff qui
 ne touche aucun document est un signal d'alerte, pas un raccourci.
+**Cadence documentaire (DEC-146).** À chaque clôture de session, sans exception :
+1. `STATE.md` — **régénéré intégralement**, jamais patché.
+2. `HISTORIQUE.md` — **+1 ligne** de session (+1 ligne de version si le sprint se clôt).
+3. Tout document de gouvernance touché par la session (`DECISIONS`, `TYPES_CONTRACT`,
+   `ANTIPATTERNS`, `AUDIT`, `AGENTS`) — **patché dans la même session, jamais reporté.**
+
+**Interdit : différer un DEC au handoff.** Un handoff est une source secondaire faillible.
+DEC-137→145 y ont vécu deux sessions, et le même handoff affirmait par ailleurs une dette
+`AGENTS.md` déjà soldée depuis trois sessions.
+
+**Vérification de dette par preuve, pas par recopie.** Toute dette de gouvernance héritée d'un
+handoff se vérifie contre le dépôt (`git log`, `findstr`) **avant** d'être reportée une fois
+de plus.
 **Isolation du déploiement `AGENTS.md` (`AP-PROCESS-3`).** Le redéploiement d'`AGENTS.md` à la
 racine de `A-Anime` se **commite seul**, en clôture de session, **avant** l'envoi de toute
 nouvelle US. Un fichier de gouvernance qui traîne non commité dans l'arbre de travail sera
@@ -226,7 +239,9 @@ un extrait de recherche qui aurait pu porter la bonne information.
 | **H7** | **Plafond : 250 lignes par document de Knowledge.** Le critère réel est la **dispersion thématique** : au-delà de 250 lignes, un document mêle en général plusieurs intentions et renvoie des extraits sans rapport avec la question. Deux exceptions nommées, parce qu'elles sont **mono-intention à titres stables** : `AGENTS.md` (lecture linéaire par Gemini, plafond 350) et `TYPES_CONTRACT.md` (document de référence pur, plafond 350). Aucune autre exception sans validation PO | Continu | Claude alerte |
 | **H8** | **Titres thématiques, jamais chronologiques.** Un document organisé par session produit des extraits qui se contredisent d'une section à l'autre | À l'écriture | Claude |
 | **H9** | **Purge tous les 5 sprints.** Tout document dont l'état de référence a plus de 3 sprints de retard est relu ou marqué périmé | S40, S45… | PO déclenche |
-- **Exception au plafond de 250 lignes : `STATE.md` est plafonné à 350.** C'est le seul
+**Plafond de `STATE.md` : 200 lignes** (DEC-146). Il ne porte plus que le présent — position,
+métriques, Kanban, faits externes, trous. Sessions et versions vivent dans `HISTORIQUE.md`,
+qui n'a pas de plafond (append-only, purge H9 par condensation, jamais par suppression).
   document qui indexe l'ensemble du projet (versions, sessions, métriques, backlog, trous)
   au lieu de traiter un sujet unique. Au-delà de 350, sortir une section entière vers un
   doc satellite hors ordre de lecture, sur le modèle d'`AUDIT.md` (SE-051).
@@ -244,6 +259,7 @@ un extrait de recherche qui aurait pu porter la bonne information.
 | `DECISIONS.md` | Pourquoi un choix irréversible a été fait | Claude |
 | `ANTIPATTERNS.md` | Pièges **répétés**, classés par thème | Claude |
 | `AGENTS.md` | Canon des règles Gemini — écrit ici, **déployé à la racine de `A-Anime`** | Gemini (+ Claude) |
+| `HISTORIQUE.md` | Journal append-only des sessions closes et des versions livrées. **Hors ordre de lecture** — ouvert à la demande | Claude |
 
 Les instructions personnalisées du projet ne vivent pas dans le dépôt : elles se collent dans
 la configuration du projet Claude Chat, comme un handoff.
