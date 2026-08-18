@@ -73,7 +73,16 @@
 - ❌ **Renseigner un état d'erreur sans jamais l'afficher.** `fetchCurrentSeason` sert un
   cache périmé en cas d'échec et remplit `error.value` — que rien n'affiche. Sans cache et
   sans réseau, la liste est vide **sans explication**.
-
+- ❌ **`AP-CATCH-1` — un `catch` qui renvoie un tableau vide.** Il est *indistinguable* d'un
+  résultat vide légitime : aucune erreur, aucun test rouge, et l'écran affiche « rien à voir »
+  au lieu de « ça n'a pas marché ».
+  **7 occurrences sur le seul sprint S40** : `fetchCurrentSeason`, bande SEQUELS & RELATED
+  (dead pour tous les utilisateurs pendant des semaines sur un 504 silencieux), pool de recos,
+  détection de suites, et 3 autres.
+  **Parade structurelle : contrat `{ data, failed }` par défaut sur toute fonction réseau.**
+  Une fonction réseau qui ne peut pas dire qu'elle a échoué est un bug en attente.
+  *Corollaire mesuré (SE-062) : un `200` servi depuis un cache expiré (`X-Cache-Status: STALE`)
+  est plus dangereux qu'un `504` — le 504 déclenche `failed`, le 200 périmé passe pour un succès.*
 
   | **AP-HYGIENE-1** | **Fichiers de travail commités.** `wait.txt` (SE-054), après les 3 fichiers de debug de SE-052. | 🟠 | Le débogage reste local. Le PO vérifie `git status` avant la gate ; tout fichier hors périmètre déclaré = correction mineure d'office. |
 | **AP-TS-1** | **`as unknown as` posé sans qu'aucune erreur de compilation ne l'exige.** J04 (SE-054), après AUD-14. | 🟠 | Un double cast n'est légitime qu'en réponse à une erreur `vue-tsc` **citée dans le rapport de livraison**. Sans citation : à retirer. |
@@ -145,7 +154,16 @@ registre.
 
 > Ces bugs ont tous passé `vue-tsc` + tous les tests + le build **au vert**. C'est la raison
 > d'être de R4.
-
+- ❌ **`AP-TEST-5` — mock réseau dupliqué, adhérent à l'URL du fournisseur.** 11 specs E2E
+  portaient chacune leur propre `page.route()` sur `api.jikan.moe/v4/…`. Au changement de
+  fournisseur, les 11 sont devenues muettes **en même temps** — et pas au merge, **au sweep**,
+  trois US plus tard, quand la cause était déjà noyée dans l'historique.
+  Deux symptômes distincts, un seul bug : soit la fixture n'arrive jamais (écran vide), soit
+  du contenu réel s'affiche à sa place (compteur inattendu). **Le second est le plus vicieux :
+  le test échoue sur un nombre, ce qui fait chercher un bug de rendu.**
+  **Parade : un helper de mock unique par fournisseur** (`tests/e2e/_helpers/<fournisseur>Mock.ts`).
+  Une spec ne connaît jamais l'URL d'une API.
+  *Même famille que R4-bis : ce qui casse au sweep et pas au merge coûte dix fois plus cher.*
 - ❌ **Asserter l'état d'un store, ou le layout desktop, au lieu du DOM visible en viewport
   mobile.** Faux-vert n°1 du projet, récidivant. Le test passe sans rien prouver.
 - ❌ **`toBeVisible()` seul quand la position est l'enjeu.** Un élément hors écran est
