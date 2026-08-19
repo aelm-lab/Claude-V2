@@ -157,3 +157,5 @@
 | **DEC-02** | ESLint = flat config + `@vue/eslint-config-typescript` avec `no-explicit-any` **en erreur** | ⚠️ La configuration existe mais ESLint **n'est jamais exécuté** dans la porte verte (`STATE.md §Trous`) |
 | **DEC-03** | `tsconfig.node.json` séparé pour isoler `vite.config.ts` | Sans isolation, la config de build pollue le type-check applicatif |
 | **DEC-18** | Upsert du store : garder `if ('state' in input)`. Ne jamais recalculer `state` inconditionnellement en branche merge | Sinon clobber du `state` choisi par l'utilisateur |
+
+| **DEC-154** | 🔴 **Le corpus documentaire est compressé et scindé : `DECISIONS.md` ne porte que les décisions **actives**, en tableau `ID \| Décision \| Pourquoi ça casse` ; les décisions closes, périmées et `⛔ SUPERSEDED` basculent dans `DECISIONS_ARCHIVE.md`, satellite append-only hors ordre de lecture | Un journal chronologique de 717 lignes ne se lit plus : il se cherche. Chaque doublon évince un extrait pertinent de l'index. Les numéros `DEC-xx` ne sont **jamais** supprimés ni renumérotés — tous les renvois restent résolvables, l'archive existe précisément pour ça |
