@@ -250,3 +250,31 @@ quatre promesses fausses**, qui vivent dans du code qu'elle ne touche pas.
   de ce raccourci (*« le diagnostic du PO pointe un symptôme, pas une cause »*). L'absence de
   trace n'est pas une preuve d'accident — le choix peut être délibéré.
   → À instruire au triage benchmark, avec `B-07`.
+
+---
+
+# Réconciliation documentaire (chantier de cleaning)
+
+> **Ajout en append, conforme à la règle du fichier :** aucune campagne antérieure n'est réécrite, aucun constat n'est supprimé. Cette section marque l'état de constats déjà présents plus haut, à la date du chantier de compression de la Knowledge.
+
+## Constats soldés
+
+| ID | État | Preuve |
+|---|---|---|
+| **AUD-04** | ⛔ **ANNULÉ, pas reporté** (DEC-126). Le constat visait la contamination du coupe-circuit entre endpoints d'un même hôte. La source actuelle n'expose **qu'un seul endpoint** : un breaker global y est le comportement correct. Leçon transposée : un `429` n'incrémente jamais le compteur de panne | DEC-126 |
+| **AUD-17** | ✅ **Soldé.** Le stub `_startBackgroundRelationFetch` et le worker qu'il doublait sont supprimés du dépôt | DEC-147, slice `J11b-1` |
+| **AUD-18** | ✅ **Partiellement soldé.** `useRecommendations` est doté de ses premières specs unitaires. Vérification faite au passage : aucun autre composable n'était dans le cas d'un fichier de cette taille sans aucun test | `useRecommendations.spec.ts` + `.nudges.spec.ts` |
+
+## Constats requalifiés
+
+| ID | Requalification |
+|---|---|
+| **AUD-01** | La note « ne pas corriger dans `normalizeAnime` » (DEC-118) est **caduque** : DEC-124 pose désormais `day` + `airsTime` par cascade, et DEC-131 marque `awaitingSchedule` en l'absence de date prouvée. Le constat d'origine reste lisible pour la traçabilité, **sa consigne de non-correction ne s'applique plus** |
+| **AUD-05** | Toujours ouvert, mais **passe 🟢 → 🟠** et exige un **DEC d'arbitrage préalable** sur la source unique du signal `stale` — deux signaux concurrents et morts coexistent, ce qui violerait DEC-52 (DEC-151) |
+| **AUD-08** | Le volet Playwright reste absent de la CI. **ESLint n'est toujours jamais exécuté** : la règle « zéro `any` » n'est vérifiée par aucun outil de la porte verte |
+
+## Constats non réévalués
+
+`AUD-02` · `AUD-03` · `AUD-06` · `AUD-07` · `AUD-09` · `AUD-10` · `AUD-11` · `AUD-13` · `AUD-14` · `AUD-15` · `AUD-16` — aucune lecture de code n'a été faite pendant le chantier documentaire. **Leur état est inconnu, pas « toujours vrai ».** Toute conversion en US démarre par un grep du fichier concerné.
+
+Les doutes `AUD-12` / `AUD-19` / `AUD-20` restent à lever par les commandes indiquées plus haut.
