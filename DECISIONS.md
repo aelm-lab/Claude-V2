@@ -1,717 +1,159 @@
-# DECISIONS.md — Journal des décisions
+# DECISIONS.md — Décisions actives
 
-> **Où mettre ce fichier :** Knowledge du projet Claude Chat (`aelm-lab/Claude-V2`).
-> **Rôle :** capturer le contexte « mou » pour qu'une nouvelle session ne rejoue pas une
-> décision déjà tranchée. Une entrée répond à : *« qu'est-ce que quelqu'un referait mal sans
-> cette information ? »*
->
-> **Séquence : DEC-01 → DEC-115.** Aucun numéro n'est jamais supprimé ni réattribué — les
-> renvois existants dans les autres documents doivent rester valides. Une décision dépassée
-> est **marquée** `⛔ SUPERSEDED`, pas effacée.
->
-> **Ce qui n'est PAS ici :** l'état courant (→ `STATE.md`), les règles opposables
-> (→ `AGENTS.md`, `PILOTAGE.md`), les pièges récurrents (→ `ANTIPATTERNS.md`).
+> **Rôle :** les choix encore appliqués aujourd'hui, une ligne chacun. Un numéro n'est jamais supprimé ni réattribué.
+> **Pas ici :** décisions closes, périmées ou de migration (→ `DECISIONS_ARCHIVE.md`, hors ordre de lecture) · état courant (→ `STATE.md`) · règles opposables (→ `AGENTS.md`, `PILOTAGE.md`) · pièges répétés (→ `ANTIPATTERNS.md`).
+
+**Dernier numéro attribué : DEC-153.** Une décision contredite est marquée `⛔ SUPERSEDED PAR DEC-xxx` et bascule dans l'archive ; les renvois `DEC-xx` des autres documents restent résolvables.
 
 ---
 
-## Index — les décisions structurantes encore actives
+## 1. Architecture & couches
 
-Point d'entrée par sujet. Le journal numéroté suit.
-
-| Sujet | Décision |
-|---|---|
-| Clés localStorage & migration | **DEC-85** (préfixe `aanime_`) — ⛔ remplace DEC-64 |
-| Orchestration du boot | **DEC-50** (séquence stricte) + **DEC-59** / **DEC-72** (loaders) |
-| Contrat d'event composant → consommateurs | **DEC-58**, **DEC-61** |
-| Déduplication des pools | **DEC-60** (`dedupeByMalId`), **DEC-74** (avant le slice) |
-| Hiatus | **DEC-52** (source unique computed, 14 j) |
-| Scoring par studio | **DEC-86** (`studios: string[]` toujours peuplé) |
-| Socle E2E & bypass auth | **DEC-56** |
-| Auteur du test ≠ auteur du code | **DEC-104** |
-| Débordement horizontal & centrage des modales | **DEC-107** / **DEC-108** |
-| Grille de cartes unifiée | **DEC-111** (`.aa-card-grid`) |
-| État de Jikan | **DEC-113** (cache HIT/MISS) |
-| Fallback sur cache périmé | **DEC-114** |
-| Champ `day` jamais produit | **DEC-115** |
-| Commandes de preuve | **AGENTS.md §2** — ⛔ remplace DEC-04 |
-
----
-
-## DEC-01 → DEC-48 — Migration vanilla → Vue 3 (phases 0 à 7)
-
-Décisions de scaffold et de portage, prises pendant la migration, **terminée**. Conservées en
-index d'une ligne : leur prose détaillée n'a plus de valeur opérationnelle et reste
-récupérable dans l'historique git.
-
-| ID | Décision | Statut |
+| ID | Décision | Pourquoi ça casse si on l'ignore |
 |---|---|---|
-| DEC-01 | US-001b absorbée dans US-001 (5 fichiers, dépassement signalé et autorisé) | historique |
-| DEC-02 | ESLint = flat config + `@vue/eslint-config-typescript@^14` → `no-explicit-any` en erreur | actif |
-| DEC-03 | `tsconfig.node.json` séparé pour isoler `vite.config.ts` | actif |
-| DEC-04 | `npx <outil>` ≡ `npm run <script>` | ⛔ **SUPERSEDED — `AGENTS.md §2`** : seuls `npm run type-check` / `test:run` / `build` sont recevables, les scripts npm portent des options que `npx` masque |
-| DEC-05 | Le conteneur Gemini tourne nativement en UTC — pas de préfixe `TZ=UTC` | actif |
-| DEC-06 | `jsdom` en devDep, déclaré par fichier via `// @vitest-environment jsdom` | actif |
-| DEC-07 | Les DTO de plomberie restent des types locaux, hors contrat | actif |
-| DEC-08 | Fixtures de test typées via helper `Partial` ou factory. Interdit : `as any`, `as unknown as T` | actif |
-| DEC-09 | US-008-types : extension du contrat en **ajouts seuls**, rien renommé | historique |
-| DEC-10 | Branches mortes simplifiées après `normalize` (genres/themes/studios toujours `string[]`) | actif |
-| DEC-11 | Bug `item.studios` reproduit tel quel depuis le vanilla | ✅ résolu par DEC-86 |
-| DEC-12 | `decayMultiplier = 0.2` conservé dans `buildTasteProfile` | actif |
-| DEC-13 | Priorité de tri des signaux typée `Record<RecSignalKind, number>`, `score: 0` | actif |
-| DEC-14 | `extractBecauseYouWatched` : param inutilisé préfixé `_profile`, signature publique préservée | actif |
-| DEC-15 | `generateICSFile` scindé : `buildICSContent` pur dans `utils/ics.ts`, download + toast dans `useICS` | actif |
-| DEC-16 | `parseMalXml` pur dans `utils/malImport.ts`, partie impure dans `useMalImport` | actif |
-| DEC-17 | Dette UX du boot : `LoadingOverlay` piloté par état réactif | ✅ résolu |
-| DEC-18 | Upsert du store : garder `if ('state' in input)`. Ne jamais recalculer `state` inconditionnellement en branche merge, sinon clobber | **actif — spec Claude fautive corrigée par Gemini** |
-| DEC-19 | `needsBroadcastSync` dans `usePersistence` : mutation réactive qui déclenche le watch | actif |
-| DEC-20 | Le bg worker retourne `[]` aussi bien sur « pas en cache » que « anime sans relations ». Idempotent | actif |
-| DEC-21 | `buildRelationMemory` vient de `recs.js`, **pas** de `rec-engine.js` | **actif — spec Claude fautive** |
-| DEC-22 | `fetchTopFinishedAnime` inline dans `useRecommendations` (fidèle au vanilla) | actif — extraction = US-165 |
-| DEC-23 | `useTheme` applique la classe `dark` sur `<html>` (le vanilla l'appliquait sur `<body>`) | actif |
-| DEC-24 | `MalImportResult` expose `imported`, pas `entries` | **actif — spec Claude corrigée par Gemini** |
-| DEC-25 | Orchestration sync : stubs no-op permanents dans `usePersistence` | ⛔ SUPERSEDED par DEC-50 |
-| DEC-26 | `watch → saveToDatabase` dans `usePersistence`, jamais dans le store. **Store sans I/O** | **actif — structurant** |
-| DEC-27 | Double bloc `<script>` + `<script setup>` pour exporter un Symbol depuis `App.vue` | actif |
-| DEC-28 | Guard auth : singleton `auth` + `await auth.authStateReady()` | **actif — structurant** |
-| DEC-29 | Placeholders inline dans `router/index.ts` jusqu'à la phase 5 | historique |
-| DEC-30 | `lastCalendarView` reporté phase 4 | historique |
-| DEC-31 | `isBooting` via `provide`/`inject`, **fallback `ref(false)` obligatoire** | actif |
-| DEC-32 | `syncAnimeUpdates` / `startBackgroundRelationFetch` en fire-and-forget | ⛔ ajusté par DEC-50 |
-| DEC-33 | `ToastNotification` monté dans `AppLayout` uniquement | actif |
-| DEC-34 | Lazy-load d'image via `<img style="display:none">`, pas `new Image()` | actif |
-| DEC-35 | Dismiss de `SeasonNudgeCard` via `<Transition @after-leave>`, pas `setTimeout` | actif |
-| DEC-36 | `ChipsStrip` : la chip `all` émet `null` | actif |
-| DEC-37 | `WeekAnimeItem` reçoit `info` en prop | actif |
-| DEC-38 | `MonthDayCell` reçoit `animes` déjà filtrés | actif |
-| DEC-39 | Substitution des placeholders router au fil des US | historique |
-| DEC-40 | Pattern stub `console.warn` en phase 5, câblage batché | historique |
-| DEC-41 | `stores/ui.ts` pilote **tous** les overlays | **actif — structurant** |
-| DEC-42 | `modalContext` : `libraryRec` prioritaire | actif |
-| DEC-43 | `removeAnimeWithUndo` simplifié — l'undo est une dette | actif |
-| DEC-44 | Prefetch des covers abandonné au profit du fallback `@error` | actif |
-| DEC-45 | Signatures `useEpisodeInfo` / `useICS` corrigées a posteriori | historique |
-| DEC-46 | `CalendarNavControls` route-aware | ⛔ résorbé par DEC-66 |
-| DEC-47 | `synopsis?` ajouté à `AnimeEntry` | ⚠️ **absent du contrat** — voir `TYPES_CONTRACT.md §9` |
-| DEC-48 | `ROADMAP.md` remplace `PHASE8_DEBT.md` | ⛔ obsolète — les deux documents ont été supprimés |
+| **DEC-26** | 🔴 `watch → saveToDatabase` vit dans `usePersistence`, jamais dans le store. **Store sans I/O** | Un store qui écrit devient intestable et sauvegarde à des moments imprévisibles |
+| **DEC-41** | 🔴 `stores/ui.ts` pilote **tous** les overlays | Deux sources d'ouverture = modales concurrentes, fermeture partielle |
+| **DEC-28** | 🔴 Guard auth : singleton `auth` + `await auth.authStateReady()` | `useFirebaseAuth()` hors `setup` casse ; `currentUser` est `null` avant le `await` |
+| **DEC-31** | `isBooting` via `provide`/`inject` avec **fallback `ref(false)` obligatoire** | Un `inject` typé sans fallback lève au montage isolé (tests) |
+| **DEC-27** | Double bloc `<script>` + `<script setup>` pour exporter un Symbol depuis `App.vue` | Un export nommé depuis `<script setup>` est impossible |
+| **DEC-07** | Les DTO de plomberie restent des types locaux, hors contrat | Le contrat se dilue en types jetables |
+| **DEC-55** | Deux documents d'architecture séparés : technique et fonctionnelle | Un seul document mêle « ce que fait l'app » et « comment c'est câblé » |
 
----
+## 2. Boot & persistance
 
-## DEC-49 → DEC-55 — Audit croisé & EPIC-1
-
-- **DEC-49** Audit croisé : Gemini a vu 4 bugs runtime que Claude Code avait ratés. → naissance de la règle **R3** (un audit lit le CODE).
-- **DEC-50** 🔴 **Orchestration du boot entièrement dans `App.vue`** : `load → await sync → await buildRelationMemory → reScorePool → bg fetch`. Couvert par `App.spec.ts`.
-- **DEC-51** Pattern `*WithMeta` pour le throttle conditionnel : 1,1 s **seulement si `fromNetwork`**. Un throttle inconditionnel après un appel qui peut taper le cache ralentit pour rien.
-- **DEC-52** 🔴 **Hiatus = source unique computed à 14 j.** Suppression de l'écriture morte à 21 j. Deux seuils pour une même règle métier = deux vérités.
-- **DEC-53** `AGENTS.md` conservé et musclé comme gouvernance permanente de Gemini.
-- **DEC-54** Filet de sécurité **avant** correctif : CI + smoke test + un test rouge encodant le bug.
-- **DEC-55** Deux documents d'architecture séparés (technique et fonctionnelle).
-
-## DEC-56 → DEC-63 — Audit UX live & EPIC P0
-
-- **DEC-56** 🔴 **Socle E2E Playwright + bypass d'auth mort en production.** `import.meta.env.VITE_E2E_AUTH_BYPASS` en lecture **statique** : la branche est éliminée du bundle (prouvé `grep -c` = 0). `tests/e2e/**` exclu de Vitest.
-- **DEC-57** **R4** — test E2E obligatoire sur tout correctif UX ou écran : geste réel, assertion sur le DOM visible, ROUGE puis VERT sans modifier le test.
-- **DEC-58** 🔴 **Cause racine d'une modale morte = désalignement de nom d'event.** `WeekAnimeItem` émettait `click`, la page écoutait `@open-modal`. **Fix côté page** — jamais renommer l'emit du composant.
-- **DEC-59** **Boot loader en deux phases.** Deux fenêtres d'écran vide distinctes : pré-mount (bundle pas encore parsé) et post-mount (`route.meta` vide pendant la résolution auth, donc `AppLayout` et son `LoadingOverlay` non montés). Fix : loader statique dans `index.html` + `<LoadingOverlay>` remonté à la racine d'`App.vue`, hors gate auth. *Correction d'un faux diagnostic de Claude : ce n'était pas un problème d'`inject` mais de **placement**.*
-- **DEC-60** 🔴 **`dedupeByMalId` = source unique de déduplication.** Les doublons avaient 3 chemins indépendants. Helper pur générique, clé `mal_id` seule, garde la 1ʳᵉ occurrence. Appliqué avant `writeLocalCache` et avant tri dans `searchAnime`.
-- **DEC-61** 🔴 **Contrat d'event = le composant, les consommateurs s'alignent.** `RecCard` émettait `add`/`skip`/`click`/`not-interested`/`more-like-this` ; ses 3 consommateurs écoutaient `@heart` (mort) et n'écoutaient ni `@click` ni `@not-interested`. Bouton Add mort, clic carte mort, « pas intéressé » mort — **0 erreur console**.
-- **DEC-62** Toute action d'ajout ou de déplacement visible produit un **toast nommant la destination visible exacte**.
-- **DEC-63** Libellés de toast harmonisés sur le vocabulaire visible : « Radar » → « Coming Soon », « Vault » → « Completed ».
-
-## DEC-64 → DEC-71 — Correctifs UX P0.5 → P0.9
-
-- **DEC-64** Clé localStorage `'animeCalendar'` confirmée. ⛔ **SUPERSEDED PAR DEC-85** — la clé est `aanime_calendar`. Ne plus utiliser `'animeCalendar'` dans un seed.
-- **DEC-65** Stratégie E2E affinée (**R5**) : un test ciblé par US pendant l'epic, grand check complet en fin d'epic, specs cumulatives jamais supprimées.
-- **DEC-66** Libellé de période = source unique dans `CalendarNavControls`.
-- **DEC-67** Convention de classe active de nav = `.active` (markup aligné sur le CSS).
-- **DEC-68** P0.7 = style pur, tokens existants, script intact.
-- **DEC-69** P0.8c sorti du périmètre P0.
-- **DEC-70** `.modal-backdrop` : overlay centré, CSS manquant ajouté — **3ᵉ occurrence du pattern « le markup référence une classe absente »**. Règles préfixées pour ne pas casser le `.modal` vanilla.
-- **DEC-71** Libellés de toast harmonisés (« Vault » → « Completed », « Radar » → « Coming Soon »).
-
-## DEC-72 → DEC-80bis — Quick wins & clôture EPIC P0
-
-- **DEC-72** 🔴 **Boot-loader hors de `#app` + suppression DOM dans `App.vue`.** `#boot-loader` est déplacé hors de `<div id="app">` ; sa suppression se fait par `document.getElementById('boot-loader')?.remove()` dans le `finally` du `onMounted` — **exception R-CODE-4 documentée**. `main.ts` reste un `app.mount('#app')` simple, **sans** `router.isReady()` (testé : cassait `boot-loader.spec.ts`).
-- **DEC-73** Toast « Moved to Completed » au boot pour l'auto-vault.
-- **DEC-74** Déduplication appliquée **avant** le `slice` dans `getNextBatch`, jamais après.
-- **DEC-75** ⚠️ **Non capturé.** Trou de lecture assumé entre DEC-74 et DEC-76. **Ne pas inventer son contenu.**
-- **DEC-76** Snap-to-today remplace le scroll-restore dans `CalendarWeekPage` : `await nextTick()` + `findIndex(d => d.isToday)` + `scrollIntoView({ behavior:'auto', block:'start' })`, garde `todayIndex < 0`, appelé en `onMounted` et `onActivated` (KeepAlive). Pas de re-snap sur Prev/Next.
-- **DEC-77** « Mark done » et la ligne recency gatés sur `isFinished` : ces actions n'ont de sens que sur un anime terminé.
-- **DEC-78** Signalement de centrage clos comme **perception d'audit**, mesuré par boundingBox — **spécifiquement sur `AnimeModal`**. *(Ne pas extrapoler : la vraie cause générale est venue plus tard, DEC-107.)*
-- **DEC-79** Réactivité Discover par **dérivation**, pas par canal modal → page : `excludedIds = union(store, dismissedRecIds)`. Add et Dismiss retirent la carte mécaniquement, quel que soit le chemin.
-- **DEC-80** 🎓 **Conflit de règles découvert :** un anime `calendar` + `Finished` s'auto-vault au boot, tandis que `calendar` + `Airing` gate « Mark done ». Le scénario « Mark done depuis Week » est donc **structurellement impossible** après gating. Le test a été déplacé sur `watchlist` + `Finished` (exclu de l'auto-vault). Aucun code source modifié.
-- **DEC-80bis** EPIC-2 clos : code-splitting, défer Firestore, fiabilité.
-
-## DEC-81 → DEC-87 — EPIC-3 & dual audit s16
-
-- **DEC-81** MAL `Dropped` = **non importé**. *Impact user : un anime abandonné sur MAL n'encombre pas la bibliothèque.*
-- **DEC-82** Redirect post-login = reste `/`. Le redirect vers la route d'origine est déféré (le lien magique expire rarement, ROI faible).
-- **DEC-83** Le skip d'une suggestion slot-fill est **session-only** : `ref<Set<number>>` local, jamais Pinia, jamais persisté. *« Écarter pour l'instant » ≠ « bannir ».*
-- **DEC-84** Cleanup groupé : `POSTER_PLACEHOLDER` source unique (4 copies inline supprimées) ; `onHiatus?` retiré du type ; `episodeOverride` reseté à l'upsert.
-- **DEC-85** 🔴 **Toutes les clés localStorage préfixées `aanime_` + migration legacy au boot**, dans `usePersistence.loadFromDatabase`. Registre complet → `ARCHITECTURE_TECHNIQUE.md §7`.
-- **DEC-86** `normalizeAnime` produit **toujours** `studios: string[]`. *Impact user : les recommandations tiennent enfin compte du studio.*
-- **DEC-87** 🎓 **Vérifications zéro-confiance de l'audit croisé s16.** Quatre points de vigilance hérités d'un handoff se sont révélés **faux** : `setAllData` n'existe pas · `syncStatus` = 0 hit · `reconcileWithDatabase` n'existe plus · l'import IDB dynamique n'était pas matérialisé. → **Un handoff est une source secondaire faillible ; le code réel tranche.** Backlog issu de l'audit (US-153 à US-159) : **tous livrés S19/S21**.
-
-## DEC-88 → DEC-98 — Epic Stats, polish & infrastructure
-
-- **DEC-88** `useStats` = composable dédié, `StatsPage.vue` = page pure. Séparation stricte des couches.
-- **DEC-89** `topGenres` scoped au **contenu terminé cette année** uniquement. Benchmark AniList / Spotify Wrapped / Letterboxd. *Impact user : les stats reflètent ce qui a été vraiment regardé, pas les intentions.*
-- **DEC-90** Garde null-safety `genres ?? []` : un cache legacy sans `genres` faisait crasher `topGenres`.
-- **DEC-91** Route `/stats` derrière le guard auth — les stats sont personnelles.
-- **DEC-92** BUG-1 / BUG-2 / BUG-4 fermés **sans spec** : invérifiables en production, déjà corrigés ou jamais reproductibles. Aucune ligne de code touchée. *Confirmation qu'un ressenti d'audit se périme.*
-- **DEC-93** Le bouton ✓ « Mark done » est **masqué** sur Airing / Hiatus — fix présentationnel (`v-if`), aucune logique touchée. L'action reste dans la modale.
-- **DEC-94** Règle de titre centralisée dans `getAnimeTitle` : anglais primaire + rōmaji secondaire si différent. Rollout progressif.
-- **DEC-95** Vocabulaire de recherche figé : « Coming Soon », « Finished airing ».
-- **DEC-96** L'état « ✓ Added » est **cliquable** : retire l'anime d'où qu'il soit + toast « Removed ».
-- **DEC-97** Les couleurs **réutilisent les tokens** existants (`var(--airing)`, `var(--upcoming)`), aucune redéclaration.
-- **DEC-98** `npm install` fonctionne en direct — la parade `--legacy-peer-deps` est supprimée (downgrade `@pinia/testing` mergé). À réarmer si un futur `package.json` réintroduit le conflit.
-
-## DEC-99 → DEC-106 — Refonte scroll & logout
-
-- **DEC-99** 🔴 **Refonte du header au scroll — sticky CSS pur.** Cause racine du flicker : `v-show`/`display:none` provoquant des sauts de hauteur en cours de scroll. Décision : **abandon de toute logique JS de scroll-hide**.
-- **DEC-100** 🎓 **Régression corrigée par retrait, pas par empilement.** Quand un effet sticky introduit une régression, le retirer entièrement est souvent le bon appel plutôt que d'empiler un correctif dessus.
-- **DEC-101** `.current-period` : taille et graisse réduites. Correctif cosmétique pur.
-- **DEC-102** US-127 (`SyncIndicator`) confirmé livré — résout un trou de traçabilité laissé ouvert.
-- **DEC-103** US-AUTH-LOGOUT mergée malgré le volet centrage non résolu — **décision PO explicite**. Le code fonctionnel est vert sur les 3 sorties ; le centrage est traité séparément.
-- **DEC-104** 🔴 **Invariant auteur-test renforcé — aucune exception, même pour un test visuel « simple ».** Gemini a livré un test E2E auto-écrit pour valider son propre correctif, avec deux manquements supplémentaires : preuve fournie sans état ROUGE préalable, et assertion sur `max-height`/`overflow-y` au lieu de `position`/`boundingBox` alors que le placement était le sujet. **Test écarté intégralement, sans valeur de preuve**, malgré un code par ailleurs correct.
-- **DEC-105** `US-JIKAN-HEALTHCHECK` : usage dev-only, détail par test au-delà d'un verdict global OK/KO.
-- **DEC-106** Périmètre du centrage élargi à tous les popups, sur demande PO. *(Résolu par DEC-107/108.)*
-
-## DEC-107 → DEC-112 — Overflow, grilles & fiabilité de test
-
-- **DEC-107** 🔴 **Cause racine unique du débordement horizontal ET du décentrage des popups.** `.secondary-nav-wrapper` portait `width:100%` + `padding:10px 15px` **sans `box-sizing:border-box`** → document à 417 px dans un viewport de 387 px. Les modales en `position:fixed` se centraient sur le viewport pendant que le contenu s'étalait 30 px plus large → décalage visible d'environ 15 px. Correctif : `box-sizing:border-box` sur le wrapper + `flex:1 1 0; min-width:0` sur `.secondary-tabs button`. 🎓 **Le symptôme apparaissait très loin de sa cause.**
-- **DEC-108** `US-MODAL-CENTER-AUDIT` close par DEC-107, **sans code dédié**. Le CSS des modales était conforme depuis le début.
-- **DEC-109** Suppression **autorisée** des specs E2E non enregistrées. R5 protège les specs figurant au registre ; un `debug-*.spec.ts` jamais enregistré n'a aucune valeur de preuve.
-- **DEC-110** `US-MODAL-UNIFY` **annulée** — la modale était déjà unique (un seul `AnimeModal`, monté une fois, routant par `modalContext`). Le vrai défaut signalé par le PO était une incohérence de **grille CSS** entre écrans de liste. 🎓 *Le diagnostic du PO pointe un symptôme, pas une cause : vérifier avant de spécifier.*
-- **DEC-111** 🔴 **`.aa-card-grid` — classe partagée, colonnes fixes par breakpoint.** Deux causes racines : `.anime-grid` avec `minmax(160px,1fr)` + padding + gap réclamait 344 px sur 339 px utiles → bascule en 1 colonne pour 5 px ; et `.recs-grid` référençait une classe définie **uniquement dans le `<style scoped>` d'une autre page**, donc jamais appliquée.
-- **DEC-112** Spec E2E corrigée en review : `toBeVisible` remplacé par `toHaveCount`. Une grille CSS vide (mock à `data:[]`) a une hauteur de 0 px → jugée invisible alors que le CSS est correct. Le nombre de colonnes est une propriété du **conteneur**, pas de son contenu rendu.
-
-## DEC-113 → DEC-115 — Jikan, cache et champ `day`
-
-### DEC-113 — Jikan : cache HIT / MISS, ni panne globale ni paramètre fautif
-
-**9 mesures curl successives.** Le code HTTP ne dépend d'**aucun paramètre de requête** mais
-de l'état du cache de Jikan : URL déjà en cache → 200 ; URL neuve → Jikan interroge
-MyAnimeList → échec → 504.
-
-| URL | Code |
-|---|---|
-| `anime?q=naruto&limit=1` | 200 (×2) — URL de test banale, en cache mondial |
-| `anime?q=naruto&limit=25` | 504 |
-| `anime?q=naruto&sfw=true&limit=1` | 504 |
-| `anime?q=naruto&sfw=true&limit=25` | 504 |
-| `anime?q=naruto&sfw=true&limit=25&order_by=popularity&sort=asc` | 504 |
-| `anime?q=zzqxwv&limit=1` (chaîne absurde) | 504 |
-| `seasons/now?limit=25` (URL réelle de l'app) | 200 (×2) |
-| `seasons/now?limit=1` | 504 |
-| `anime/1/recommendations` | 504 |
-
-Corroboré par la documentation officielle Jikan (cache 24 h + rafraîchissement en tâche de
-fond) et par l'issue GitHub `jikan-me/jikan-rest` **#610**, ouverte et non résolue.
-
-**Conséquences**
-- La **recherche** est structurellement KO : chaque titre tapé = URL neuve = miss = 504.
-  **Aucun correctif possible côté Aanime.**
-- Les **saisons** restent fonctionnelles (URLs fixes, cache chaud).
-- `US-ANILIST-SEARCH` devient la **seule** voie de réparation → **condition de lancement**.
-- Le standby « panne Jikan globale », porté de S33 à S38, était **faux**.
-
-**Hypothèses écartées — ne pas réessayer :** cache local périmé · TTL non vérifié · flag dev
-non câblé · `order_by=popularity` · intermittence aléatoire.
-
-> ⛔ **Une formulation concurrente de DEC-113 a circulé** (« la panne venait de notre
-> `order_by=popularity` »). Elle est **écartée** : elle est falsifiée par les mesures
-> ci-dessus — `anime?q=naruto&limit=25` sans `order_by` répond 504, et
-> `seasons/now?limit=1` répond 504 alors que `limit=25` répond 200. Aucune théorie
-> « paramètre fautif » ne survit à ces deux mesures. *Arbitrage acté en SE-049.*
-
-### DEC-114 — Fallback sur cache périmé : comportement voulu, non signalé
-
-`readLocalCache` expose un booléen `stale` ; `fetchCurrentSeason` sert le cache périmé si le
-fetch échoue — comportement **délibéré**, documenté en commentaire, fidèle au vanilla (il
-évite une page vide en cas de panne). `error.value` est renseigné mais **jamais affiché**.
-Sans cache et sans réseau → liste vide **silencieuse**.
-**Décision : comportement conservé.** Dette UX enregistrée sous `US-CACHE-STALE-WARNING`.
-
-### DEC-115 — Le champ `day` n'est produit par aucun chemin de normalisation⛔ **SUPERSEDED PAR DEC-124.** La cascade de résolution livrée en S38 pose `day` et `airsTime`
-dans `normalizeAnime`. La piste « dépendant de `/anime/{id}` en 504 » était fausse : la donnée
-était présente et ignorée. *Leçon : une hypothèse marquée « NON close » doit être re-testée à
-sa clôture, pas citée comme un fait dans les autres documents — elle l'a été 3 fois.*
-`normalizeAnime` ne produit **jamais** `day` ni `airsTime`. Or `CalendarWeekPage` filtre sur
-`state === 'calendar' && day === dayClass` : **sans `day`, un anime en `state:'calendar'` est
-stocké mais invisible partout** — ni dans la semaine, ni en Library.
-`buildSeedEntry` pose `state` mais pas `day` ; le même bug avait déjà été corrigé une fois
-sur `state` seul, la moitié `day` est restée.
-
-⚠️ **Statut : hypothèse forte, NON close.** Le `aanime_calendar` du PO ne contient aucune
-entrée `state:'calendar'`, ce qui empêche la vérification sur donnée réelle. **Ne pas
-spécifier de correctif avant d'avoir tranché.**
-**Piste non vérifiée :** `day` serait rempli par `syncAnimeUpdates` via `parseJSTToLocal`
-depuis le `broadcast` Jikan — donc dépendant de `/anime/{id}`, endpoint en 504 (DEC-113). Si
-confirmé, le défaut d'onboarding et la panne Jikan ont **la même cause aval**.
-
-
-## DEC-120 → DEC-124 — Beta réelle, gouvernance Gemini, garde `day`
-
-- **DEC-120** L'app est en **beta avec des testeurs réels**. Tout P0 sur un parcours d'entrée devient bloquant, plus seulement gênant.
-- **DEC-121** **`AGENTS.md` en lecture seule pour l'agent implémenteur** (R-AGENTS-1). Mise à jour uniquement par US dédiée avec patch verbatim (R-AGENTS-2). Sens de circulation unique : AI Studio → repo → CMD. *Motif : 3ᵉ occurrence de R-SCOPE-1 sur ce fichier.*
-- **DEC-122** **La gate 🔴 peut être satisfaite par un test unitaire dédié quand l'E2E est structurellement impossible.** Motivé au cas par cas, non généralisable. Cas fondateur : AUD-02 — le SDK Firestore met les écritures en file locale hors-ligne, `setDoc` résout, aucun rejet n'est observable depuis le navigateur.
-- **DEC-123** Clé primaire `mal_id` conservée. `US-BETA-DATA-MIGRATION` annulée.
-- **DEC-124** 🔴 **`normalizeAnime` pose `day` et `airsTime` depuis `broadcast`.** ⛔ **SUPERSEDE DEC-118.** DEC-118 interdisait de corriger le mapping au motif que J-04 le réécrirait. Elle reposait sur une prémisse fausse : la donnée de diffusion était supposée absente, alors qu'elle est présente dans `/seasons/now` **et** `/anime/{id}` (mesure SE-053) et simplement ignorée. Cascade retenue : (1) valeur existante jamais écrasée, (2) `broadcast` JST → jour + heure locale, (3) jour de semaine de `aired.from`, **sans heure** — l'absence d'heure signale honnêtement l'approximation. Le résidu (aucune source) est marqué `awaitingSchedule` et repromu par `useSync`. *Leçon : une décision « ne corrigez pas ici » doit citer la mesure qui la fonde, sinon elle survit à sa prémisse.*
-
-## DEC-125 → DEC-126 — Fin de vie Jikan & périmètre du breaker
-
-- **DEC-125** 🔴 **Jikan ferme en octobre 2026.** Fait apporté par le PO, absent du corpus.
-  La migration AniList cesse d'être une réparation de la recherche pour devenir un **full
-  switch** de toutes les lectures externes, avec échéance dure. C'est ce qui a défini le
-  Sprint Goal S39. *Impact utilisateur : sans ce switch, l'app cesse purement de fonctionner
-  en octobre.*
-- **DEC-126** **`AUD-04` est ANNULÉE, pas reportée.** Le constat visait la contamination du
-  circuit-breaker entre endpoints d'un même hôte. AniList n'expose **qu'un seul endpoint**
-  (`graphql.anilist.co`) : un breaker global y est le comportement correct, pas un défaut.
-  La seule leçon transposable a été gravée dans `anilistClient` : **un 429 n'incrémente
-  jamais le compteur de panne** (une limite de débit n'est pas une panne).
-## DEC-127 → DEC-130 — Recherche AniList, modale calendrier & gouvernance d'agent (SE-056)
-
-- **DEC-127** **La déduplication de recherche s'applique APRÈS le tri.** Précise `DEC-60` sans la contredire : clé `mal_id` et helper unique `dedupeByMalId` inchangés, seul le point d'application se déplace. `dedupeByMalId` garde la 1ʳᵉ occurrence — appliqué après le tri, c'est la version la mieux classée qui survit (série en cours de diffusion > terminée, puis popularité). Impact utilisateur : on ne renvoie plus l'utilisateur vers Completed pour une série qu'il peut suivre aujourd'hui. Implémenté dans `useAniListApi.searchAnimeWithMeta` (`0384cc8`).
-- **DEC-128** **Les micro-patchs ne passent plus par Gemini.** Tout changement ≤ 10 lignes sur 1 fichier, entièrement dictable verbatim, est produit par Claude et collé par le PO. Corollaire de gouvernance : **la dictée verbatim est réservée aux changements sans logique métier** (import, déplacement d'appel, renommage). Dès qu'une US porte une décision de comportement, la spec décrit le comportement et Gemini implémente — pour qu'un second lecteur puisse attraper une erreur de spec. Origine : la garde `day` mal placée en SE-053 était une erreur de Claude qu'une dictée verbatim aurait rendue indétectable.
-- **DEC-129** **Ligne « prochain épisode » : pas de repli textuel.** La modale calendrier affiche `Next episode · Wednesday at 18:30` uniquement si `airsTime` existe et que la série n'est pas terminée. `airsTime` sans `day` → `Next episode · 18:30`. Pas d'`airsTime` → **aucune ligne**, jamais « time unknown ». Se cale sur `airsTime`, **jamais sur `day` seul**, qui peut venir du repli fautif d'`AUD-21`. Aligné sur le bloc synopsis (`v-if="synopsisText"`) : le composant se tait quand il ne sait pas. Revient sur la note SE-055 qui prévoyait « time unknown ».
-- **DEC-130** ⛔ **`US-MODAL-OPEN-SEED-KEY` annulée — sans objet.** `usePersistence.loadFromDatabase` exécute au boot une **migration de clés legacy (US-133)** qui recopie `animeCalendar` → `aanime_calendar` avant lecture. Un seed E2E sur l'ancienne clé atteint donc le store, et l'enveloppe `{timestamp, data}` est exactement `ScheduleDocument`. `modal-open.spec.ts` n'a jamais été rouge. **`DEC-85` reste actif** : toute nouvelle spec sème sur `aanime_calendar`. 3ᵉ US annulée par lecture du code après `US-MODAL-UNIFY` (DEC-110) et `US-SEARCH-3` — mais la 1ʳᵉ dont la cause est une inférence de Claude inscrite en Knowledge, pas un backlog vieilli.
-## DEC-131 → DEC-132 — S39, clôture
-
-- **DEC-131** 🔴 **Pas de date de diffusion prouvée, pas de créneau.** `normalizeAniList` ne
-  déduit plus jamais un jour de semaine depuis `aired_from` (première diffusion). Sans
-  `nextAiringEpisode`, une série `Currently Airing` (donc `RELEASING` ou `HIATUS`) reçoit
-  `awaitingSchedule = true` et sort de la grille ; `useSync` la repromeut dès qu'un `day`
-  arrive. Tout autre statut : ni jour, ni attente.
-  *Origine :* `AUD-21`. Une série en pause entre deux cours occupait un créneau tiré d'une date
-  parfois vieille de plusieurs années. **Une case fausse ne se détecte pas à l'œil : elle
-  discrédite toute la grille, pas seulement sa ligne.** Option écartée : conserver le repli pour
-  les séries en cours — elle ne corrigeait pas le cas d'origine, elle le déguisait.
-  ⚠️ Arme enfin le mécanisme de DEC-124, jusque-là jamais posé sur le chemin AniList
-  (`awaitingSchedule` était retourné `undefined` en dur).
-
-- **DEC-132** **`description` AniList est du HTML, jamais affichable brut.** Règle de nettoyage
-  gravée dans `normalizeAniList`, en TypeScript pur, **sans DOM** : `<br>` → `\n`, dépouillement
-  des autres balises, **puis** décodage des entités, `\n{3,}` → `\n\n`, `trim`. Résultat vide →
-  `synopsis: undefined`, jamais `null` ni `''`.
-  *L'ordre dépouillement → décodage est structurant :* une description contenant `&lt;i&gt;` veut
-  afficher `<i>` littéralement. Décoder d'abord supprimerait ce texte voulu par l'auteur.
-  ⚠️ N'agit qu'à la normalisation : les entrées déjà persistées restent sans synopsis jusqu'à `J10`.
-### DEC-133 — Le chiffre de boot de référence est celui de la production (SE-058)
-
-**Décision :** le temps de démarrage de référence d'Aanime est **2,5 s en production**, avec
-un bundle prêt à **152 ms** et 15 requêtes. Le chiffre de **8 045 ms / 77 requêtes** porté par
-les notes internes est une mesure du **serveur Vite de développement** hébergé à Singapour,
-servant 59 fichiers `/src/*` un par un. Rapport 3,2 : 1.
-
-**Conséquence :** **aucun chantier de réduction de bundle n'est ouvert.** Le découpage par
-route existe et fonctionne déjà en production. La perte de 2,3 s est entièrement dans
-l'orchestration du boot (910 ms mortes entre la réponse d'authentification et le chargement du
-chunk de route), pas dans le poids du code.
-
-**Pourquoi c'est inscrit ici :** c'est le même défaut que « Jikan est en panne » porté 5 sprints
-sur un curl jamais rejoué — un défaut de **fraîcheur de fait**, pas de code. Un chantier de
-bundle décidé sur le chiffre de dev aurait visé un fantôme.
-
-
-# DECISIONS.md — Journal des décisions
-
-> **Où mettre ce fichier :** Knowledge du projet Claude Chat (`aelm-lab/Claude-V2`).
-> **Rôle :** capturer le contexte « mou » pour qu'une nouvelle session ne rejoue pas une
-> décision déjà tranchée. Une entrée répond à : *« qu'est-ce que quelqu'un referait mal sans
-> cette information ? »*
->
-> **Séquence : DEC-01 → DEC-115.** Aucun numéro n'est jamais supprimé ni réattribué — les
-> renvois existants dans les autres documents doivent rester valides. Une décision dépassée
-> est **marquée** `⛔ SUPERSEDED`, pas effacée.
->
-> **Ce qui n'est PAS ici :** l'état courant (→ `STATE.md`), les règles opposables
-> (→ `AGENTS.md`, `PILOTAGE.md`), les pièges récurrents (→ `ANTIPATTERNS.md`).
-
----
-
-## Index — les décisions structurantes encore actives
-
-Point d'entrée par sujet. Le journal numéroté suit.
-
-| Sujet | Décision |
-|---|---|
-| Clés localStorage & migration | **DEC-85** (préfixe `aanime_`) — ⛔ remplace DEC-64 |
-| Orchestration du boot | **DEC-50** (séquence stricte) + **DEC-59** / **DEC-72** (loaders) |
-| Contrat d'event composant → consommateurs | **DEC-58**, **DEC-61** |
-| Déduplication des pools | **DEC-60** (`dedupeByMalId`), **DEC-74** (avant le slice) |
-| Hiatus | **DEC-52** (source unique computed, 14 j) |
-| Scoring par studio | **DEC-86** (`studios: string[]` toujours peuplé) |
-| Socle E2E & bypass auth | **DEC-56** |
-| Auteur du test ≠ auteur du code | **DEC-104** |
-| Débordement horizontal & centrage des modales | **DEC-107** / **DEC-108** |
-| Grille de cartes unifiée | **DEC-111** (`.aa-card-grid`) |
-| État de Jikan | **DEC-113** (cache HIT/MISS) |
-| Fallback sur cache périmé | **DEC-114** |
-| Champ `day` jamais produit | **DEC-115** |
-| Commandes de preuve | **AGENTS.md §2** — ⛔ remplace DEC-04 |
-
----
-
-## DEC-01 → DEC-48 — Migration vanilla → Vue 3 (phases 0 à 7)
-
-Décisions de scaffold et de portage, prises pendant la migration, **terminée**. Conservées en
-index d'une ligne : leur prose détaillée n'a plus de valeur opérationnelle et reste
-récupérable dans l'historique git.
-
-| ID | Décision | Statut |
+| ID | Décision | Pourquoi ça casse si on l'ignore |
 |---|---|---|
-| DEC-01 | US-001b absorbée dans US-001 (5 fichiers, dépassement signalé et autorisé) | historique |
-| DEC-02 | ESLint = flat config + `@vue/eslint-config-typescript@^14` → `no-explicit-any` en erreur | actif |
-| DEC-03 | `tsconfig.node.json` séparé pour isoler `vite.config.ts` | actif |
-| DEC-04 | `npx <outil>` ≡ `npm run <script>` | ⛔ **SUPERSEDED — `AGENTS.md §2`** : seuls `npm run type-check` / `test:run` / `build` sont recevables, les scripts npm portent des options que `npx` masque |
-| DEC-05 | Le conteneur Gemini tourne nativement en UTC — pas de préfixe `TZ=UTC` | actif |
-| DEC-06 | `jsdom` en devDep, déclaré par fichier via `// @vitest-environment jsdom` | actif |
-| DEC-07 | Les DTO de plomberie restent des types locaux, hors contrat | actif |
-| DEC-08 | Fixtures de test typées via helper `Partial` ou factory. Interdit : `as any`, `as unknown as T` | actif |
-| DEC-09 | US-008-types : extension du contrat en **ajouts seuls**, rien renommé | historique |
-| DEC-10 | Branches mortes simplifiées après `normalize` (genres/themes/studios toujours `string[]`) | actif |
-| DEC-11 | Bug `item.studios` reproduit tel quel depuis le vanilla | ✅ résolu par DEC-86 |
-| DEC-12 | `decayMultiplier = 0.2` conservé dans `buildTasteProfile` | actif |
-| DEC-13 | Priorité de tri des signaux typée `Record<RecSignalKind, number>`, `score: 0` | actif |
-| DEC-14 | `extractBecauseYouWatched` : param inutilisé préfixé `_profile`, signature publique préservée | actif |
-| DEC-15 | `generateICSFile` scindé : `buildICSContent` pur dans `utils/ics.ts`, download + toast dans `useICS` | actif |
-| DEC-16 | `parseMalXml` pur dans `utils/malImport.ts`, partie impure dans `useMalImport` | actif |
-| DEC-17 | Dette UX du boot : `LoadingOverlay` piloté par état réactif | ✅ résolu |
-| DEC-18 | Upsert du store : garder `if ('state' in input)`. Ne jamais recalculer `state` inconditionnellement en branche merge, sinon clobber | **actif — spec Claude fautive corrigée par Gemini** |
-| DEC-19 | `needsBroadcastSync` dans `usePersistence` : mutation réactive qui déclenche le watch | actif |
-| DEC-20 | Le bg worker retourne `[]` aussi bien sur « pas en cache » que « anime sans relations ». Idempotent | actif |
-| DEC-21 | `buildRelationMemory` vient de `recs.js`, **pas** de `rec-engine.js` | **actif — spec Claude fautive** |
-| DEC-22 | `fetchTopFinishedAnime` inline dans `useRecommendations` (fidèle au vanilla) | actif — extraction = US-165 |
-| DEC-23 | `useTheme` applique la classe `dark` sur `<html>` (le vanilla l'appliquait sur `<body>`) | actif |
-| DEC-24 | `MalImportResult` expose `imported`, pas `entries` | **actif — spec Claude corrigée par Gemini** |
-| DEC-25 | Orchestration sync : stubs no-op permanents dans `usePersistence` | ⛔ SUPERSEDED par DEC-50 |
-| DEC-26 | `watch → saveToDatabase` dans `usePersistence`, jamais dans le store. **Store sans I/O** | **actif — structurant** |
-| DEC-27 | Double bloc `<script>` + `<script setup>` pour exporter un Symbol depuis `App.vue` | actif |
-| DEC-28 | Guard auth : singleton `auth` + `await auth.authStateReady()` | **actif — structurant** |
-| DEC-29 | Placeholders inline dans `router/index.ts` jusqu'à la phase 5 | historique |
-| DEC-30 | `lastCalendarView` reporté phase 4 | historique |
-| DEC-31 | `isBooting` via `provide`/`inject`, **fallback `ref(false)` obligatoire** | actif |
-| DEC-32 | `syncAnimeUpdates` / `startBackgroundRelationFetch` en fire-and-forget | ⛔ ajusté par DEC-50 |
-| DEC-33 | `ToastNotification` monté dans `AppLayout` uniquement | actif |
-| DEC-34 | Lazy-load d'image via `<img style="display:none">`, pas `new Image()` | actif |
-| DEC-35 | Dismiss de `SeasonNudgeCard` via `<Transition @after-leave>`, pas `setTimeout` | actif |
-| DEC-36 | `ChipsStrip` : la chip `all` émet `null` | actif |
-| DEC-37 | `WeekAnimeItem` reçoit `info` en prop | actif |
-| DEC-38 | `MonthDayCell` reçoit `animes` déjà filtrés | actif |
-| DEC-39 | Substitution des placeholders router au fil des US | historique |
-| DEC-40 | Pattern stub `console.warn` en phase 5, câblage batché | historique |
-| DEC-41 | `stores/ui.ts` pilote **tous** les overlays | **actif — structurant** |
-| DEC-42 | `modalContext` : `libraryRec` prioritaire | actif |
-| DEC-43 | `removeAnimeWithUndo` simplifié — l'undo est une dette | actif |
-| DEC-44 | Prefetch des covers abandonné au profit du fallback `@error` | actif |
-| DEC-45 | Signatures `useEpisodeInfo` / `useICS` corrigées a posteriori | historique |
-| DEC-46 | `CalendarNavControls` route-aware | ⛔ résorbé par DEC-66 |
-| DEC-47 | `synopsis?` ajouté à `AnimeEntry` | ⚠️ **absent du contrat** — voir `TYPES_CONTRACT.md §9` |
-| DEC-48 | `ROADMAP.md` remplace `PHASE8_DEBT.md` | ⛔ obsolète — les deux documents ont été supprimés |
+| **DEC-50** | 🔴 Orchestration du boot entièrement dans `App.vue` : `load → await sync → await buildRelationMemory → reScorePool`. Couverte par `App.spec.ts` (l'étape worker de fond est tombée avec DEC-147) | Un rescore avant la sync score des données vides ; le smoke test est le seul filet |
+| **DEC-59** | Boot loader en **deux phases** : loader statique dans `index.html` + `<LoadingOverlay>` à la racine d'`App.vue`, **hors gate auth** | Sous la gate auth, l'overlay n'est pas monté pendant la résolution → écran vide |
+| **DEC-72** | 🔴 `#boot-loader` vit **hors de `<div id="app">`**, supprimé par `.remove()` dans le `finally` du `onMounted` (exception R-CODE-4). `main.ts` reste un `app.mount` simple, **sans** `router.isReady()` | Le loader est `position:fixed` et intercepte tous les pointer events ; `router.isReady()` casse `boot-loader.spec.ts` |
+| **DEC-85** | 🔴 Toutes les clés localStorage sont préfixées `aanime_`, avec migration legacy au boot dans `loadFromDatabase`. Registre → `ARCHITECTURE_TECHNIQUE.md §7` | Une clé hors convention = données invisibles pour l'utilisateur existant |
+| **DEC-123** | Clé primaire `mal_id` conservée (vocabulaire MyAnimeList, gardé pour la compatibilité des données existantes) | Changer la clé primaire invalide toutes les bibliothèques déjà persistées |
+| **DEC-19** | `needsBroadcastSync` est une mutation réactive dans `usePersistence` — c'est elle qui déclenche le watch | Une mutation non réactive ne déclenche pas la sauvegarde |
+| **DEC-146** | 🔴 `STATE.md` (présent, **régénéré intégralement**) + `HISTORIQUE.md` (passé, **append-only**). Tous les autres documents sont **patchés à chaque clôture de session**, jamais batchés au sprint | Un `STATE.md` trop lourd saute des sessions « faute de capacité » ; une décision différée au handoff se perd ou se déforme |
 
----
+## 3. Données, normalisation & planning
 
-## DEC-49 → DEC-55 — Audit croisé & EPIC-1
+| ID | Décision | Pourquoi ça casse si on l'ignore |
+|---|---|---|
+| **DEC-124** | 🔴 La normalisation pose `day` + `airsTime` par cascade : (1) valeur existante jamais écrasée, (2) diffusion JST → jour + heure locale, (3) jour de semaine de la première diffusion **sans heure**. Le résidu sans source est marqué `awaitingSchedule` et repromu par `useSync` | Sans `day`, une entrée `state:'calendar'` est stockée mais **invisible partout** |
+| **DEC-131** | 🔴 **Pas de date de diffusion prouvée, pas de créneau.** `normalizeAniList` ne déduit jamais un jour depuis la première diffusion. Sans `nextAiringEpisode`, une série `Currently Airing` reçoit `awaitingSchedule = true` et sort de la grille | Une case fausse ne se détecte pas à l'œil : elle discrédite **toute** la grille, pas seulement sa ligne |
+| **DEC-132** | `description` AniList est du HTML : nettoyage en TypeScript pur, **sans DOM** — `<br>` → `\n`, dépouillement des balises **puis** décodage des entités, `\n{3,}` → `\n\n`, `trim`. Vide → `synopsis: undefined`, jamais `null` ni `''` | Décoder avant de dépouiller supprime un `&lt;i&gt;` que l'auteur voulait afficher littéralement |
+| **DEC-47** | `synopsis?` fait partie d'`AnimeEntry` (contractualisé, `TYPES_CONTRACT.md §2`) | Un type réinventé localement diverge du contrat |
+| **DEC-52** | 🔴 **Hiatus = une seule source**, computed à 14 j | Deux seuils pour une même règle métier = deux vérités affichées |
+| **DEC-86** | `normalizeAnime` produit **toujours** `studios: string[]` | Sans studios peuplés, la dimension studio du scoring est morte |
+| **DEC-84** | `POSTER_PLACEHOLDER` source unique · `onHiatus?` retiré du type · `episodeOverride` reseté à chaque upsert | Une copie inline du placeholder diverge ; un `onHiatus` persisté concurrence le calcul dérivé |
+| **DEC-90** | Garde null-safety `genres ?? []` | Un cache legacy sans `genres` fait crasher `topGenres` |
+| **DEC-10** | Après normalisation, `genres` / `themes` / `studios` sont toujours `string[]` — les branches défensives sont supprimées | Du code mort qui teste l'impossible masque le vrai cas |
+| **DEC-81** | Une entrée MyAnimeList `Dropped` n'est **pas** importée | Un import de 300 titres remplit la bibliothèque de séries abandonnées |
+| **DEC-24** | `MalImportResult` expose `imported`, pas `entries` | Signature inventée = erreur de compilation ou champ toujours vide |
+| **DEC-16** | `parseMalXml` est pur dans `utils/malImport.ts` ; la partie impure vit dans `useMalImport` | Un parseur impur n'est pas testable sans navigateur |
+| **DEC-15** | `buildICSContent` est pur dans `utils/ics.ts` ; download + toast dans `useICS` | Idem : génération de texte non testable |
 
-- **DEC-49** Audit croisé : Gemini a vu 4 bugs runtime que Claude Code avait ratés. → naissance de la règle **R3** (un audit lit le CODE).
-- **DEC-50** 🔴 **Orchestration du boot entièrement dans `App.vue`** : `load → await sync → await buildRelationMemory → reScorePool → bg fetch`. Couvert par `App.spec.ts`.
-- **DEC-51** Pattern `*WithMeta` pour le throttle conditionnel : 1,1 s **seulement si `fromNetwork`**. Un throttle inconditionnel après un appel qui peut taper le cache ralentit pour rien.
-- **DEC-52** 🔴 **Hiatus = source unique computed à 14 j.** Suppression de l'écriture morte à 21 j. Deux seuils pour une même règle métier = deux vérités.
-- **DEC-53** `AGENTS.md` conservé et musclé comme gouvernance permanente de Gemini.
-- **DEC-54** Filet de sécurité **avant** correctif : CI + smoke test + un test rouge encodant le bug.
-- **DEC-55** Deux documents d'architecture séparés (technique et fonctionnelle).
+## 4. Réseau AniList
 
-## DEC-56 → DEC-63 — Audit UX live & EPIC P0
+| ID | Décision | Pourquoi ça casse si on l'ignore |
+|---|---|---|
+| **DEC-139** | 🔴 `Page(page:1, perPage:1){ media(idMal:) }` obligatoire, **jamais** `Media(idMal:)` | `Media()` renvoie une erreur GraphQL sur une entrée introuvable ; le disjoncteur la compte comme un échec et **3 suffisent à couper AniList 60 s pour toute l'app**. La forme `Page` renvoie une liste vide |
+| **DEC-126** | Un **429 n'incrémente jamais** le compteur de panne du disjoncteur (une limite de débit n'est pas une panne). `AUD-04` est annulée : AniList n'expose qu'un endpoint, un breaker global y est correct | Une rafale de frappe dans la recherche fermerait le circuit et viderait le calendrier |
+| **DEC-141** | 🔴 Aucun throttle manuel dans `syncAnimeUpdates` : `anilistClient` sérialise déjà à 700 ms | Deux régulateurs empilés = deux vérités ; sync de 30 titres à ~50 s au lieu de ~21 s |
+| **DEC-143** | Pool `incoming` = **2 appels** (saison courante + suivante, `perPage:50`) | Une 3ᵉ requête n'a plus d'objet et coûte du quota |
+| **DEC-137** | Tri `POPULARITY_DESC` pour la requête de saison | — |
+| **DEC-114** | Le cache de saison **périmé est servi** si le fetch échoue ; `error.value` est renseigné mais jamais affiché | Évite une page vide, mais l'absence totale de cache donne une liste vide **silencieuse** → dette suivie sous `AUD-05` |
+| **DEC-60** | 🔴 `dedupeByMalId` = **source unique** de déduplication, clé `mal_id`, garde la 1ʳᵉ occurrence | Trois chemins de dédup indépendants divergent silencieusement |
+| **DEC-127** | La déduplication de recherche s'applique **APRÈS** le tri | Appliquée avant, c'est la version terminée qui survit et l'utilisateur est renvoyé vers Completed pour une série qu'il peut suivre aujourd'hui |
+| **DEC-74** | Déduplication appliquée **avant** le `slice` dans `getNextBatch`, jamais après | Un batch de 12 rend 9 cartes sans explication |
 
-- **DEC-56** 🔴 **Socle E2E Playwright + bypass d'auth mort en production.** `import.meta.env.VITE_E2E_AUTH_BYPASS` en lecture **statique** : la branche est éliminée du bundle (prouvé `grep -c` = 0). `tests/e2e/**` exclu de Vitest.
-- **DEC-57** **R4** — test E2E obligatoire sur tout correctif UX ou écran : geste réel, assertion sur le DOM visible, ROUGE puis VERT sans modifier le test.
-- **DEC-58** 🔴 **Cause racine d'une modale morte = désalignement de nom d'event.** `WeekAnimeItem` émettait `click`, la page écoutait `@open-modal`. **Fix côté page** — jamais renommer l'emit du composant.
-- **DEC-59** **Boot loader en deux phases.** Deux fenêtres d'écran vide distinctes : pré-mount (bundle pas encore parsé) et post-mount (`route.meta` vide pendant la résolution auth, donc `AppLayout` et son `LoadingOverlay` non montés). Fix : loader statique dans `index.html` + `<LoadingOverlay>` remonté à la racine d'`App.vue`, hors gate auth. *Correction d'un faux diagnostic de Claude : ce n'était pas un problème d'`inject` mais de **placement**.*
-- **DEC-60** 🔴 **`dedupeByMalId` = source unique de déduplication.** Les doublons avaient 3 chemins indépendants. Helper pur générique, clé `mal_id` seule, garde la 1ʳᵉ occurrence. Appliqué avant `writeLocalCache` et avant tri dans `searchAnime`.
-- **DEC-61** 🔴 **Contrat d'event = le composant, les consommateurs s'alignent.** `RecCard` émettait `add`/`skip`/`click`/`not-interested`/`more-like-this` ; ses 3 consommateurs écoutaient `@heart` (mort) et n'écoutaient ni `@click` ni `@not-interested`. Bouton Add mort, clic carte mort, « pas intéressé » mort — **0 erreur console**.
-- **DEC-62** Toute action d'ajout ou de déplacement visible produit un **toast nommant la destination visible exacte**.
-- **DEC-63** Libellés de toast harmonisés sur le vocabulaire visible : « Radar » → « Coming Soon », « Vault » → « Completed ».
+## 5. Moteur de recommandations
 
-## DEC-64 → DEC-71 — Correctifs UX P0.5 → P0.9
+| ID | Décision | Pourquoi ça casse si on l'ignore |
+|---|---|---|
+| **DEC-144** | 🔴 `getSeasonNudges` **n'écrit ni ne lit** le store IDB `relations`. Ce store porte la forme MyAnimeList (`[{ relation, entry }]`) lue par `buildRelationMemory` | Y écrire des `AnimeRelation` AniList corromprait le scoring **en silence**, sans erreur ni test rouge |
+| **DEC-140** | `AnimeRelation` normalisé ; le filtrage des types de relation vit dans le composable, **jamais** dans le `.vue` | Un filtre dans la vue est invisible aux tests unitaires |
+| **DEC-12** | `decayMultiplier = 0.2` dans `buildTasteProfile` | Constante de calibrage — la changer déplace tout le scoring |
+| **DEC-13** | Priorité de tri des signaux typée `Record<RecSignalKind, number>`, `score: 0` | Un membre d'union non mappé tombe silencieusement au défaut |
+| **DEC-14** | `extractBecauseYouWatched` : paramètre inutilisé préfixé `_profile`, signature publique préservée | `TS6133` ne se silencie pas avec `eslint-disable` |
+| **DEC-79** | Réactivité Discover par **dérivation** : `excludedIds = union(store, dismissedRecIds)` | Un canal modal → page laisse des cartes fantômes selon le chemin d'ajout |
+| **DEC-83** | Le skip d'une suggestion slot-fill est **session-only** (`ref<Set<number>>` local, jamais persisté) | « Écarter pour l'instant » ≠ « bannir » |
+| **DEC-145** | `J10e` (repli des orphelins par titre + année) éclatée en 3 slices, en backlog | `normalizeAniList` rejette en ligne 1 tout média sans `idMal` — or un orphelin est précisément ça. Un mauvais rattachement est **pire** que pas de rattachement : l'utilisateur voit la jaquette d'une autre série |
 
-- **DEC-64** Clé localStorage `'animeCalendar'` confirmée. ⛔ **SUPERSEDED PAR DEC-85** — la clé est `aanime_calendar`. Ne plus utiliser `'animeCalendar'` dans un seed.
-- **DEC-65** Stratégie E2E affinée (**R5**) : un test ciblé par US pendant l'epic, grand check complet en fin d'epic, specs cumulatives jamais supprimées.
-- **DEC-66** Libellé de période = source unique dans `CalendarNavControls`.
-- **DEC-67** Convention de classe active de nav = `.active` (markup aligné sur le CSS).
-- **DEC-68** P0.7 = style pur, tokens existants, script intact.
-- **DEC-69** P0.8c sorti du périmètre P0.
-- **DEC-70** `.modal-backdrop` : overlay centré, CSS manquant ajouté — **3ᵉ occurrence du pattern « le markup référence une classe absente »**. Règles préfixées pour ne pas casser le `.modal` vanilla.
-- **DEC-71** Libellés de toast harmonisés (« Vault » → « Completed », « Radar » → « Coming Soon »).
+## 6. UI, feedback & vocabulaire
 
-## DEC-72 → DEC-80bis — Quick wins & clôture EPIC P0
+| ID | Décision | Pourquoi ça casse si on l'ignore |
+|---|---|---|
+| **DEC-61** | 🔴 **Le composant définit son contrat d'emit ; les consommateurs s'alignent.** Ne jamais renommer un emit pour matcher un listener | `RecCard` a eu Add, clic carte et « pas intéressé » morts sur toutes les surfaces, avec **0 erreur console** |
+| **DEC-58** | Corollaire : un désalignement de nom d'event se corrige **côté page**, jamais côté composant | Renommer l'emit casse les N autres consommateurs |
+| **DEC-62** | Toute action d'ajout ou de déplacement produit un **toast nommant la destination visible exacte** | Une action sans feedback est indistinguable de « rien ne s'est passé » |
+| **DEC-63** | Vocabulaire des toasts = vocabulaire visible : « Coming Soon », « Completed » — jamais « Radar » ni « Vault » | L'utilisateur ne voit ces mots nulle part dans l'UI |
+| **DEC-95** | Vocabulaire de recherche figé : « Coming Soon », « Finished airing » | Idem |
+| **DEC-73** | Toast « Moved to Completed » au boot pour l'auto-vault | Une série disparaît de la semaine sans explication |
+| **DEC-96** | L'état « ✓ Added » est **cliquable** : retire l'anime d'où qu'il soit + toast « Removed » | Sinon l'ajout est irréversible depuis la recherche |
+| **DEC-93** | Le bouton ✓ « Mark done » est **masqué** sur Airing / Hiatus (`v-if` présentationnel) ; l'action reste dans la modale | L'action n'a de sens que sur un titre terminé |
+| **DEC-77** | « Mark done » et la ligne recency sont gatés sur `isFinished` | Idem |
+| **DEC-129** | Ligne « prochain épisode » : affichée seulement si `airsTime` existe et que la série n'est pas terminée. Pas d'`airsTime` → **aucune ligne**, jamais « time unknown ». Se cale sur `airsTime`, jamais sur `day` seul | Un repli textuel affiche une certitude que la donnée ne porte pas |
+| **DEC-66** | Le libellé de période a une **source unique** dans `CalendarNavControls` | Deux libellés divergent d'un écran à l'autre |
+| **DEC-76** | Snap-to-today : `await nextTick()` + `findIndex(d => d.isToday)` + `scrollIntoView`, garde `todayIndex < 0`, en `onMounted` **et** `onActivated` (KeepAlive). Pas de re-snap sur Prev/Next | Sans `onActivated`, le retour sur la vue via KeepAlive ne resnappe pas |
+| **DEC-33** | `ToastNotification` monté **uniquement** dans `AppLayout` | Conséquence connue : aucun toast sur `/login` ni `/welcome` (`AUD-06`) |
+| **DEC-42** | `modalContext` : `libraryRec` prioritaire | Deux contextes concurrents ouvrent le mauvais gabarit |
+| **DEC-36** | `ChipsStrip` : la chip `all` émet `null` | Une chaîne vide serait traitée comme un filtre |
+| **DEC-37** | `WeekAnimeItem` reçoit `info` en prop | Recalculer dans la carte multiplie les calculs par ligne |
+| **DEC-38** | `MonthDayCell` reçoit `animes` **déjà filtrés** | Idem |
+| **DEC-34** | Lazy-load d'image via `<img style="display:none">`, pas `new Image()` | `new Image()` échappe au cycle de vie Vue |
+| **DEC-35** | Dismiss de `SeasonNudgeCard` via `<Transition @after-leave>`, pas `setTimeout` | Un timer désynchronisé de l'animation laisse un trou visuel |
+| **DEC-44** | Pas de prefetch de covers : fallback `@error` | Le prefetch doublait les requêtes image pour rien |
+| **DEC-43** | `removeAnimeWithUndo` simplifié — l'undo est une dette assumée | — |
+| **DEC-82** | Redirect post-login = `/`, pas la route d'origine | Choix assumé : le lien magique expire rarement, ROI faible |
+| **DEC-91** | Route `/stats` derrière le guard auth | Les stats sont personnelles |
+| **DEC-88** | `useStats` = composable dédié, `StatsPage.vue` = page pure | Séparation stricte des couches |
+| **DEC-89** | `topGenres` scoped au **contenu terminé cette année** uniquement | Un year-in-review compte ce qui a été consommé, pas les intentions |
+| **DEC-94** | Règle de titre centralisée dans `getAnimeTitle` : anglais primaire + rōmaji secondaire si différent | Deux règles de titre = deux affichages pour la même série |
+| **DEC-23** | `useTheme` applique la classe `dark` sur `<html>` | Sur `<body>`, les variables CSS racine ne basculent pas |
 
-- **DEC-72** 🔴 **Boot-loader hors de `#app` + suppression DOM dans `App.vue`.** `#boot-loader` est déplacé hors de `<div id="app">` ; sa suppression se fait par `document.getElementById('boot-loader')?.remove()` dans le `finally` du `onMounted` — **exception R-CODE-4 documentée**. `main.ts` reste un `app.mount('#app')` simple, **sans** `router.isReady()` (testé : cassait `boot-loader.spec.ts`).
-- **DEC-73** Toast « Moved to Completed » au boot pour l'auto-vault.
-- **DEC-74** Déduplication appliquée **avant** le `slice` dans `getNextBatch`, jamais après.
-- **DEC-75** ⚠️ **Non capturé.** Trou de lecture assumé entre DEC-74 et DEC-76. **Ne pas inventer son contenu.**
-- **DEC-76** Snap-to-today remplace le scroll-restore dans `CalendarWeekPage` : `await nextTick()` + `findIndex(d => d.isToday)` + `scrollIntoView({ behavior:'auto', block:'start' })`, garde `todayIndex < 0`, appelé en `onMounted` et `onActivated` (KeepAlive). Pas de re-snap sur Prev/Next.
-- **DEC-77** « Mark done » et la ligne recency gatés sur `isFinished` : ces actions n'ont de sens que sur un anime terminé.
-- **DEC-78** Signalement de centrage clos comme **perception d'audit**, mesuré par boundingBox — **spécifiquement sur `AnimeModal`**. *(Ne pas extrapoler : la vraie cause générale est venue plus tard, DEC-107.)*
-- **DEC-79** Réactivité Discover par **dérivation**, pas par canal modal → page : `excludedIds = union(store, dismissedRecIds)`. Add et Dismiss retirent la carte mécaniquement, quel que soit le chemin.
-- **DEC-80** 🎓 **Conflit de règles découvert :** un anime `calendar` + `Finished` s'auto-vault au boot, tandis que `calendar` + `Airing` gate « Mark done ». Le scénario « Mark done depuis Week » est donc **structurellement impossible** après gating. Le test a été déplacé sur `watchlist` + `Finished` (exclu de l'auto-vault). Aucun code source modifié.
-- **DEC-80bis** EPIC-2 clos : code-splitting, défer Firestore, fiabilité.
+## 7. CSS & layout
 
-## DEC-81 → DEC-87 — EPIC-3 & dual audit s16
+| ID | Décision | Pourquoi ça casse si on l'ignore |
+|---|---|---|
+| **DEC-107** | 🔴 `width:100%` + `padding` **sans `box-sizing:border-box`** sur `.secondary-nav-wrapper` faisait déborder le **document** de 30 px. Correctif : `box-sizing:border-box` + `flex:1 1 0; min-width:0` sur `.secondary-tabs button` | Cause racine unique du débordement horizontal **et** du décentrage apparent des modales `position:fixed`. Le symptôme apparaît très loin de sa cause |
+| **DEC-111** | 🔴 `.aa-card-grid` = classe partagée, colonnes fixes par breakpoint | Un `minmax(160px,1fr)` sans marge bascule en 1 colonne pour 5 px ; une classe définie en `<style scoped>` ailleurs n'est **jamais** appliquée |
+| **DEC-99** | Header au scroll = **sticky CSS pur**, aucune logique JS de scroll-hide | `v-show`/`display:none` en cours de scroll provoque des sauts de hauteur (flicker) |
+| **DEC-97** | Les couleurs réutilisent les tokens existants (`var(--airing)`, `var(--upcoming)`) | Une couleur en dur ne suit pas le mode sombre |
+| **DEC-67** | Convention de classe active de nav = `.active` | Le markup doit suivre le CSS, pas l'inverse |
 
-- **DEC-81** MAL `Dropped` = **non importé**. *Impact user : un anime abandonné sur MAL n'encombre pas la bibliothèque.*
-- **DEC-82** Redirect post-login = reste `/`. Le redirect vers la route d'origine est déféré (le lien magique expire rarement, ROI faible).
-- **DEC-83** Le skip d'une suggestion slot-fill est **session-only** : `ref<Set<number>>` local, jamais Pinia, jamais persisté. *« Écarter pour l'instant » ≠ « bannir ».*
-- **DEC-84** Cleanup groupé : `POSTER_PLACEHOLDER` source unique (4 copies inline supprimées) ; `onHiatus?` retiré du type ; `episodeOverride` reseté à l'upsert.
-- **DEC-85** 🔴 **Toutes les clés localStorage préfixées `aanime_` + migration legacy au boot**, dans `usePersistence.loadFromDatabase`. Registre complet → `ARCHITECTURE_TECHNIQUE.md §7`.
-- **DEC-86** `normalizeAnime` produit **toujours** `studios: string[]`. *Impact user : les recommandations tiennent enfin compte du studio.*
-- **DEC-87** 🎓 **Vérifications zéro-confiance de l'audit croisé s16.** Quatre points de vigilance hérités d'un handoff se sont révélés **faux** : `setAllData` n'existe pas · `syncStatus` = 0 hit · `reconcileWithDatabase` n'existe plus · l'import IDB dynamique n'était pas matérialisé. → **Un handoff est une source secondaire faillible ; le code réel tranche.** Backlog issu de l'audit (US-153 à US-159) : **tous livrés S19/S21**.
+## 8. Tests & E2E
 
-## DEC-88 → DEC-98 — Epic Stats, polish & infrastructure
+| ID | Décision | Pourquoi ça casse si on l'ignore |
+|---|---|---|
+| **DEC-104** | 🔴 **L'auteur du test ≠ l'auteur du code. Aucune exception**, même pour un test visuel « simple » | Un test auto-écrit valide le code tel qu'il est, pas le comportement attendu — écarté intégralement, sans valeur de preuve |
+| **DEC-57** | **R4** : tout correctif UX livre un E2E — geste réel, assertion sur le DOM visible, ROUGE puis VERT **sans modification du test** | Un vert obtenu en modifiant le test ne prouve rien |
+| **DEC-56** | 🔴 Bypass d'auth E2E lu en **statique** (`import.meta.env`), branche éliminée du bundle (prouvable `grep -c` = 0) ; `tests/e2e/**` exclu de Vitest | Une lecture runtime laisserait le bypass vivant en production |
+| **DEC-65** | **R5** : 1 test ciblé par US pendant l'epic, grand check en fin d'epic, specs cumulatives jamais supprimées | Un test cumulé rouge est une régression à corriger, pas un test à retirer |
+| **DEC-109** | La suppression d'une spec **non enregistrée** au registre est autorisée | Un `debug-*.spec.ts` hors registre n'a aucune valeur de preuve |
+| **DEC-112** | Pour une propriété de conteneur : `toHaveCount` puis `getComputedStyle`, pas `toBeVisible` | Un `display:grid` sans enfant a une hauteur de 0 px et paraît invisible alors que le CSS est correct |
+| **DEC-80** | Un anime `calendar` + terminé s'auto-vault au boot, alors que `calendar` + en cours gate « Mark done » : le scénario est **structurellement impossible**. Les specs testent sur `watchlist` (exclu de l'auto-vault) | Un test écrit sur le cas impossible est rouge sans qu'aucun code ne soit fautif |
+| **DEC-149** | 🔴 Le harnais E2E AniList passe par un **helper mutualisé** `tests/e2e/_helpers/anilistMock.ts`, jamais par N `page.route()` dupliqués | Un mock dupliqué dans N fichiers fait payer le prix fort à chaque changement de fournisseur — et casse **au sweep**, pas au merge |
+| **DEC-150** | 🔴 Le mock discrimine par **corps de requête**, pas par URL (AniList n'a qu'un endpoint POST). Quatre règles ordonnées : `search` → recherche · `season` → saison · `idMal` **+ `query` contenant `relations`** → relations · `idMal` seul → détail · aucune variable → top finished. Le helper **importe** `resolveSeason` / `resolveNextSeason` depuis `useAniListApi.ts` | Détail et relations partagent `idMal` : sans le jeton `relations`, les deux se confondent. Recopier la règle mois→saison ferait passer une spec au vert le 30 juin et au rouge le 1ᵉʳ juillet |
+| **DEC-153** | Les 12 specs vertes-mais-démockées (`AUD-24`) migrent **après** la gate, pas avant | Toucher 12 specs vertes juste avant une Sprint Outcome Gate en fabrique trois rouges |
+| **DEC-152** | ⛔ « More like this » n'est **pas** masqué : il est **rebranché** sur `fetchRelationsByMalIdWithMeta` | Masquer ajoute un `v-if` sur un élément qu'une spec clique → rouge au sweep. Le bouton doit redevenir utile, pas disparaître |
+| **DEC-122** | Une gate 🔴 peut être satisfaite par un **test unitaire dédié** quand l'E2E est structurellement impossible. Motivé au cas par cas, non généralisable | Cas fondateur `AUD-02` : le SDK Firestore met les écritures en file locale hors-ligne, aucun rejet n'est observable depuis le navigateur |
+| **DEC-54** | Filet de sécurité **avant** correctif : CI + smoke test + un test rouge encodant le bug | Corriger sans filet, c'est corriger sans preuve |
+| **DEC-08** | Fixtures de test typées via helper `Partial` ou factory. Interdit : `as any`, `as unknown as T` | Une fixture castée ne peut pas détecter une entité incomplète |
+| **DEC-06** | `jsdom` déclaré **par fichier** via `// @vitest-environment jsdom` | Un environnement global ralentit toute la suite |
+| **DEC-05** | Le conteneur de l'agent tourne nativement en UTC — pas de préfixe `TZ=UTC` | Un préfixe inutile masque un vrai problème de fuseau |
 
-- **DEC-88** `useStats` = composable dédié, `StatsPage.vue` = page pure. Séparation stricte des couches.
-- **DEC-89** `topGenres` scoped au **contenu terminé cette année** uniquement. Benchmark AniList / Spotify Wrapped / Letterboxd. *Impact user : les stats reflètent ce qui a été vraiment regardé, pas les intentions.*
-- **DEC-90** Garde null-safety `genres ?? []` : un cache legacy sans `genres` faisait crasher `topGenres`.
-- **DEC-91** Route `/stats` derrière le guard auth — les stats sont personnelles.
-- **DEC-92** BUG-1 / BUG-2 / BUG-4 fermés **sans spec** : invérifiables en production, déjà corrigés ou jamais reproductibles. Aucune ligne de code touchée. *Confirmation qu'un ressenti d'audit se périme.*
-- **DEC-93** Le bouton ✓ « Mark done » est **masqué** sur Airing / Hiatus — fix présentationnel (`v-if`), aucune logique touchée. L'action reste dans la modale.
-- **DEC-94** Règle de titre centralisée dans `getAnimeTitle` : anglais primaire + rōmaji secondaire si différent. Rollout progressif.
-- **DEC-95** Vocabulaire de recherche figé : « Coming Soon », « Finished airing ».
-- **DEC-96** L'état « ✓ Added » est **cliquable** : retire l'anime d'où qu'il soit + toast « Removed ».
-- **DEC-97** Les couleurs **réutilisent les tokens** existants (`var(--airing)`, `var(--upcoming)`), aucune redéclaration.
-- **DEC-98** `npm install` fonctionne en direct — la parade `--legacy-peer-deps` est supprimée (downgrade `@pinia/testing` mergé). À réarmer si un futur `package.json` réintroduit le conflit.
+## 9. Gouvernance, process & outillage
 
-## DEC-99 → DEC-106 — Refonte scroll & logout
-
-- **DEC-99** 🔴 **Refonte du header au scroll — sticky CSS pur.** Cause racine du flicker : `v-show`/`display:none` provoquant des sauts de hauteur en cours de scroll. Décision : **abandon de toute logique JS de scroll-hide**.
-- **DEC-100** 🎓 **Régression corrigée par retrait, pas par empilement.** Quand un effet sticky introduit une régression, le retirer entièrement est souvent le bon appel plutôt que d'empiler un correctif dessus.
-- **DEC-101** `.current-period` : taille et graisse réduites. Correctif cosmétique pur.
-- **DEC-102** US-127 (`SyncIndicator`) confirmé livré — résout un trou de traçabilité laissé ouvert.
-- **DEC-103** US-AUTH-LOGOUT mergée malgré le volet centrage non résolu — **décision PO explicite**. Le code fonctionnel est vert sur les 3 sorties ; le centrage est traité séparément.
-- **DEC-104** 🔴 **Invariant auteur-test renforcé — aucune exception, même pour un test visuel « simple ».** Gemini a livré un test E2E auto-écrit pour valider son propre correctif, avec deux manquements supplémentaires : preuve fournie sans état ROUGE préalable, et assertion sur `max-height`/`overflow-y` au lieu de `position`/`boundingBox` alors que le placement était le sujet. **Test écarté intégralement, sans valeur de preuve**, malgré un code par ailleurs correct.
-- **DEC-105** `US-JIKAN-HEALTHCHECK` : usage dev-only, détail par test au-delà d'un verdict global OK/KO.
-- **DEC-106** Périmètre du centrage élargi à tous les popups, sur demande PO. *(Résolu par DEC-107/108.)*
-
-## DEC-107 → DEC-112 — Overflow, grilles & fiabilité de test
-
-- **DEC-107** 🔴 **Cause racine unique du débordement horizontal ET du décentrage des popups.** `.secondary-nav-wrapper` portait `width:100%` + `padding:10px 15px` **sans `box-sizing:border-box`** → document à 417 px dans un viewport de 387 px. Les modales en `position:fixed` se centraient sur le viewport pendant que le contenu s'étalait 30 px plus large → décalage visible d'environ 15 px. Correctif : `box-sizing:border-box` sur le wrapper + `flex:1 1 0; min-width:0` sur `.secondary-tabs button`. 🎓 **Le symptôme apparaissait très loin de sa cause.**
-- **DEC-108** `US-MODAL-CENTER-AUDIT` close par DEC-107, **sans code dédié**. Le CSS des modales était conforme depuis le début.
-- **DEC-109** Suppression **autorisée** des specs E2E non enregistrées. R5 protège les specs figurant au registre ; un `debug-*.spec.ts` jamais enregistré n'a aucune valeur de preuve.
-- **DEC-110** `US-MODAL-UNIFY` **annulée** — la modale était déjà unique (un seul `AnimeModal`, monté une fois, routant par `modalContext`). Le vrai défaut signalé par le PO était une incohérence de **grille CSS** entre écrans de liste. 🎓 *Le diagnostic du PO pointe un symptôme, pas une cause : vérifier avant de spécifier.*
-- **DEC-111** 🔴 **`.aa-card-grid` — classe partagée, colonnes fixes par breakpoint.** Deux causes racines : `.anime-grid` avec `minmax(160px,1fr)` + padding + gap réclamait 344 px sur 339 px utiles → bascule en 1 colonne pour 5 px ; et `.recs-grid` référençait une classe définie **uniquement dans le `<style scoped>` d'une autre page**, donc jamais appliquée.
-- **DEC-112** Spec E2E corrigée en review : `toBeVisible` remplacé par `toHaveCount`. Une grille CSS vide (mock à `data:[]`) a une hauteur de 0 px → jugée invisible alors que le CSS est correct. Le nombre de colonnes est une propriété du **conteneur**, pas de son contenu rendu.
-
-## DEC-113 → DEC-115 — Jikan, cache et champ `day`
-
-### DEC-113 — Jikan : cache HIT / MISS, ni panne globale ni paramètre fautif
-
-**9 mesures curl successives.** Le code HTTP ne dépend d'**aucun paramètre de requête** mais
-de l'état du cache de Jikan : URL déjà en cache → 200 ; URL neuve → Jikan interroge
-MyAnimeList → échec → 504.
-
-| URL | Code |
-|---|---|
-| `anime?q=naruto&limit=1` | 200 (×2) — URL de test banale, en cache mondial |
-| `anime?q=naruto&limit=25` | 504 |
-| `anime?q=naruto&sfw=true&limit=1` | 504 |
-| `anime?q=naruto&sfw=true&limit=25` | 504 |
-| `anime?q=naruto&sfw=true&limit=25&order_by=popularity&sort=asc` | 504 |
-| `anime?q=zzqxwv&limit=1` (chaîne absurde) | 504 |
-| `seasons/now?limit=25` (URL réelle de l'app) | 200 (×2) |
-| `seasons/now?limit=1` | 504 |
-| `anime/1/recommendations` | 504 |
-
-Corroboré par la documentation officielle Jikan (cache 24 h + rafraîchissement en tâche de
-fond) et par l'issue GitHub `jikan-me/jikan-rest` **#610**, ouverte et non résolue.
-
-**Conséquences**
-- La **recherche** est structurellement KO : chaque titre tapé = URL neuve = miss = 504.
-  **Aucun correctif possible côté Aanime.**
-- Les **saisons** restent fonctionnelles (URLs fixes, cache chaud).
-- `US-ANILIST-SEARCH` devient la **seule** voie de réparation → **condition de lancement**.
-- Le standby « panne Jikan globale », porté de S33 à S38, était **faux**.
-
-**Hypothèses écartées — ne pas réessayer :** cache local périmé · TTL non vérifié · flag dev
-non câblé · `order_by=popularity` · intermittence aléatoire.
-
-> ⛔ **Une formulation concurrente de DEC-113 a circulé** (« la panne venait de notre
-> `order_by=popularity` »). Elle est **écartée** : elle est falsifiée par les mesures
-> ci-dessus — `anime?q=naruto&limit=25` sans `order_by` répond 504, et
-> `seasons/now?limit=1` répond 504 alors que `limit=25` répond 200. Aucune théorie
-> « paramètre fautif » ne survit à ces deux mesures. *Arbitrage acté en SE-049.*
-
-### DEC-114 — Fallback sur cache périmé : comportement voulu, non signalé
-
-`readLocalCache` expose un booléen `stale` ; `fetchCurrentSeason` sert le cache périmé si le
-fetch échoue — comportement **délibéré**, documenté en commentaire, fidèle au vanilla (il
-évite une page vide en cas de panne). `error.value` est renseigné mais **jamais affiché**.
-Sans cache et sans réseau → liste vide **silencieuse**.
-**Décision : comportement conservé.** Dette UX enregistrée sous `US-CACHE-STALE-WARNING`.
-
-### DEC-115 — Le champ `day` n'est produit par aucun chemin de normalisation⛔ **SUPERSEDED PAR DEC-124.** La cascade de résolution livrée en S38 pose `day` et `airsTime`
-dans `normalizeAnime`. La piste « dépendant de `/anime/{id}` en 504 » était fausse : la donnée
-était présente et ignorée. *Leçon : une hypothèse marquée « NON close » doit être re-testée à
-sa clôture, pas citée comme un fait dans les autres documents — elle l'a été 3 fois.*
-`normalizeAnime` ne produit **jamais** `day` ni `airsTime`. Or `CalendarWeekPage` filtre sur
-`state === 'calendar' && day === dayClass` : **sans `day`, un anime en `state:'calendar'` est
-stocké mais invisible partout** — ni dans la semaine, ni en Library.
-`buildSeedEntry` pose `state` mais pas `day` ; le même bug avait déjà été corrigé une fois
-sur `state` seul, la moitié `day` est restée.
-
-⚠️ **Statut : hypothèse forte, NON close.** Le `aanime_calendar` du PO ne contient aucune
-entrée `state:'calendar'`, ce qui empêche la vérification sur donnée réelle. **Ne pas
-spécifier de correctif avant d'avoir tranché.**
-**Piste non vérifiée :** `day` serait rempli par `syncAnimeUpdates` via `parseJSTToLocal`
-depuis le `broadcast` Jikan — donc dépendant de `/anime/{id}`, endpoint en 504 (DEC-113). Si
-confirmé, le défaut d'onboarding et la panne Jikan ont **la même cause aval**.
-
-
-## DEC-120 → DEC-124 — Beta réelle, gouvernance Gemini, garde `day`
-
-- **DEC-120** L'app est en **beta avec des testeurs réels**. Tout P0 sur un parcours d'entrée devient bloquant, plus seulement gênant.
-- **DEC-121** **`AGENTS.md` en lecture seule pour l'agent implémenteur** (R-AGENTS-1). Mise à jour uniquement par US dédiée avec patch verbatim (R-AGENTS-2). Sens de circulation unique : AI Studio → repo → CMD. *Motif : 3ᵉ occurrence de R-SCOPE-1 sur ce fichier.*
-- **DEC-122** **La gate 🔴 peut être satisfaite par un test unitaire dédié quand l'E2E est structurellement impossible.** Motivé au cas par cas, non généralisable. Cas fondateur : AUD-02 — le SDK Firestore met les écritures en file locale hors-ligne, `setDoc` résout, aucun rejet n'est observable depuis le navigateur.
-- **DEC-123** Clé primaire `mal_id` conservée. `US-BETA-DATA-MIGRATION` annulée.
-- **DEC-124** 🔴 **`normalizeAnime` pose `day` et `airsTime` depuis `broadcast`.** ⛔ **SUPERSEDE DEC-118.** DEC-118 interdisait de corriger le mapping au motif que J-04 le réécrirait. Elle reposait sur une prémisse fausse : la donnée de diffusion était supposée absente, alors qu'elle est présente dans `/seasons/now` **et** `/anime/{id}` (mesure SE-053) et simplement ignorée. Cascade retenue : (1) valeur existante jamais écrasée, (2) `broadcast` JST → jour + heure locale, (3) jour de semaine de `aired.from`, **sans heure** — l'absence d'heure signale honnêtement l'approximation. Le résidu (aucune source) est marqué `awaitingSchedule` et repromu par `useSync`. *Leçon : une décision « ne corrigez pas ici » doit citer la mesure qui la fonde, sinon elle survit à sa prémisse.*
-
-## DEC-125 → DEC-126 — Fin de vie Jikan & périmètre du breaker
-
-- **DEC-125** 🔴 **Jikan ferme en octobre 2026.** Fait apporté par le PO, absent du corpus.
-  La migration AniList cesse d'être une réparation de la recherche pour devenir un **full
-  switch** de toutes les lectures externes, avec échéance dure. C'est ce qui a défini le
-  Sprint Goal S39. *Impact utilisateur : sans ce switch, l'app cesse purement de fonctionner
-  en octobre.*
-- **DEC-126** **`AUD-04` est ANNULÉE, pas reportée.** Le constat visait la contamination du
-  circuit-breaker entre endpoints d'un même hôte. AniList n'expose **qu'un seul endpoint**
-  (`graphql.anilist.co`) : un breaker global y est le comportement correct, pas un défaut.
-  La seule leçon transposable a été gravée dans `anilistClient` : **un 429 n'incrémente
-  jamais le compteur de panne** (une limite de débit n'est pas une panne).
-## DEC-127 → DEC-130 — Recherche AniList, modale calendrier & gouvernance d'agent (SE-056)
-
-- **DEC-127** **La déduplication de recherche s'applique APRÈS le tri.** Précise `DEC-60` sans la contredire : clé `mal_id` et helper unique `dedupeByMalId` inchangés, seul le point d'application se déplace. `dedupeByMalId` garde la 1ʳᵉ occurrence — appliqué après le tri, c'est la version la mieux classée qui survit (série en cours de diffusion > terminée, puis popularité). Impact utilisateur : on ne renvoie plus l'utilisateur vers Completed pour une série qu'il peut suivre aujourd'hui. Implémenté dans `useAniListApi.searchAnimeWithMeta` (`0384cc8`).
-- **DEC-128** **Les micro-patchs ne passent plus par Gemini.** Tout changement ≤ 10 lignes sur 1 fichier, entièrement dictable verbatim, est produit par Claude et collé par le PO. Corollaire de gouvernance : **la dictée verbatim est réservée aux changements sans logique métier** (import, déplacement d'appel, renommage). Dès qu'une US porte une décision de comportement, la spec décrit le comportement et Gemini implémente — pour qu'un second lecteur puisse attraper une erreur de spec. Origine : la garde `day` mal placée en SE-053 était une erreur de Claude qu'une dictée verbatim aurait rendue indétectable.
-- **DEC-129** **Ligne « prochain épisode » : pas de repli textuel.** La modale calendrier affiche `Next episode · Wednesday at 18:30` uniquement si `airsTime` existe et que la série n'est pas terminée. `airsTime` sans `day` → `Next episode · 18:30`. Pas d'`airsTime` → **aucune ligne**, jamais « time unknown ». Se cale sur `airsTime`, **jamais sur `day` seul**, qui peut venir du repli fautif d'`AUD-21`. Aligné sur le bloc synopsis (`v-if="synopsisText"`) : le composant se tait quand il ne sait pas. Revient sur la note SE-055 qui prévoyait « time unknown ».
-- **DEC-130** ⛔ **`US-MODAL-OPEN-SEED-KEY` annulée — sans objet.** `usePersistence.loadFromDatabase` exécute au boot une **migration de clés legacy (US-133)** qui recopie `animeCalendar` → `aanime_calendar` avant lecture. Un seed E2E sur l'ancienne clé atteint donc le store, et l'enveloppe `{timestamp, data}` est exactement `ScheduleDocument`. `modal-open.spec.ts` n'a jamais été rouge. **`DEC-85` reste actif** : toute nouvelle spec sème sur `aanime_calendar`. 3ᵉ US annulée par lecture du code après `US-MODAL-UNIFY` (DEC-110) et `US-SEARCH-3` — mais la 1ʳᵉ dont la cause est une inférence de Claude inscrite en Knowledge, pas un backlog vieilli.
-## DEC-131 → DEC-132 — S39, clôture
-
-- **DEC-131** 🔴 **Pas de date de diffusion prouvée, pas de créneau.** `normalizeAniList` ne
-  déduit plus jamais un jour de semaine depuis `aired_from` (première diffusion). Sans
-  `nextAiringEpisode`, une série `Currently Airing` (donc `RELEASING` ou `HIATUS`) reçoit
-  `awaitingSchedule = true` et sort de la grille ; `useSync` la repromeut dès qu'un `day`
-  arrive. Tout autre statut : ni jour, ni attente.
-  *Origine :* `AUD-21`. Une série en pause entre deux cours occupait un créneau tiré d'une date
-  parfois vieille de plusieurs années. **Une case fausse ne se détecte pas à l'œil : elle
-  discrédite toute la grille, pas seulement sa ligne.** Option écartée : conserver le repli pour
-  les séries en cours — elle ne corrigeait pas le cas d'origine, elle le déguisait.
-  ⚠️ Arme enfin le mécanisme de DEC-124, jusque-là jamais posé sur le chemin AniList
-  (`awaitingSchedule` était retourné `undefined` en dur).
-
-- **DEC-132** **`description` AniList est du HTML, jamais affichable brut.** Règle de nettoyage
-  gravée dans `normalizeAniList`, en TypeScript pur, **sans DOM** : `<br>` → `\n`, dépouillement
-  des autres balises, **puis** décodage des entités, `\n{3,}` → `\n\n`, `trim`. Résultat vide →
-  `synopsis: undefined`, jamais `null` ni `''`.
-  *L'ordre dépouillement → décodage est structurant :* une description contenant `&lt;i&gt;` veut
-  afficher `<i>` littéralement. Décoder d'abord supprimerait ce texte voulu par l'auteur.
-  ⚠️ N'agit qu'à la normalisation : les entrées déjà persistées restent sans synopsis jusqu'à `J10`.
-### DEC-133 — Le chiffre de boot de référence est celui de la production (SE-058)
-
-**Décision :** le temps de démarrage de référence d'Aanime est **2,5 s en production**, avec
-un bundle prêt à **152 ms** et 15 requêtes. Le chiffre de **8 045 ms / 77 requêtes** porté par
-les notes internes est une mesure du **serveur Vite de développement** hébergé à Singapour,
-servant 59 fichiers `/src/*` un par un. Rapport 3,2 : 1.
-
-**Conséquence :** **aucun chantier de réduction de bundle n'est ouvert.** Le découpage par
-route existe et fonctionne déjà en production. La perte de 2,3 s est entièrement dans
-l'orchestration du boot (910 ms mortes entre la réponse d'authentification et le chargement du
-chunk de route), pas dans le poids du code.
-
-**Pourquoi c'est inscrit ici :** c'est le même défaut que « Jikan est en panne » porté 5 sprints
-sur un curl jamais rejoué — un défaut de **fraîcheur de fait**, pas de code. Un chantier de
-bundle décidé sur le chiffre de dev aurait visé un fantôme.
-
-
-## DEC-137 → DEC-145 — Migration AniList : relations, sync, recommandations
-
-- **DEC-137** Tri `POPULARITY_DESC` retenu pour la requête de saison. *(SE-060)*
-- **DEC-138** `J10` éclatée en 5 slices (`J10a`→`J10e`). *(SE-060)*
-- **DEC-139** 🔴 **`Page(page:1, perPage:1){ media(idMal:) }` obligatoire, jamais
-  `Media(idMal:)`.** La forme `Media()` renvoie une erreur GraphQL sur une entrée introuvable,
-  que le disjoncteur d'`anilistClient` compte comme un échec — 3 suffisent à ouvrir un
-  blackout AniList de 60 s pour l'app entière. La forme `Page` renvoie une liste vide. *(SE-060)*
-- **DEC-140** Type `AnimeRelation` normalisé ; le filtrage des types de relation vit dans le
-  composable, jamais dans le `.vue`. *(SE-060)*
-- **DEC-141** 🔴 **Suppression du throttle manuel dans `syncAnimeUpdates`**
-  (`BATCH_SIZE`, `BATCH_INTERVAL_MS`). `anilistClient` sérialise déjà à 700 ms : deux
-  régulateurs empilés = deux vérités. Sync de 30 titres : ~50 s → ~21 s. *(SE-061)*
-- **DEC-142** `J11a` éclatée en 3 slices. Motif : une US unique aurait touché 4 fichiers et
-  `useRecommendations.ts` n'avait aucun test. `J11a-1` purement additive a fourni le socle. *(SE-061)*
-- **DEC-143** **Pool `incoming` = 2 appels AniList** (saison courante + suivante, `perPage:50`)
-  au lieu de 3 requêtes Jikan. AniList sert 50 titres par page là où Jikan en servait 25 :
-  la 3ᵉ requête n'a plus d'objet. *(SE-061)*
-- **DEC-144** 🔴 **`getSeasonNudges` n'écrit ni ne lit le store IDB `relations`.** Ce store
-  contient la forme **Jikan** (`[{ relation, entry }]`) et est lu par `buildRelationMemory`
-  pour le scoring. Y écrire des `AnimeRelation` AniList corromprait le moteur de
-  recommandations **en silence**, sans erreur ni test rouge. Le cache 24 h
-  `aanime_season_nudges` suffit. *(SE-061)*
-- **DEC-145** **`J10e` reportée en S41 et éclatée en 3 slices.** `normalizeAniList.ts` rejette
-  en ligne 1 tout média sans `idMal` — or un orphelin est précisément un titre sans `idMal`.
-  Argument produit : la population d'orphelins n'a jamais été mesurée (corpus : 19/19
-  rattachés), et un mauvais rattachement par titre est **pire** que pas de rattachement —
-  l'utilisateur verrait la jaquette d'une autre série. *(SE-061)*
-
-## DEC-146 → DEC-149 — Gouvernance documentaire & fin de la dépendance Jikan
-
-- **DEC-146** 🔴 **`STATE.md` scindé en `STATE.md` (présent) + `HISTORIQUE.md` (passé clos).**
-  `STATE.md` est **régénéré intégralement à chaque clôture de session** ; `HISTORIQUE.md` est
-  **append-only**, une ligne par session, une ligne de version par sprint, jamais réécrit et
-  hors ordre de lecture. Tous les autres documents restent **patchés à chaque clôture de
-  session**, jamais batchés au sprint.
-  *Motif du refus de batcher au sprint (arbitrage PO, SE-062) : DEC-137→145 n'ont vécu que
-  dans un handoff pendant deux sessions, et ce même handoff s'est révélé faux sur la dette
-  `AGENTS.md`. Un handoff est une source secondaire faillible : il ne peut pas porter seul
-  une décision. Motif du scindage : `STATE.md` à 350 lignes coûtait trop cher à régénérer en
-  fin de session — il a sauté deux sessions d'affilée « faute de capacité ». Le format était
-  la cause, pas la discipline.* *(SE-062)*
-- **DEC-147** **Le worker `startBackgroundRelationFetch` est supprimé sans remplacement.**
-  Ses deux endpoints (`/anime/{id}/relations`, `/anime/{id}/recommendations`) sont mesurés
-  504 (SE-062), il attendait 1,1 s par requête sur toute la bibliothèque, forçait
-  `isSyncing = true` pendant ~1 min — et déposait son résultat dans un bloc vide.
-  Re-brancher un enrichissement de relations en fond est une US produit de S41, pas un
-  sous-produit du débranchement. *(SE-062)*
-- **DEC-148** `J11b` éclatée en 3 slices : suppression du worker (4 fichiers, dérogation au
-  plafond de 3 — une suppression atomique, couper en deux rendait le `type-check` rouge à
-  l'état intermédiaire), puis suppression de `useJikanApi`, puis purge de `helpers.ts`. *(SE-062)*
-- **DEC-149** 🔴 **Le harnais E2E migre vers AniList par un helper mutualisé**, pas par
-  11 patches de spec. Les `page.route()` de 11 specs interceptent `api.jikan.moe/v4/…` et ne
-  mordent plus depuis `J11b`. Un mock réseau dupliqué dans N fichiers fait payer le prix fort
-  à chaque changement de fournisseur → `tests/e2e/_helpers/anilistMock.ts` devient la source
-  unique. Ouvre l'epic **`J12`**. **Gemini n'est pas impliqué : zéro code de production.** *(SE-062)*
-  ## DEC-150 → DEC-153 — Harnais E2E AniList & arbitrages de clôture S40 (SE-063)
-
-- **DEC-150** 🔴 **Le mock E2E AniList discrimine par corps de requête, pas par URL.**
-  AniList n'expose qu'un endpoint en POST : les cinq requêtes de `useAniListApi` y arrivent
-  toutes. `installAniListMock` lit `route.request().postDataJSON()` et applique quatre règles
-  ordonnées — `variables.search` → recherche ; `variables.season` → saison (courante ou
-  suivante selon la valeur) ; `variables.idMal` **+ `query` contenant `relations`** → relations ;
-  `variables.idMal` seul → détail ; aucune variable → top finished. Le jeton `relations` est
-  nécessaire car détail et relations partagent la variable `idMal`.
-  **Le helper importe `resolveSeason` / `resolveNextSeason` depuis `useAniListApi.ts`** plutôt
-  que de recopier la règle mois→saison : deux seuils pour une même règle métier violeraient
-  DEC-52, et une spec passerait au vert un 30 juin, au rouge un 1ᵉʳ juillet. *Vérifié en
-  SE-063 : l'import résout côté Playwright.* *(SE-063)*
-- **DEC-151** **`AUD-05` sort de S40 et passe en S41.** Elle n'a aucun lien avec le Sprint Goal
-  « Jikan est débranché », lui-même atteint depuis `2a24b3c`. Elle exige un DEC d'arbitrage sur
-  la source unique du signal `stale`, une US 🟠 avec code de production, une boucle Gemini et
-  une spec R4. La garder dans le chemin de clôture retardait un bump déjà mérité. *(SE-063)*
-- **DEC-152** ⛔ **« More like this » n'est PAS masqué par micro-patch.** Masquer le point
-  d'entrée ajoute un `v-if` sur un élément cliquable, or `more-like-this-modal.spec.ts` clique
-  précisément cet élément et vient de repasser au vert. C'est donc 2 fichiers, une US 🟠, hors
-  périmètre de DEC-128 — et le rouge n'apparaîtrait qu'au sweep, l'étape même qu'on cherchait à
-  franchir. **Le geste correct n'est pas de masquer mais de rebrancher** sur
-  `fetchRelationsByMalIdWithMeta` : le bouton redevient utile au lieu de disparaître.
-  P1 en tête de S41. *(SE-063)*
-- **DEC-153** **Les 12 specs vertes-mais-démockées migrent en S41, pas avant la gate.**
-  Toucher 12 specs vertes juste avant une Sprint Outcome Gate est le meilleur moyen d'en
-  fabriquer trois rouges et de faire déraper la clôture. → `AUD-24`, migration mécanique une
-  fois le helper prouvé. *(SE-063)*
-  
+| ID | Décision | Pourquoi ça casse si on l'ignore |
+|---|---|---|
+| **DEC-53** | `AGENTS.md` est la gouvernance permanente de l'agent d'implémentation | C'est le **seul** document qu'il lit |
+| **DEC-121** | `AGENTS.md` est en **lecture seule** pour l'agent (R-AGENTS-1) ; mise à jour uniquement par US dédiée avec patch verbatim (R-AGENTS-2). Circulation unique : AI Studio → repo → CMD | 3ᵉ occurrence de `R-SCOPE-1` sur ce fichier |
+| **DEC-128** | Les **micro-patchs** (≤ 10 lignes, 1 fichier, entièrement dictables) ne passent pas par l'agent : Claude produit, le PO colle. **Réservé aux changements sans logique métier** (import, déplacement d'appel, renommage) | Dès qu'une décision de comportement est en jeu, la dictée verbatim rend une erreur de spec indétectable — un second lecteur doit pouvoir l'attraper |
+| **DEC-87** | 🔴 **Un handoff est une source secondaire faillible ; le code réel tranche.** Quatre « faits » hérités d'un handoff se sont révélés faux | Une inférence recopiée devient un fait au bout de deux sessions |
+| **DEC-110** | Le diagnostic du PO pointe un **symptôme**, pas une cause : vérifier avant de spécifier | Une US entière a été écrite pour un défaut qui n'existait pas sous cette forme |
+| **DEC-100** | Devant une régression introduite par un effet visuel, **retirer** plutôt qu'empiler un correctif | Un empilement de correctifs enterre la cause |
+| **DEC-133** | Le temps de démarrage de référence est **celui de la production** (2,5 s, bundle prêt à 152 ms, 15 requêtes) — pas la mesure du serveur de dev | Un chantier de réduction de bundle décidé sur le chiffre de dev vise un fantôme. **Aucun chantier de bundle n'est ouvert** |
+| **DEC-147** | Le worker de relations en fond est **supprimé sans remplacement** | Il attendait 1,1 s par requête sur toute la bibliothèque, forçait `isSyncing` ~1 min et déposait son résultat dans un bloc vide. Un enrichissement de relations en fond est une US produit, pas un sous-produit |
+| **DEC-151** | `AUD-05` (signal de fraîcheur visible) exige un **DEC d'arbitrage préalable** sur la source unique du signal `stale`, et passe 🟠 | Deux signaux `stale` concurrents et morts coexistent → violerait DEC-52 |
+| **DEC-120** | L'app est en **beta avec des testeurs réels** : tout P0 sur un parcours d'entrée est bloquant | Un défaut d'onboarding touche le premier écran de chaque nouvel utilisateur |
+| **DEC-98** | `npm install` fonctionne en direct ; `--legacy-peer-deps` supprimé, à réarmer seulement si un futur `package.json` réintroduit le conflit | Une parade laissée en place masque le retour du conflit |
+| **DEC-02** | ESLint = flat config + `@vue/eslint-config-typescript` avec `no-explicit-any` **en erreur** | ⚠️ La configuration existe mais ESLint **n'est jamais exécuté** dans la porte verte (`STATE.md §Trous`) |
+| **DEC-03** | `tsconfig.node.json` séparé pour isoler `vite.config.ts` | Sans isolation, la config de build pollue le type-check applicatif |
+| **DEC-18** | Upsert du store : garder `if ('state' in input)`. Ne jamais recalculer `state` inconditionnellement en branche merge | Sinon clobber du `state` choisi par l'utilisateur |
