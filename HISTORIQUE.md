@@ -42,6 +42,7 @@
 | SE-061 | S40 | `J10d` · `J11a-1/2/3` · `useRecommendations` doté de ses 2 premières specs · DEC-141→145 | **4 MERGE au 1ᵉʳ coup**, 280 tests |
 | **SE-062** | **S40** | **`J11b-1/2/3` — Jikan intégralement retiré du dépôt.** Dette `AGENTS.md` E2E classée (patch déjà déployé en `4b99eeb`, handoff SE-061 erroné). Sweep complet : 12 rouges, cause unique → epic `J12`. DEC-146→149. Création de ce fichier | **3 MERGE au 1ᵉʳ coup**, 265 tests, **Sprint Goal S40 atteint, sprint non clos** |
 | **SE-063** | S40 | `J12-a` (helper `installAniListMock` + 2 specs pilotes) · `J12-b` (9 specs) | **2 MERGE au 1ᵉʳ coup, 0 correction.** Sweep **52/52 verts — premier sweep intégralement vert du projet.** Diagnostic du handoff SE-062 corrigé : aucune des 11 rouges ne routait `api.jikan.moe`. Découverte `AUD-24` (12 specs démockées) et `AUD-25`. DEC-150→153. **Sprint S40 CLOS** |
+| **SE-063.b** | hors sprint | **Cleaning et compression de la Knowledge.** 12 documents réécrits, création de `DECISIONS_ARCHIVE.md` (satellite hors ordre de lecture), `AUDIT.md` enrichi en append. `DECISIONS.md` était collé deux fois dans lui-même (717 → 159 lignes). 15 informations périmées corrigées, dont la séquence de boot fausse depuis `J11b-1` et deux règles opposables d'`AGENTS.md` contradictoires. DEC-154 | **Aucun code.** Corpus 3441 → 2432 lignes (−29 %), ordre de lecture −37 % |
 
 ---
 
