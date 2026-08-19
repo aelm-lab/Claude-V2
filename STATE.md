@@ -18,6 +18,7 @@
 | **Sprint** | **S40 — ✅ CLOS.** Goal : *Jikan est débranché avant sa fermeture* — **ATTEINT** |
 | **Sprint suivant** | **S41 — à composer** (triage benchmark préalable, gel levé) |
 | **Session courante** | **SE-063** |
+| **SE-063.b** | hors sprint | **Cleaning et compression de la Knowledge.** 12 documents réécrits, création de `DECISIONS_ARCHIVE.md` (satellite hors ordre de lecture), `AUDIT.md` enrichi en append. `DECISIONS.md` était collé deux fois dans lui-même (717 → 159 lignes). 15 informations périmées corrigées, dont la séquence de boot fausse depuis `J11b-1` et deux règles opposables d'`AGENTS.md` contradictoires. DEC-154 | **Aucun code.** Corpus 3441 → 2432 lignes (−29 %), ordre de lecture −37 % |
 | **Dernière version livrée** | **v0.34.0 (S40)** |
 | **Dernier DEC** | **DEC-153** |
 | **Commit `main`** | `365a6aa` — arbre propre |
