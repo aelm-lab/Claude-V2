@@ -1,42 +1,31 @@
 # TYPES_CONTRACT.md — Contrat TypeScript de référence
 
-> **Où mettre ce fichier :** Knowledge du projet Claude Chat (`aelm-lab/Claude-V2`).
-> **Rôle :** la **seule** source d'interfaces du projet. Toute US copie ses types d'ici,
-> verbatim, dans son corps — Gemini n'a pas accès à ce fichier.
->
-> **Règle absolue :** on n'invente **jamais** un type. Si un type manque, on crée d'abord une
-> US « types » pour l'ajouter ici, **puis** on l'utilise.
->
-> **Ce qui n'est PAS ici :** les bugs ouverts et la dette (→ `STATE.md`), le pourquoi des
-> choix de typage (→ `DECISIONS.md`). Ce document décrit **la forme des données**, pas leur
-> état de santé.
+> **Rôle :** la **seule** source d'interfaces du projet. Toute US copie ses types d'ici, verbatim, dans son corps — l'agent d'implémentation n'a pas accès à ce fichier.
+> **Pas ici :** les bugs ouverts et la dette (→ `STATE.md`), le pourquoi des choix (→ `DECISIONS.md`).
+
+**Règle absolue :** on n'invente **jamais** un type. Si un type manque, on crée d'abord une US « types » pour l'ajouter ici, **puis** on l'utilise.
 
 ---
 
-## 0. Trois faits gravés — ne jamais réintroduire
+## 0. Faits gravés — ne jamais réintroduire
 
-- **`syncStatus` n'existe pas** dans `AnimeEntry` (0 hit dans `src/`, vérifié à l'audit s16).
-  Ne pas l'ajouter.
-- **L'action de remplacement du store s'appelle `setData`** (+ `clearAll`). Il n'existe
-  **pas** de `setAllData`.
-- **`reconcileWithDatabase` n'existe plus.** La réconciliation au chargement se fait dans
-  `loadFromDatabase`.
+- **`syncStatus` n'existe pas** dans `AnimeEntry`. Ne pas l'ajouter.
+- **L'action de remplacement du store s'appelle `setData`** (+ `clearAll`). Il n'existe **pas** de `setAllData`.
+- **`reconcileWithDatabase` n'existe plus.** La réconciliation au chargement se fait dans `loadFromDatabase`.
+- **`startBackgroundRelationFetch` n'existe plus** (DEC-147).
+- **`BASE_URL`, `fetchWithRetry`, `_resetJikanQueue` n'existent plus** dans `utils/helpers` — une spec de surface (`helpers.spec.ts`) échoue si un export réseau y réapparaît.
 
-Ces trois affirmations ont été inscrites à tort dans un handoff antérieur, puis réfutées par
-grep. Un handoff est une source secondaire faillible : **le code réel tranche** (R3).
-- 🔴 **`normalizeAniList` renvoie `state: null`**, omet `startedAt` / `completedAt` /
-  `episodeOverride`, et renvoie **`awaitingSchedule: true`** pour tout anime `Currently Airing`
-  sans `nextAiringEpisode`.
-  **Liste close des champs interdits en écriture depuis un objet normalisé :**
-  `state`, `awaitingSchedule`, `title`, `startedAt`, `completedAt`, `episodeOverride`.
-  Toute écriture globale d'un objet normalisé sur une entrée de bibliothèque **vide en silence
-  tous les onglets utilisateur**. Mutation champ par champ obligatoire, liste close de
-  9 champs mutables (parade livrée en `J10d`, avec test bloquant).
-- 🔴 **Les variantes `WithMeta` ne lèvent jamais** : elles renvoient `{ data, failed }`
-  (+ `stale` sur les fonctions à cache). **C'est la forme par défaut de toute nouvelle
-  fonction réseau** (voir `AP-CATCH-1`).
-- **`mal_id ?? id` partout** — compatibilité des entrées legacy.
+> Les trois premiers ont été affirmés à tort par un handoff, puis réfutés par grep. **Un handoff est une source secondaire faillible : le code réel tranche** (R3).
+
+### Règles de forme, opposables à toute US
+
+- 🔴 **`normalizeAniList` renvoie `state: null`**, omet `startedAt` / `completedAt` / `episodeOverride`, et renvoie **`awaitingSchedule: true`** pour tout anime en cours sans `nextAiringEpisode`.
+  **Liste close des champs interdits en écriture depuis un objet normalisé :** `state`, `awaitingSchedule`, `title`, `startedAt`, `completedAt`, `episodeOverride`.
+  Toute écriture globale d'un objet normalisé sur une entrée de bibliothèque **vide en silence tous les onglets utilisateur**. Mutation champ par champ obligatoire, liste close de 9 champs mutables.
+- 🔴 **Les variantes `WithMeta` ne lèvent jamais** : elles renvoient `{ data, failed }` (+ `stale` sur les fonctions à cache). **C'est la forme par défaut de toute nouvelle fonction réseau** (voir `AP-CATCH-1`).
+- **`mal_id ?? id` partout** — compatibilité des entrées existantes.
 - **`setSyncTimestamp` utilise `anime.id`, pas `malId`** — préserve les clés localStorage.
+
 ---
 
 ## 1. États & statuts
@@ -47,12 +36,13 @@ grep. Un handoff est une source secondaire faillible : **le code réel tranche**
 /** State interne de l'app (onglet de classement). */
 export type AnimeState = 'calendar' | 'radar' | 'watchlist' | 'vault';
 
-/** Statut de diffusion (vocabulaire Jikan + valeurs legacy à normaliser). */
+/** Statut de diffusion — vocabulaire MyAnimeList, conservé pour la compatibilité
+ *  des données déjà persistées. normalizeAniList convertit vers ces valeurs. */
 export type AnimeStatus =
   | 'Currently Airing'
   | 'Not yet aired'
   | 'Finished Airing'
-  // legacy, présentes en cache et injectées par la persistance :
+  // valeurs legacy, présentes en cache et injectées par la persistance :
   | 'Continuing'
   | 'Ended'
   | 'Finished';
@@ -65,20 +55,13 @@ export type WeekDay =
 export type RecencyBucket = 'recent' | 'mid' | 'old';
 ```
 
-> **Règle de consommation d'une union :** quand un type union gagne une valeur, **grep tous
-> les `switch` et chaînes de `if` qui le consomment**. Un membre jamais mappé tombe
-> silencieusement sur le `return` par défaut. C'est exactement ce qui est arrivé à
-> `'Continuing'` dans `getCardStatus` (un show en cours s'affichait « Finished »).
+> **Règle de consommation d'une union :** quand un type union gagne une valeur, **grep tous les `switch` et chaînes de `if` qui le consomment**. Un membre jamais mappé tombe silencieusement sur le `return` par défaut — c'est ce qui est arrivé à `'Continuing'` dans `getCardStatus` (un show en cours s'affichait « Finished »).
 
 ---
 
 ## 2. Entité principale : `AnimeEntry`
 
-Forme canonique renvoyée par `normalizeAnime`, enrichie des champs runtime utilisés par les
-vues et le moteur de recommandations.
-
 ```ts
-
 // src/types/anime.ts
 import type { RecBadge, RecSignal } from './recs';
 
@@ -89,11 +72,11 @@ export interface AnimeEntry {
 
   // Métadonnées de base
   title: string;                  // titre primaire (rōmaji en source AniList)
-  title_english?: string | null;  // titre anglais — null si la source n'en fournit pas
-synopsis?: string;              // texte de présentation (DEC-47). Source AniList : nettoyé du HTML (DEC-132). Jamais null ni ''
+  title_english?: string | null;  // null si la source n'en fournit pas
+  synopsis?: string;              // nettoyé du HTML (DEC-132). Jamais null ni ''
   cover_url: string | null;
   cover_url_hd: string | null;
-  studio: string | null;          // SINGULIER — null si inconnu, jamais "Unknown Studio". Conservé pour l'AFFICHAGE.
+  studio: string | null;          // SINGULIER — null si inconnu, jamais "Unknown Studio". AFFICHAGE
   genres: string[];
   themes: string[];
   demographics: string[];
@@ -111,12 +94,12 @@ synopsis?: string;              // texte de présentation (DEC-47). Source AniLi
   // Classement & planning
   state: AnimeState | null;
   episodes: number | null;
-  day?: WeekDay;                  // jour de diffusion LOCAL — posé par normalizeAnime (DEC-124)
-  airsTime?: string | null;       // "HH:mm" local — posé par normalizeAnime (DEC-124)
-  /** Entrée démotée en 'watchlist' faute de jour de diffusion connu.
-   *  useSync la repromeut en 'calendar' dès que `day` est renseigné. (DEC-124) */
+  day?: WeekDay;                  // jour de diffusion LOCAL (DEC-124)
+  airsTime?: string | null;       // "HH:mm" local (DEC-124)
+  /** Entrée démotée faute de jour de diffusion prouvé.
+   *  useSync la repromeut en 'calendar' dès que `day` est renseigné. (DEC-124 / DEC-131) */
   awaitingSchedule?: boolean;
-  episodeOverride?: number;       // épisode forcé par l'utilisateur — RESET à undefined à chaque upsert (DEC-84)
+  episodeOverride?: number;       // épisode forcé — RESET à undefined à chaque upsert (DEC-84)
   recencyBucket?: RecencyBucket;
 
   // Champs internes au moteur de recommandations (préfixe _, optionnels)
@@ -130,27 +113,20 @@ synopsis?: string;              // texte de présentation (DEC-47). Source AniLi
   _triggerTitle?: string;
 
   // Moteur de recommandations
-  studios?: string[];             // PLURIEL — lu par scorePool. OPTIONNEL : toujours tester avant de mapper.
+  studios?: string[];             // PLURIEL — lu par scorePool. OPTIONNEL : tester avant de mapper
   popularityScore?: number;       // fallback popularité quand historyCount < 5
   _relevanceScore?: number;       // produit par scorePool
   _presetScore?: number;          // produit par applyPreset
 }
 ```
 
-**`studio` vs `studios` — les deux coexistent volontairement.** `studio` (singulier) sert
-l'**affichage** ; `studios?: string[]` sert le **scoring** (`scorePool`).
+**`studio` vs `studios` — les deux coexistent volontairement.** `studio` (singulier) sert l'**affichage** ; `studios?: string[]` sert le **scoring** (`scorePool`).
 
-⚠️ **`studios` est OPTIONNEL dans le code** (lecture SE-055), alors que DEC-86 affirme que
-`normalizeAnime` le peuple toujours. Le contrat suit le code : **jamais `anime.studios.map()`
-sans garde**. Tension enregistrée, à trancher par une lecture de `normalize.ts` (pas d'US
-ouverte : le typage optionnel est déjà le comportement sûr).
+⚠️ **`studios` est OPTIONNEL dans le code**, alors que DEC-86 affirme qu'il est toujours peuplé. Le contrat suit le code : **jamais `anime.studios.map()` sans garde.**
 
-✅ **`day` et `airsTime` SONT produits par `normalizeAnime`** depuis `broadcast`, par cascade
-(DEC-124, livré S38). L'ancienne interdiction (DEC-115) est **superseded**. Le résidu sans
-source est marqué `awaitingSchedule` et repromu par `useSync`.
+✅ **`day` et `airsTime` SONT produits par la normalisation**, par cascade (DEC-124). Le résidu sans source est marqué `awaitingSchedule` et repromu par `useSync`.
 
-❌ **`onHiatus?` a été SUPPRIMÉ du type** (DEC-84). Le hiatus est un calcul dérivé
-(`isOnHiatus`, source unique). Ne pas le réintroduire.
+❌ **`onHiatus?` a été SUPPRIMÉ du type** (DEC-84). Le hiatus est un calcul dérivé (`isOnHiatus`, source unique). Ne pas le réintroduire.
 
 ---
 
@@ -250,53 +226,80 @@ export interface ScheduleDocument {
 export type IdbStoreName = 'relations' | 'recommendations';
 ```
 
+> 🔴 Le store IDB `relations` porte la forme **MyAnimeList** (`[{ relation, entry }]`), lue par `buildRelationMemory` pour le scoring. Y écrire un `AnimeRelation` AniList corromprait le moteur **en silence** (DEC-144).
+
 ---
 
 ## 6. Constantes partagées
 
 ```ts
 // src/utils/constants.ts
-export const POSTER_PLACEHOLDER: string;   // source UNIQUE (DEC-84) — 4 copies inline supprimées
+export const POSTER_PLACEHOLDER: string;   // source UNIQUE (DEC-84)
 ```
 
 ---
 
 ## 7. Types locaux — NON contractuels
 
-Ces types sont locaux à un fichier util et **ne doivent pas** être déplacés ici : ce sont des
-DTO de plomberie, pas des types métier.
+DTO de plomberie, pas des types métier. **Ne pas les déplacer ici.**
 
 | Type | Emplacement |
 |---|---|
 | `RawAnime`, `RawNamed`, `RawListItem`, `RawImages` | local non exporté, `utils/normalize.ts` |
 | `MalImportEntry` | local non exporté, `utils/malImport.ts` |
-| `MalImportResult` | **exporté** depuis `utils/malImport.ts` (reste près de sa fonction) — expose `imported`, pas `entries` |
+| `MalImportResult` | **exporté** depuis `utils/malImport.ts` — expose `imported`, pas `entries` |
 
 ---
 
-## 8. Signatures des composables & stores
+## 8. DTO AniList — `src/types/anilist.ts`
+
+Forme **brute** renvoyée par `graphql.anilist.co`. Ne décrit **pas** l'entité applicative : la forme canonique reste `AnimeEntry` (§2). Conversion portée par `utils/normalizeAniList.ts`.
+
+Types exportés : `AnimeRelationType`, `AnimeRelation`, `AniListRelationsResult`, `AniListDetailResult`, `AniListSeasonResult`, `AniListSearchResult`, `AniListPoolResult`. Le fichier fait autorité pour les interfaces exactes ; il est copié verbatim dans les US.
+
+**Pièges structurants, à rappeler dans toute US touchant ce mapping :**
+
+| Champ | Piège |
+|---|---|
+| `AniListFuzzyDate` | `{year, month, day}` chacun `null` **indépendamment**. Ce n'est pas une chaîne ISO ; une date partielle (année seule) est courante |
+| `nextAiringEpisode.airingAt` | Timestamp UNIX en **secondes, UTC**, donc absolu : `new Date(airingAt * 1000)` donne l'heure locale **sans** passer par le parsing JST |
+| `studios` | Connexion `edges` / `nodes`, **jamais** un tableau plat |
+| `averageScore` | Échelle **/100**, pas /10. Diviser par 10 |
+| `description` | Contient du **HTML** + entités. Nettoyage obligatoire (DEC-132) |
+| `idMal` | Peut être `null` (titre absent de MyAnimeList) → l'entrée est **rejetée** (DEC-123) |
+| `AniListResponse.errors` | AniList renvoie **HTTP 200** avec un tableau `errors` peuplé sur requête invalide. **Le code HTTP seul ne prouve rien** |
+| Statuts | `FINISHED` / `RELEASING` / `NOT_YET_RELEASED` / `CANCELLED` / `HIATUS`. `HIATUS` mappe sur `'Currently Airing'` : **une série en pause est traitée comme en cours** (DEC-131) |
+
+---
+
+## 9. Signatures des composables & stores
 
 > Les valeurs exposées vers l'extérieur sont **`readonly`** ou des `computed`.
 
 ```ts
-// 
-searchAnime(query: string): Promise<AnimeEntry[]>
-fetchAnimeById(id: number): Promise<AnimeEntry | null>
-fetchAnimeRelations(malId: number): Promise<unknown[]>
-fetchAnimeRecommendations(malId: number): Promise<unknown[]>
-fetchAnimeRelationsWithMeta(malId: number): Promise<{ data: unknown[]; fromNetwork: boolean }>
-fetchAnimeRecommendationsWithMeta(malId: number): Promise<{ data: unknown[]; fromNetwork: boolean }>
-fetchCurrentSeason(): Promise<AnimeEntry[]>        // sert le cache PÉRIMÉ si le fetch échoue (DEC-114)
-fetchUpcomingSeason(): Promise<AnimeEntry[]>
+// useAniListApi
+searchAnimeWithMeta(query: string)
+searchAnime(query: string)
+fetchCurrentSeasonWithMeta()
+fetchCurrentSeason()
+fetchUpcomingSeasonWithMeta()
+fetchTopFinishedWithMeta()
+fetchAnimeByMalIdWithMeta(malId: number)
+fetchAnimeByMalId(malId: number)
+fetchRelationsByMalIdWithMeta(malId: number)
+fetchRelationsByMalId(malId: number)
+// fonctions module exportées (importées telles quelles par le helper de mock E2E) :
+resolveSeason(now: Date)
+resolveNextSeason(now: Date)
 
 // usePersistence
-loadFromDatabase(): Promise<void>                  // inclut migration des clés aanime_* + réconciliation
+loadFromDatabase(): Promise<void>          // migration des clés aanime_* + réconciliation
 saveToDatabase(showFeedback?: boolean): Promise<void>
 staleDataWarning: Readonly<Ref<boolean>>
 
 // useSync
 syncAnimeUpdates(): Promise<void>
-startBackgroundRelationFetch(): Promise<void>
+clearSyncTimestamp(): void
 isSyncing: Readonly<Ref<boolean>>
 
 // useRecommendations
@@ -310,21 +313,19 @@ getSeasonNudges(): Promise<{ sequel: AnimeEntry; finishedTitle: string }[]>
 
 // useEpisodeInfo (wrappe utils/episodeInfo.ts)
 getAnimeEpisodeInfo(anime: AnimeEntry, targetDate?: Date): AnimeEpisodeInfo
-getCardStatus(anime: AnimeEntry): CardStatus
+getStatus(anime: AnimeEntry): CardStatus     // ⚠️ getStatus, PAS getCardStatus
 isOnHiatus(anime: AnimeEntry): boolean
 
 // stores/anime (actions)
-setData(data: AnimeEntry[]): void                  // PAS de setAllData
+setData(data: AnimeEntry[]): void            // PAS de setAllData
 clearAll(): void
-addAnime(input: Partial<AnimeEntry>): void         // upsert — reset episodeOverride à undefined (DEC-84)
+addAnime(input: Partial<AnimeEntry>): void   // upsert — reset episodeOverride (DEC-84)
 addAnimeSilent(input: Partial<AnimeEntry>): void
 removeAnime(id: number): void
 setDate(date: Date): void
 
-// useToast
+// useToast / useTheme
 showToast(message: string, isHtml?: boolean, durationMs?: number): void
-
-// useTheme
 isDark: Readonly<Ref<boolean>>
 toggleDarkMode(): void
 
@@ -339,63 +340,20 @@ downloadICS(): void
 importMalFile(file: File): Promise<MalImportResult>
 ```
 
-> **`getAnimeEpisodeInfo`** : l'util sous-jacent impose `targetDate: Date` **obligatoire**.
-> `useEpisodeInfo` fournit `new Date()` à l'appel pour exposer un `targetDate?` optionnel.
+> **`getAnimeEpisodeInfo`** : l'util sous-jacent impose `targetDate: Date` **obligatoire** ; `useEpisodeInfo` fournit `new Date()` à l'appel pour exposer un `targetDate?` optionnel.
+> **`getStatus`** est le nom réel exposé par le composable (confirmé par `ModalCalendarTop.vue:92` et `ModalVersionTop.vue:102`) — l'util pur s'appelle `getCardStatus`.
 
-| `useEpisodeInfo` | `getStatus(anime): CardStatus` — **et non `getCardStatus`**. Confirmé par ModalCalendarTop.vue:92 et ModalVersionTop.vue:102 | 
 ---
-## 8bis. DTO AniList — `src/types/anilist.ts`
 
-Forme **brute** renvoyée par `graphql.anilist.co`. Ne décrit **pas** l'entité applicative :
-la forme canonique reste `AnimeEntry` (§2). Conversion portée par `utils/normalizeAniList.ts`.
+## 10. ⚠️ Lacunes assumées du contrat
 
-Pièges structurants, à rappeler dans toute US touchant ce mapping :
-- **`AniListFuzzyDate`** — `{year, month, day}` chacun `null` **indépendamment**. Ce n'est pas
-  une chaîne ISO. Une date partielle (année seule) est courante. Les trois nulls sont à gérer.
-- **`nextAiringEpisode.airingAt`** — timestamp UNIX en **secondes, UTC**, donc déjà absolu :
-  `new Date(airingAt * 1000)` donne l'heure locale sans passer par le parsing JST.
-- **`studios`** — connexion `edges` / `nodes`, **jamais** un tableau plat.
-- **`averageScore`** — échelle **/100**, pas /10. Diviser par 10.
-- **`description`** — contient du **HTML** + entités. Nettoyage obligatoire (DEC-132).
-- **`idMal`** — peut être `null` (titre absent de MAL) → l'entrée est rejetée (DEC-123).
-- **`AniListResponse.errors`** — AniList renvoie **HTTP 200** avec un tableau `errors` peuplé
-  sur requête invalide. **Le code HTTP seul ne prouve rien.**
-- **Vocabulaire de statut différent de Jikan** : `FINISHED` / `RELEASING` / `NOT_YET_RELEASED` /
-  `CANCELLED` / `HIATUS`. Table de correspondance dans `normalizeAniList` — `HIATUS` mappe sur
-  `'Currently Airing'`, donc **une série en pause est traitée comme en cours** (DEC-131).
+Ces éléments existent dans le code mais n'ont jamais été contractualisés. Listés pour éviter qu'un type soit inventé en leur absence. **Aucun ne doit être utilisé dans une US avant relecture du code (R3) et ajout ci-dessus par une US « types ».**
 
-Le fichier fait autorité pour les interfaces exactes ; il est copié verbatim dans les US.
-Types : `AnimeRelationType`, `AnimeRelation`, `AniListRelationsResult`, `AniListDetailResult`,
-`AniListSeasonResult`, `AniListSearchResult`, `AniListPoolResult`.
+| Élément | Ce qui manque |
+|---|---|
+| `useStats` — `completedThisYear`, `topGenres` | Aucune signature contractualisée |
+| `useOnboarding` / `finishWithSeed` / `markOnboarded` | Aucune signature contractualisée |
+| `utils/onboardingFilter.ts` — `buildSeedEntry`, `selectOnboardingSuggestions` | `buildSeedEntry` retourne `{ ...anime, id, state }` et ne pose pas `day` lui-même. Signature exacte à confirmer |
+| `getAnimeTitle` (DEC-94) | Emplacement et signature à confirmer |
 
-Signatures `useAniListApi` : `searchAnimeWithMeta`, `searchAnime`, `fetchCurrentSeasonWithMeta`,
-`fetchCurrentSeason`, `fetchUpcomingSeasonWithMeta`, `fetchTopFinishedWithMeta`,
-`fetchAnimeByMalIdWithMeta`, `fetchAnimeByMalId`, `fetchRelationsByMalIdWithMeta`,
-`fetchRelationsByMalId`.
-
-Fonctions module exportées : `resolveSeason(now)`, `resolveNextSeason(now)`.
-
-Signatures `useSync` (réduites en `J11b-1`) : `isSyncing` (readonly), `syncAnimeUpdates`,
-`clearSyncTimestamp`. **`startBackgroundRelationFetch` n'existe plus.**
-
-Signatures `utils/helpers` (purgé en `J11b-3`) : `escapeHTML`, `getWeekNumber`,
-`dedupeByMalId`. **`BASE_URL`, `fetchWithRetry`, `_resetJikanQueue` n'existent plus** — une
-spec de surface (`helpers.spec.ts`) échoue si un export réseau réapparaît.
----
-## 9. ⚠️ Lacunes assumées du contrat
-
-Ces éléments **existent dans le code** d'après la documentation du projet mais n'ont jamais
-été contractualisés ici. Ils sont listés pour éviter que Gemini n'invente un type en leur
-absence. **Aucun ne doit être utilisé dans une US avant d'avoir été relu dans le code et
-ajouté ci-dessus par une US « types ».**
-
-
-| Élément | Source documentaire | Ce qui manque |
-|---|---|---|
-| `useStats` | DEC-88, EPIC 11 — `completedThisYear`, `topGenres` | Aucune signature contractualisée |
-| `useOnboarding` / `finishWithSeed` / `markOnboarded` | EPIC 9 (livré) | Aucune signature contractualisée |
-| `utils/onboardingFilter.ts` — `buildSeedEntry`, `selectOnboardingSuggestions` | EPIC 9, DEC-115 | `buildSeedEntry` retourne `{ ...anime, id, state }` et **ne pose jamais `day`**. Signature exacte à confirmer |
-| `getAnimeTitle` | DEC-94 — règle de titre centralisée (anglais primaire + rōmaji si différent) | Emplacement et signature à confirmer |
-
-> Cette section est un **filet, pas une dette permanente** : chaque ligne se ferme par une
-> lecture du code (R3) et une US « types ». Elle ne doit pas grossir sans être traitée.
+> Cette section est un **filet, pas une dette permanente** : chaque ligne se ferme par une lecture du code et une US « types ». Elle ne doit pas grossir sans être traitée.
