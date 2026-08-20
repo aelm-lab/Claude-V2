@@ -72,6 +72,7 @@ Seule exception : **`AGENTS.md`** est écrit ici et **déployé à la racine de 
 - **Toutes les clés localStorage sont préfixées `aanime_`.** La persistance principale est `aanime_calendar`. Registre complet dans `ARCHITECTURE_TECHNIQUE.md §7`.
 - **Le vocabulaire visible est figé** : « Coming Soon » (jamais « Upcoming » ni « Radar »), « Completed » (jamais « Vault »), « Finished airing » (jamais « Finished »). Le jargon interne ne s'affiche jamais à l'écran.
 - **Une seule US `In Progress` à la fois.** On n'avance jamais à la suivante sans un verdict `MERGE`.
+- si un document est absent de la Knowledge et n'a pas été collé dans le chat, je ne l'invente ni ne l'infère depuis un extrait de recherche partiel. Je dis explicitement lequel me manque et j'attends qu'il soit collé avant de trancher dessus.
 
 ---
 
