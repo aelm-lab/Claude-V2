@@ -278,3 +278,58 @@ quatre promesses fausses**, qui vivent dans du code qu'elle ne touche pas.
 `AUD-02` · `AUD-03` · `AUD-06` · `AUD-07` · `AUD-09` · `AUD-10` · `AUD-11` · `AUD-13` · `AUD-14` · `AUD-15` · `AUD-16` — aucune lecture de code n'a été faite pendant le chantier documentaire. **Leur état est inconnu, pas « toujours vrai ».** Toute conversion en US démarre par un grep du fichier concerné.
 
 Les doutes `AUD-12` / `AUD-19` / `AUD-20` restent à lever par les commandes indiquées plus haut.
+
+
+
+# Campagne SE-064 — session P0 « zéro zone d'ombre »
+
+**Méthode :** 22 constats tranchés par grep sur le dépôt local, plus deux vérifications en
+console Firebase et une capture DevTools. **Aucune inférence** : tout verdict ci-dessous
+s'appuie sur une sortie de commande ou une capture, conformément à `AP-PROCESS-2`.
+
+## Constats soldés — ne pas rouvrir
+
+| ID | Verdict | Preuve |
+|---|---|---|
+| **AUD-02** | ✅ **Soldé dans sa forme d'origine.** `useFirestore.ts:89-91` relance bien (`throw error.value`). Le `try/catch` inopérant est réparé. *Résidu isolé sous `AUD-29`* | `useFirestore.ts:73-94` |
+| **AUD-09** | ✅ **Requalifié, quasi soldé.** Sur 60 usages `localStorage` en E2E, 59 sont du seed légitime. Une seule assertion sur le store subsiste | `onboarding-seed.spec.ts:56` |
+| **AUD-11** | ✅ **Soldé.** `EmptyStateProps` = `title` + `subtitle`, tous deux rendus. Aucune prop orpheline — `vue-tsc` strict serait rouge sinon | `EmptyState.vue:1-15` |
+| **AUD-14** | ✅ **Soldé.** `as AnimeEntry` : **zéro hit** dans `tests\**` et `src\**\*.ts`. La factory-cast est morte, probablement avec la purge `helpers.ts` (`J11b-3`) | grep récursif |
+| **AUD-19** | ✅ **Soldé.** `helpers.ts` ne contient plus que `escapeHTML`, `getWeekNumber`, `dedupeByMalId`. Aucune file, aucun disjoncteur : la famine `low`/`high` n'a plus de code support | `helpers.ts:1-40` |
+| **AUD-28** | ✅ **Annulé.** Les 0 lectures de la vue d'ensemble étaient un artefact d'agrégation : la base réelle affiche **62 lectures** et 14 lectures temps réel sur 7 jours | console → Utilisation |
+| **AUD-26** | ⛔ **Annulé — faux positif que je corrige.** Les deux clés de seed E2E (`animeCalendar` / `aanime_calendar`) ne divergent pas : `usePersistence.ts:139-150` porte une table de migration (US-133). Fragilité réelle mais mineure — le jour où la migration tombe, 8 specs rougissent d'un coup. Note pour `US-DEMOCK`, pas une US | `usePersistence.ts:139-150` |
+| **Atterrissage onboarding** | ✅ **Sain, prouvé.** `buildSeedEntry` fait un **spread** (`return { ...anime, id, state }`) : `day` et `airsTime` produits par `normalizeAniList` survivent. Le pattern `AUD-01` n'est pas réintroduit. Le trou honnête ouvert en SE-063.b est refermé | `onboardingFilter.ts:13` |
+
+## Constats confirmés vivants — convertis en US
+
+| ID | Constat prouvé | Impact utilisateur | Destination |
+|---|---|---|---|
+| **AUD-03** | 🔴 **Vivant, et pas là où on croyait.** `malImport.ts:44-58` mappe **correctement** les statuts MAL et préserve `episodeOverride`. Mais `useMalImport.ts:86-97` (`mapMalStatusToState`) lit `my_status` sur un `MalImportEntry` qui **ne porte pas ce champ** : `s` vaut toujours `undefined` → `default: return 'radar'`. Le parser fait le bon travail, ce helper le défait. Le cast `as unknown as Record<string, unknown>` a désarmé TypeScript — `AUD-14` sous une autre forme. *Bonus : « Dropped » est silencieusement ignoré (`skipped++`)* | Un import de 300 titres atterrit intégralement en Coming Soon, avec un toast de succès | `US-MALIMPORT-FIX` — S41 |
+| **AUD-06** | `ToastNotification` monté **uniquement** dans `AppLayout.vue:21` | Sur `/welcome` et `/login`, tout échec est muet | `US-ONBOARD-TOAST` — S42 |
+| **AUD-07** | `useOnboarding.ts:1-15` — flag `aanime_onboarded` en **localStorage seul**, zéro Firestore | Onboarding rejoué en entier sur chaque appareil et après tout vidage de cache | `US-ONBOARD-PERSIST` — S41 |
+| **AUD-10** | 🟡 **Périmètre réduit de 4 cas à 1.** Trois des quatre `show: false` d'`episodeInfo.ts` portent `isFinished: true` (légitime). Seule la l.33 masque une entrée non finie | Un anime présent, `day` renseigné, disparaît de la semaine | `US-SHOW-FALSE` — S44 |
+| **AUD-13** | 🟢 **1 seule occurrence restante** : `AppHeader.vue:59-61` (purge de clés au logout) | Aucun visible — mais c'est le maillon 1 d'`AUD-30` | Absorbé par `US-PERSIST-P0` |
+| **AUD-15** | `episodeInfo.ts:111` — fallback final `word: 'Finished'`, atteint sur statut nul ou inconnu | Un anime au statut inconnu s'affiche « Finished », pastille grise | `US-STATUS-UNKNOWN` — S44 |
+| **AUD-16** | `AnimeModal.vue:179` — `{mal_id, id, title} as AnimeEntry`. *Les trois autres `as AnimeEntry` en `.vue` sont bénins (spreads complets, lecture de `.name`)* | Cliquer une relation ouvre une modale sans jaquette, sans score, sans synopsis | Fusionné dans `US-MORELIKETHIS-FIX` — S42 |
+
+## Constats nouveaux — SE-064
+
+| ID | Constat | Impact utilisateur | Destination |
+|---|---|---|---|
+| **AUD-27** | 🔴 Les règles Firestore déployées plafonnent le document à **100 entrées** (`data.data.size() <= 100`, l.18 et l.28) et imposent un **timestamp monotone** (`>= resource.data.timestamp`, l.26) | Au 101ᵉ anime, plus aucune sauvegarde cloud n'est acceptée — un import MAL de 300 titres est rejeté en bloc. Deux appareils aux horloges décalées : celui en retard voit toutes ses écritures refusées, définitivement | `US-FIRESTORE-LIMITS` — S41 |
+| **AUD-29** | 🔴 `useFirestore.ts:81` — `if (!auth.currentUser) return;` retourne **sans sauvegarder et sans signaler**. `saveToDatabase` affiche alors « Saved » | L'app confirme une sauvegarde qui n'a pas eu lieu | `US-FIRESTORE-LIMITS` — S41 |
+| **AUD-30** | 🔴🔴 **Aucune persistance. Deux causes cumulées.** **(1) Prouvée** — `AppHeader.vue:59-61` vide l'intégralité du `localStorage` au logout : `aanime_onboarded` **et** `aanime_calendar` partent ensemble. **(2) Très probable, non prouvée** — le watcher profond `usePersistence.ts:105-115` déclenche `debouncedSave()` sur un store encore vide au boot, avant que `loadFromDatabase()` ait résolu ; `saveToDatabase` écrit alors `data: []` avec un timestamp frais, et la règle serveur l'**autorise** (document vide plus récent). D'où **0 refus** côté moteur de règles : le cloud est effacé par l'app elle-même. `clearStaleData():297-302` fait la même chose délibérément | L'utilisateur ajoute des animes, se déconnecte ou change d'appareil, et retrouve un onboarding vierge. **Bloquant de lancement bêta** | `US-PERSIST-P0` — S41, US n°1 |
+| **AUD-31** | 🟢 La collection `schedules` mélange **8 documents fossiles** dont l'ID est un pseudo tapé à la main (`Adn`, `Ae`, `Ael`, `ade`, `adn`, `adnanne`, `aer`, `aze`) et des documents dont l'ID est un vrai UID Auth. Les fossiles portent la forme vanilla : `name:` au lieu de `title:`, `id:` en chaîne, images `artworks.thetvdb.com`. Plus aucun compte ne peut les lire (les règles exigent `uid == documentId`) | Aucun | **Purge console manuelle** avant lancement public. Pas d'US |
+
+## Ce que cette campagne dit du produit
+
+Sept des constats tranchés produisent la même expérience : **l'app affirme quelque chose de
+faux et ne se contredit jamais.** « Saved » sans écriture (`AUD-29`), « Imported 300 animes »
+dans le mauvais bac (`AUD-03`), « Finished » sur un statut inconnu (`AUD-15`), une liste qui
+s'arrête à 100 sans le dire (`AUD-27`), un anime présent qui disparaît (`AUD-10`), une modale
+de relation vide (`AUD-16`), et une liste entière effacée en silence (`AUD-30`).
+
+La campagne S38 avait déjà écrit la conclusion : *le produit n'a pas un problème de bugs, il a
+un problème de véracité.* Aucun de ces défauts ne produit de crash — c'est précisément pour
+cela qu'ils ont survécu à quarante sprints. Un utilisateur ne signale pas un mensonge
+silencieux : il arrête d'utiliser l'app.
