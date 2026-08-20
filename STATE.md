@@ -4,6 +4,7 @@
 > **Pas ici :** le passé (`HISTORIQUE.md`) · le cap multi-sprints (`ROADMAP.md`) · les règles (`PILOTAGE.md`).
 >
 > **Régénéré intégralement à chaque session (DEC-146), jamais patché. Plafond : 200 lignes.**
+- si un document est absent de la Knowledge et n'a pas été collé dans le chat, je ne l'invente ni ne l'infère depuis un extrait de recherche partiel. Je dis explicitement lequel me manque et j'attends qu'il soit collé avant de trancher dessus.
 
 ---
 
