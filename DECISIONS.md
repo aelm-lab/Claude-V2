@@ -3,7 +3,8 @@
 > **Rôle :** les choix encore appliqués aujourd'hui, une ligne chacun. Un numéro n'est jamais supprimé ni réattribué.
 > **Pas ici :** décisions closes, périmées ou de migration (→ `DECISIONS_ARCHIVE.md`, hors ordre de lecture) · état courant (→ `STATE.md`) · règles opposables (→ `AGENTS.md`, `PILOTAGE.md`) · pièges répétés (→ `ANTIPATTERNS.md`).
 
-**Dernier numéro attribué : DEC-153.** Une décision contredite est marquée `⛔ SUPERSEDED PAR DEC-xxx` et bascule dans l'archive ; les renvois `DEC-xx` des autres documents restent résolvables.
+**Dernier numéro attribué : DEC-159.** 
+Une décision contredite est marquée `⛔ SUPERSEDED PAR DEC-xxx` et bascule dans l'archive ; les renvois `DEC-xx` des autres documents restent résolvables.
 
 ---
 
@@ -151,7 +152,6 @@
 | **DEC-100** | Devant une régression introduite par un effet visuel, **retirer** plutôt qu'empiler un correctif | Un empilement de correctifs enterre la cause |
 | **DEC-133** | Le temps de démarrage de référence est **celui de la production** (2,5 s, bundle prêt à 152 ms, 15 requêtes) — pas la mesure du serveur de dev | Un chantier de réduction de bundle décidé sur le chiffre de dev vise un fantôme. **Aucun chantier de bundle n'est ouvert** |
 | **DEC-147** | Le worker de relations en fond est **supprimé sans remplacement** | Il attendait 1,1 s par requête sur toute la bibliothèque, forçait `isSyncing` ~1 min et déposait son résultat dans un bloc vide. Un enrichissement de relations en fond est une US produit, pas un sous-produit |
-| **DEC-151** | `AUD-05` (signal de fraîcheur visible) exige un **DEC d'arbitrage préalable** sur la source unique du signal `stale`, et passe 🟠 | Deux signaux `stale` concurrents et morts coexistent → violerait DEC-52 |
 | **DEC-120** | L'app est en **beta avec des testeurs réels** : tout P0 sur un parcours d'entrée est bloquant | Un défaut d'onboarding touche le premier écran de chaque nouvel utilisateur |
 | **DEC-98** | `npm install` fonctionne en direct ; `--legacy-peer-deps` supprimé, à réarmer seulement si un futur `package.json` réintroduit le conflit | Une parade laissée en place masque le retour du conflit |
 | **DEC-02** | ESLint = flat config + `@vue/eslint-config-typescript` avec `no-explicit-any` **en erreur** | ⚠️ La configuration existe mais ESLint **n'est jamais exécuté** dans la porte verte (`STATE.md §Trous`) |
@@ -159,3 +159,11 @@
 | **DEC-18** | Upsert du store : garder `if ('state' in input)`. Ne jamais recalculer `state` inconditionnellement en branche merge | Sinon clobber du `state` choisi par l'utilisateur |
 
 | **DEC-154** | 🔴 **Le corpus documentaire est compressé et scindé : `DECISIONS.md` ne porte que les décisions **actives**, en tableau `ID \| Décision \| Pourquoi ça casse` ; les décisions closes, périmées et `⛔ SUPERSEDED` basculent dans `DECISIONS_ARCHIVE.md`, satellite append-only hors ordre de lecture | Un journal chronologique de 717 lignes ne se lit plus : il se cherche. Chaque doublon évince un extrait pertinent de l'index. Les numéros `DEC-xx` ne sont **jamais** supprimés ni renumérotés — tous les renvois restent résolvables, l'archive existe précisément pour ça |
+
+
+
+DEC-155	Un sprint fait 10 slots : 7 US planifiées + 3 flex (bugs sortis en route, retours bêta qualifiés). Clôture à date, jamais à épuisement — le non-fini glisse dans ROADMAP.md. Un retour bêta entre en flex, jamais en interrompant l'US In Progress. Dérogation S41 déclarée : 10 planifiées / 0 flex	Sans clôture à date, un sprint qui absorbe les retours ne finit jamais : plus aucun bump de version, plus aucun Sprint Outcome Gate
+DEC-156	La vision multi-sprints vit dans ROADMAP.md, satellite hors ordre de lecture. Rafraîchi à chaque clôture de sprint, PI complet toutes les 4. STATE.md ne porte que le sprint courant et renvoie	Un cap dans STATE.md explose son plafond de 200 lignes ; un cap nulle part oblige à re-débattre les priorités à chaque session
+DEC-157	Boucle bêta : retour brut du PO → qualification par Claude (impact utilisateur, effort, risque) → slot flex du sprint courant ou ROADMAP.md. Jamais de correctif « au vol » hors US	Un correctif sans US ni gate est exactement le chemin qui a produit les quatre promesses fausses de l'audit S38
+DEC-158	Source unique du signal stale = WithMeta.stale (useAniListApi.ts). staleDataWarning (usePersistence.ts:18,192,305) est supprimé, ainsi que keepStaleData / clearStaleData s'ils n'ont plus d'appelant. Débloque AUD-05. Solde DEC-151	Deux sources de vérité pour une même notion violent DEC-52. Le signal doit naître là où la donnée naît, pas dans une couche de persistance qui ne parle pas au réseau
+DEC-159	Depuis This Season, le rejet d'un anime est session-only. Skip partout sur cet écran, y compris dans la modale qui en est issue. dismissRec() + trackNegative() restent réservés à For You	Ne pas vouloir un titre cette saison n'est pas ne jamais vouloir le voir. Mélanger les deux fabrique des recommandations punies à tort, sans que l'utilisateur l'ait demandé ni compris
