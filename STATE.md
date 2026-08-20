@@ -1,112 +1,80 @@
-# STATE.md — État courant Aanime
+# STATE.md — État courant du projet Aanime
 
-> **Rôle :** source de vérité **UNIQUE** de l'état **courant** — sprint, session, compteurs, Kanban, faits externes, trous. Les autres documents y renvoient.
-> *Exception unique : `AGENTS.md`, lu par Gemini qui n'a pas accès à ce fichier.*
-
-**DEC-146 — Ce fichier ne porte pas l'historique.** Sessions closes et versions livrées vivent dans `HISTORIQUE.md`. Régénération **intégrale** à chaque clôture, jamais de patch.
+> **Rôle :** le présent uniquement — session en cours, métriques, Kanban, trous ouverts.
+> **Pas ici :** le passé (`HISTORIQUE.md`) · le cap multi-sprints (`ROADMAP.md`) · les règles (`PILOTAGE.md`).
+>
+> **Régénéré intégralement à chaque session (DEC-146), jamais patché. Plafond : 200 lignes.**
 
 ---
 
-## 🧭 Position courante
+## 📍 Session courante
 
-| | Valeur |
+| | |
 |---|---|
-| **Sprint** | **S40 — ✅ CLOS.** Goal : *Jikan est débranché avant sa fermeture* — **ATTEINT** |
-| **Sprint suivant** | **S41 — à composer** (triage benchmark préalable, gel levé) |
-| **Session courante** | **SE-063.b — hors sprint** (chantier documentaire, aucun code) |
-| **Dernière version livrée** | **v0.34.0 (S40)** — pas de bump : session hors sprint |
-| **Dernier DEC** | **DEC-154** |
-| **Commit `main`** | `365a6aa` — arbre propre, **inchangé cette session** |
-| **Cadence** | 4 à 8 US par sprint |
-
-**Rien ne bloque.** Aucun rouge connu sur le code.
+| Session | **SE-064** — hors sprint (chantier P0 « zéro zone d'ombre ») |
+| Sprint | **S41 composé, non démarré.** Démarre en SE-065 |
+| Version | **v0.34.0** — aucun bump (aucune US livrée) |
+| Commit main | `365a6aa` + micro-patch P0-6 (DEC-128, non commité au moment de la clôture) |
+| Prochaine session | **SE-065 = ouverture S41**, US n°1 = `US-PERSIST-P0` |
 
 ---
 
-## 🎯 Métriques techniques
-
-| Métrique | Valeur | Preuve | Fraîcheur |
-|---|---|---|---|
-| Tests unitaires | **265 passed** (29 fichiers) | `npm run test:run`, machine PO | **SE-063** |
-| Durée suite unitaire | **4,21 s** | idem | **SE-063** |
-| Type-check | **vert** | sortie vide | **SE-063** |
-| Build | **vert** | `180 modules transformed`, 2,51 s | **SE-063** |
-| E2E — specs sur disque | **42** (+1 helper hors batch) | inchangé | **SE-063** |
-| E2E — registre `package.json` | **42 / 42** | 5 batches : 9·9·8·9·7 | **SE-063** |
-| **E2E — sweep complet** | **✅ 52 / 52 · 0 rouge** | 5 batches séparés, machine PO | **SE-063** |
-
-**Répartition du sweep :** batch1 10 · batch2 12 · batch3 9 · batch4 11 · batch5 10.
-
-> ⚠️ Pas de mention « zéro `any` » : `vue-tsc` ne les teste pas, ESLint n'est jamais exécuté.
-> Aucune métrique n'a été remesurée en SE-063.b — **aucune ligne de code n'a été touchée.**
-
----
-
-## 📚 Métriques documentaires
+## 📊 Métriques
 
 | Métrique | Valeur | Fraîcheur |
 |---|---|---|
-| Corpus complet | **2 432 lignes** (14 documents) | **SE-063.b** |
-| Ordre de lecture (10 documents) | **1 935 lignes** | **SE-063.b** |
-| Document le plus lourd | `TYPES_CONTRACT.md` — 359 lignes | **SE-063.b** |
-| Documents au-dessus du plafond H7 | **0** | **SE-063.b** |
+| Tests unitaires | **265** / 29 fichiers | SE-064 (micro-patch P0-6) |
+| Build | **180 modules**, `index` 368,71 kB (gzip 108,15) | SE-064 |
+| Sweep E2E | **52/52** | SE-063 |
+| Specs E2E | 42 enregistrées en 5 batchs | SE-063 |
+| ESLint | ❌ **jamais exécuté** — « zéro `any` » vérifié par aucun outil | — |
+
+> `vue-tsc --noEmit` est embarqué dans `npm run build` : un build vert vaut type-check vert.
+
+## 📚 Métriques documentaires
+
+| Métrique | Valeur |
+|---|---|
+| Corpus | **15 documents** (10 en ordre de lecture + 5 satellites) |
+| Nouveau satellite | `ROADMAP.md` (DEC-156) |
+| Documents au-dessus du plafond H7 | **0** |
 
 ---
 
-## 📋 Kanban — S41 (à composer) · SE-063.b
+## 📋 Kanban — S41 · SE-064
 
-### ✅ Done — sprint S40 (clos)
+### ✅ Done — hors sprint (SE-064)
 
-| US | Risque | Commit | Objet |
-|---|---|---|---|
-| `J09a` | 🟠 | `4403bd5` | Season AniList |
-| `J09b` | 🟠 | `31ec1b4` | Season AniList (suite) |
-| `J10a` | 🔴 | `0ed68f6` | `fetchRelations` |
-| `J10b` | 🔴 | `65af6eb` | Relations sur AniList |
-| `J10c` | 🔴 | — | Bande relations (504 silencieux corrigé) |
-| `J10d` | 🔴 | `169f48d` | `syncAnimeUpdates` sur AniList, liste close de 9 champs |
-| `J11a-1` | 🟠 | `3b87dd6` | `fetchUpcomingSeason` · `fetchTopFinished` · `resolveNextSeason` |
-| `J11a-2` | 🔴 | `8234404` | `fetchRecPool` sur AniList |
-| `J11a-3` | 🔴 | `70a7b91` | `getSeasonNudges` sur relations AniList |
-| `J11b-1` | 🔴 | `2a24b3c` | Suppression du worker de relations en fond |
-| `J11b-2` | 🟢 | `90dd38a` | Suppression `useJikanApi.ts` |
-| `J11b-3` | 🟢 | `91b78eb` | Purge `helpers.ts` — dernière ligne de Jikan |
-| `J12-a` | 🟠 | `1e119c4` + `8250862` | Helper `installAniListMock` + 2 specs pilotes |
-| `J12-b` | 🟠 | `365a6aa` | 9 specs restantes — **sweep 52/52** |
-
-**Bilan Gemini S40 : merge au premier coup sur toutes les US, 0 correction majeure.**
-
-### ✅ Done — hors sprint (SE-063.b)
-
-| Chantier | Objet |
+| Chantier | Sortie |
 |---|---|
-| **Cleaning documentaire** | 12 documents réécrits, création de `DECISIONS_ARCHIVE.md`, `AUDIT.md` enrichi en append. **DEC-154.** Détail → `HISTORIQUE.md` |
+| **P0 « zéro zone d'ombre »** | 22 constats tranchés par grep. 7 soldés, 11 confirmés vivants, 6 nouveaux (AUD-26→31) |
+| **Micro-patch P0-6** | Stub `_startBackgroundRelationFetch` supprimé de `usePersistence.ts`. Porte verte ✅ |
+| **Déploiement `AGENTS.md`** | Racine `A-Anime` alignée : `installAniListMock` présent, patterns REST morts absents |
+| **PI Planning S41→S50** | → `ROADMAP.md`. DEC-155→159 |
 
 ### 🔄 In Progress
-Aucune. S40 clos, S41 non composé.
+Aucune. S41 non démarré.
 
-### 📝 To Do — préalable à la composition de S41
+### 📝 To Do — Sprint S41 · 🎯 **« Ce que j'ajoute reste »**
 
-| Ordre | Item | Note |
-|---|---|---|
-| 1 | **Déployer `AGENTS.md` à la racine de `A-Anime`** | 🔴 **Commit seul, avant toute US** (`AP-PROCESS-3`). Version en place = celle qui demande encore de mocker par URL |
-| 2 | **Triage `BENCHMARK.md`** — gel PO levé | 4 remesures, ~20 min (`BENCHMARK §8`) |
-| 3 | Instruire `AUD-25` (lecture composant This Season) | Avant toute US |
-| 4 | Composer S41 sur un Sprint Goal produit | Après triage seulement |
+> **Dérogation DEC-155 déclarée : 10 planifiées / 0 flex.** Aucun bêta-testeur n'entre avant
+> `US-PERSIST-P0` — il n'y a donc pas de retour à absorber pendant ce sprint.
 
-### 🗂️ Backlog S41
+| # | US | Risque | Effort | Impact utilisateur |
+|---|---|---|---|---|
+| 1 | **`US-PERSIST-P0`** | 🔴 | M | Ce que l'utilisateur ajoute survit à une déconnexion, un changement d'appareil, un vidage de cache |
+| 2 | **`US-FIRESTORE-LIMITS`** | 🔴 | M | La liste cesse de s'arrêter silencieusement à 100 titres ; un échec de sauvegarde devient visible |
+| 3 | `US-ONBOARD-PERSIST` | 🟠 | S | L'onboarding n'est plus rejoué à chaque connexion ni sur chaque appareil |
+| 4 | `US-MALIMPORT-FIX` | 🟠 | XS | Un import MAL de 300 titres atterrit dans les bons bacs, pas 100 % en Coming Soon |
+| 5 | `US-MONTH-FIX` | 🟢 | XS | La vue Mois redevient lisible en thème clair (titres blancs sur blanc aujourd'hui) |
+| 6 | `US-SEASON-1TAP` | 🟠 | S | This Season : 1 tap au lieu de 2 + modale. Skip session-only (DEC-159) |
+| 7 | `US-CARD-ORDER` | 🟢 | XS | On lit le titre **avant** de décider Skip/Add |
+| 8 | `US-REC-WHY-2LINES` | 🟢 | XS | La raison d'une reco n'est plus coupée en plein mot |
+| 9 | `US-TOUCH-A` | 🟢 | S | 6 contrôles deviennent tapables — zéro pixel visuel changé |
+| 10 | `US-TOUCH-B` | 🟢 | S | 24 à 48 cibles remontées à 44 px sur les écrans de tri |
 
-| Item | Priorité | Note |
-|---|---|---|
-| **« More like this » sans backend** | **P1** | Rebrancher sur `fetchRelationsByMalIdWithMeta` (DEC-152). **Pas de masquage** |
-| **`AUD-25`** — asymétrie d'action This Season / For You | **P1** | Lire le composant avant de spécifier |
-| **`B-07`** — 0/13 contrôles ≥ 44 × 44 px | **P1** | Seul item « taille » mesurable en l'état |
-| **`B-04`** — `.app-header` jamais rethémé | **P1** | Logo à 1,47:1 en mode sombre — l'app a l'air cassée. Effort petit |
-| `AUD-05` — signal de fraîcheur visible | P2 | 🟠, DEC d'arbitrage préalable requis (DEC-151) |
-| `AUD-24` — 12 specs démockées | P2 | Migration mécanique vers le helper (DEC-153) |
-| `J10e-a/b/c` — repli orphelins titre+année | P2 | 3 slices (DEC-145) |
-| `US-SYNOPSIS-VERSIONTOP` | P2 | Synopsis dans `ModalVersionTop.vue` |
-| `US-MODAL-NEXTEP-HIERARCHY` | P3 | Hiérarchie visuelle `ModalCalendarTop.vue` |
+### 🗂️ Backlog
+Cap S42 → S50 : **`ROADMAP.md`**. Aucun item de backlog n'est listé ici.
 
 ---
 
@@ -114,20 +82,28 @@ Aucune. S40 clos, S41 non composé.
 
 | Fait | Mesure | Date | Méthode |
 |---|---|---|---|
-| AniList — Recherche | **fonctionnelle en production** | **SE-063.b** | constat PO |
-| AniList — Discover This Season | **fonctionnel, contenu réel** | **SE-063** | captures PO |
-| AniList — For You | **fonctionnel, badges et signaux OK** | **SE-063** | captures PO |
-| AniList — Library Upcoming | **fonctionnel** | **SE-063** | captures PO |
+| AniList — Recherche · This Season · For You · Library Upcoming | **fonctionnels** | SE-063.b | constat PO |
+| Firestore — base cible | `ai-studio-58fc34cb-5a66-41ef-afc5-08d725019708`, europe-west2 | **SE-064** | console Firebase |
+| Firestore — règles déployées | **identiques au dépôt**, déployées le 14/05/2026 | **SE-064** | console → Sécurité |
+| Firestore — moteur de règles | 176 autorisations · **0 refus · 0 erreur** sur 7 j | **SE-064** | console → Utilisation |
+| Firestore — trafic app | lecture `useFirestore.ts:60` · écriture `:85`, WebChannel 200 | **SE-064** | DevTools Réseau |
 
-> AniList est la seule dépendance externe de données. Le constat visuel dans l'app suffit à la remesure.
+> ⚠️ Un `channel?VER=8` en 200 **ne prouve pas** le succès : les erreurs Firestore voyagent
+> dans le flux WebChannel, jamais dans le statut HTTP.
 
 ---
 
 ## 🕳️ Trous ouverts
 
-- **ESLint jamais exécuté** — la promesse « zéro `any` » (R-CODE-1) n'est vérifiée par aucun outil de la porte verte.
-- **12 specs E2E vertes tapant le réseau réel** — `AUD-24`. Le sweep n'est pas déterministe.
-- **Deux signaux `stale` concurrents et morts** : `useAniListApi.ts:23,338` et `usePersistence.ts:18,192,305`. Zéro consommateur `.vue`. → `AUD-05`, DEC d'arbitrage préalable requis.
-- **`usePersistence.ts:14-15,287`** — stub mort `_startBackgroundRelationFetch`. Code mort confirmé. → constat `AUDIT.md`, aucune US.
-- **⚠️ Non revérifié par lecture de code (SE-063.b)** — l'atterrissage de l'onboarding a été documenté comme sain sur la seule base de DEC-124/DEC-131 et du sweep vert, **sans grep de `buildSeedEntry`**. Signature non contractualisée (`TYPES_CONTRACT.md §10`). À lever avant toute US touchant l'onboarding.
-- **11 constats d'audit à l'état inconnu** — `AUD-02/03/06/07/09/10/11/13/14/15/16` n'ont pas été relus depuis leur campagne. Ils ne sont **ni soldés ni confirmés** : toute conversion en US démarre par un grep.
+1. **🔴 `US-PERSIST-P0` non livrée** — aucun accès bêta-testeur avant sa livraison **et** sa
+   vérification par le PO sur deux appareils.
+2. **⚠️ Un seul grep de la session P0 n'a pas été exécuté** — `_syncAnimeUpdates`
+   (`usePersistence.ts:13`) est un stub vide `await`é l.284. `AUDIT.md` (SE-061/062) situe la
+   vraie sync en 4 points vivants (`App.vue:52`, `AnimeModal.vue:134`/`:145`,
+   `DiscoverExplorePage.vue:225`), ce qui en ferait un doublon mort — **non prouvé, AP-PROCESS-2**.
+   Commande de levée : `findstr /n /s /c:"syncAnimeUpdates" src\*.ts src\*.vue`
+3. **ESLint jamais exécuté** — R-CODE-1 non vérifiée. → S43.
+4. **12 specs E2E vertes tapant le réseau réel** (`AUD-24`) — sweep non déterministe. → S43.
+5. **8 documents fossiles dans `schedules`** (`AUD-31`) — purge console manuelle avant lancement public.
+6. **`ARCHITECTURE_TECHNIQUE §6`** — la séquence de boot documente une étape « sync » qui
+   pourrait ne rien faire. À corriger après levée du trou n°2.
