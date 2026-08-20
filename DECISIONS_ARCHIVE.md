@@ -82,6 +82,14 @@ Décisions de **découpage de travaux**, sans portée technique résiduelle. Les
 
 ---
 
+
+| **DEC-151** | `AUD-05` (signal de fraîcheur visible) exige un **DEC d'arbitrage préalable** sur la source unique du signal `stale`, et passe 🟠 | Deux signaux `stale` concurrents et morts coexistent → violerait DEC-52 | DEC-151 est superseded par DEC-158
+
+
+
+
+---
+
 ## Leçons extraites — vivent ailleurs, ne pas les rejouer ici
 
 | Leçon | Document propriétaire |
