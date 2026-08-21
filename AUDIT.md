@@ -333,3 +333,26 @@ La campagne S38 avait déjà écrit la conclusion : *le produit n'a pas un probl
 un problème de véracité.* Aucun de ces défauts ne produit de crash — c'est précisément pour
 cela qu'ils ont survécu à quarante sprints. Un utilisateur ne signale pas un mensonge
 silencieux : il arrête d'utiliser l'app.
+# Campagne SE-065 — clôture AUD-30
+
+## Constat corrigé
+
+| ID | Correction |
+|---|---|
+| **AUD-30** | ✅ **FERMÉ — et les deux causes écrites étaient fausses.** La cause (2) affirmait « le cloud est effacé par l'app elle-même ». **Non.** L'écriture au logout n'atteint jamais Firestore : `useFirestore.ts:81` (`if (!auth.currentUser) return`) sort en silence, `currentUser` étant déjà `null` après `signOut()`. Le constat contredisait sa propre preuve — SE-064 avait vu `schedules` peuplé en console. **Les 0 refus du moteur de règles s'expliquent par l'absence totale d'écriture, pas par une écriture autorisée.** Les deux vraies causes : **(1)** `App.vue:38-41` appelle `loadFromDatabase()` dans `onMounted`, une seule fois, alors que l'utilisateur est encore sur `/login` sans `currentUser` ; la connexion étant une navigation SPA, `App.vue` ne se remonte jamais et la lecture ne rejoue pas. **(2)** `AppHeader.vue:58` `clearAll()` armait le watcher avant la purge ; la sauvegarde différée recréait `aanime_calendar = {timestamp: now, data: []}` 1 s plus tard, bloquant à jamais `firestoreData.timestamp > cacheTimestamp`. Soldé par `US-PERSIST-P0b` + `US-PERSIST-P0a2` | vérifié par le PO en parcours réel |
+| **AUD-17** | 🔁 **ROUVERT puis soldé.** Le constat visait **deux** stubs. Seul `_startBackgroundRelationFetch` avait été supprimé (DEC-147) ; `_syncAnimeUpdates` a survécu jusqu'à SE-065. Fermeture prématurée à ne pas reproduire : un constat portant sur N éléments ne se ferme qu'après vérification des N | grep `syncAnimeUpdates` |
+| **AUD-12** | ✅ **CONFIRMÉ VIVANT.** `localStorage.setItem` est bien **hors du `try`** dans `saveToDatabase`. Un quota dépassé empêcherait la sauvegarde Firestore qui suit, sans message. Non corrigé — à slotter | lecture complète de `usePersistence.ts` |
+| **AUD-02** | ✅ **Confirmé soldé en production.** La chaîne d'erreur remonte intégralement jusqu'au toast : capture console du PO, `useFirestore.ts:88` → `usePersistence.ts:130` | console prod |
+
+## Constats nouveaux — SE-065
+
+| ID | Constat | Impact utilisateur | Destination |
+|---|---|---|---|
+| **AUD-32** | 🟠 `POST graphql.anilist.co` répond **429 Too Many Requests** en usage réel (ajout de plusieurs animes d'affilée). Le message `blocked by CORS policy` qui suit est un **artefact** : une réponse 429 ne porte pas d'en-tête CORS. **Ne pas ouvrir d'US CORS** | Les animes ajoutés n'apparaissent pas dans Week sans actualiser la page | `US-ANILIST-429` — S41 |
+| **AUD-33** | 🟢 `usePersistence.guard.spec.ts` dépend de son **ordre interne** : le watcher étant module-level, seul le premier test du fichier dispose d'un watcher vivant. Un déplacement du test rendrait la garde faussement verte. Commentaire de garde posé dans le fichier | Aucun — piège de test | Aucune US, note permanente |
+
+## Rappel de méthode confirmé
+
+`AUD-29` (`useFirestore.ts:81` retourne sans sauvegarder pendant que l'app affiche « Saved ») et
+`AUD-27` (plafond 100 entrées + timestamp monotone) sont **tous deux observés en production**
+sur le compte du PO. Ils passent en tête de S41.
