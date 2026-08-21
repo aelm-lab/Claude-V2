@@ -69,7 +69,7 @@ Si l'US en demande plus, le Tech Lead l'aura annoncé **en gras dans le titre de
 **R-CODE-1 — Zéro `any`.** Aucun `any` implicite ou explicite, aucun `as any`, aucun `@ts-ignore`. Tout type vient du contrat fourni dans l'US.
 `eslint-disable-next-line` **ne corrige pas** `TS6133` (variable inutilisée) : retirer la variable ou la préfixer `_`.
 
-**R-CODE-2 — Fixtures de test typées.** Jamais `as unknown as T` pour une fixture. Utiliser le helper `makeAnime(overrides: Partial<AnimeEntry>)`.
+**R-CODE-2 — Fixtures de test typées.** Jamais `as unknown as T`, jamais `as AnimeEntry` pour une fixture de production. Le helper `makeAnime()` **n'existe plus** — ne pas le réintroduire. Une fixture `AnimeEntry` s'écrit en littéral complet, tous champs obligatoires renseignés ; le Tech Lead la fournit dans l'US. Si un type fourni dans l'US est refusé par `vue-tsc`, **STOP et signale-le** : ne jamais affaiblir un type de production pour faire compiler un test.
 
 **R-CODE-3 — Séparation des responsabilités.**
 - Composant `.vue` : UI + réactivité locale uniquement. **Jamais** de `fetch`, de `localStorage`/IndexedDB, ni de logique métier lourde.
@@ -84,7 +84,8 @@ Si l'US en demande plus, le Tech Lead l'aura annoncé **en gras dans le titre de
 - `<input file>.click()` pour l'import MyAnimeList ;
 - `DOMParser` pour parser du XML (pur) ;
 - `getElementById('boot-loader')?.remove()` dans le `finally` du `onMounted` d'`App.vue` (le loader pré-Vue vit dans `index.html`, hors du scope Vue).
-
+- `window.location.assign()` pour l'entrée et la sortie de session (`AppHeader.vue` logout, `router/index.ts` garde de connexion) — DEC-160.
+- 
 **R-CODE-5 — Gestion d'erreur.** Chaque fonction `async` a un `try/catch` explicite et expose un état d'erreur réactif. Ne jamais avaler une erreur en silence, sans log ni état.
 🔴 **Côté AniList : un `429` n'est PAS une panne.** Il n'incrémente jamais le compteur du disjoncteur — une limite de débit se retente, elle ne coupe pas le service.
 🔴 **Un `catch` qui renvoie un tableau vide est interdit** : il est indistinguable d'un résultat vide légitime. Toute fonction réseau retourne `{ data, failed }`.
