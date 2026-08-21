@@ -131,6 +131,10 @@ Il est *indistinguable* d'un résultat vide légitime : aucune erreur, aucun tes
 | **AP-PROCESS-2** | **Inférence promue en fait par son entrée dans un document.** Un test déclaré « rouge qualifié » sur la seule lecture de son code — il était vert. Un chemin de fichier déduit d'un handoff au lieu d'être lu | 🟠 | **Un test n'est rouge que sur sa sortie d'exécution.** Sans sortie collée par le PO : « suspecté », jamais « qualifié ». **Un chemin de fichier se lit, ne se déduit pas.** Le mot choisi dans `STATE.md` engage : il sera lu comme un fait mesuré à la session suivante |
 | **AP-PROCESS-3** | **Modification documentaire non isolée → faux signal de dérive de périmètre.** Deux occurrences : patch doc envoyé dans le même message qu'une US, puis déploiement d'`AGENTS.md` non commité, embarqué par le commit suivant de l'agent | 🟠 | Le déploiement d'`AGENTS.md` se **commite seul, en clôture de session, avant toute nouvelle US**. Un `git status` vide est **condition d'ouverture** d'une livraison. Un fichier inattendu dans un diffstat se **lit** avant d'être imputé |
 | — | **Sortie de test d'un run antérieur présentée comme fraîche** (2 occurrences) | 🟠 | Seule la machine PO fait foi (R1) |
+**AP-PROCESS-4 — Jamais d'US non envoyable.** Un bloc `## [US-XXX]` n'est produit que s'il est
+collable à Gemini immédiatement : test de fidélité inclus, types vérifiés contre le code source.
+S'il manque un fichier, on demande le fichier — on ne rédige pas un squelette.
+*Origine : une US livrée sans son test de fidélité a coûté un tour de conversation entier.*
 
 ## 9. Fidélité fonctionnelle
 
