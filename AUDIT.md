@@ -356,3 +356,25 @@ silencieux : il arrête d'utiliser l'app.
 `AUD-29` (`useFirestore.ts:81` retourne sans sauvegarder pendant que l'app affiche « Saved ») et
 `AUD-27` (plafond 100 entrées + timestamp monotone) sont **tous deux observés en production**
 sur le compte du PO. Ils passent en tête de S41.
+
+
+# Campagne SE-065 — exécution S41 (persistance)
+
+## Constats soldés
+
+| ID | Verdict | Preuve |
+|---|---|---|
+| **AUD-13** | ✅ **Soldé.** `AppHeader.vue` ne pilote plus l'état mémoire : `clearAll()` supprimé, remplacé par un rechargement complet | `US-PERSIST-P0b` |
+| **AUD-17** | ✅ **Soldé pour de bon.** La clôture antérieure était partielle : seul `_startBackgroundRelationFetch` avait été supprimé. `_syncAnimeUpdates` l'est depuis SE-065. La vraie sync vit en `useSync.ts:58`, appelée en 4 points vivants | micro-patch DEC-128 |
+| **AUD-30** | ✅ **Soldé, et le diagnostic de SE-064 était à moitié faux.** Cause (1) confirmée. Cause (2) **requalifiée** : le cloud n'est jamais effacé — `useFirestore.ts:81` (`if (!auth.currentUser) return`) bloque l'écriture au logout. La corruption est **100 % locale** et agit en **bloquant la lecture**, pas en effaçant l'écriture. D'où les 0 refus côté règles : il n'y a jamais eu d'écriture à refuser. **Deuxième cause découverte en SE-065** : `loadFromDatabase()` ne rejoue jamais après connexion | `US-PERSIST-P0b` + `P0a2` |
+| **AUD-12** | ✅ **Confirmé vivant, puis toléré.** `localStorage.setItem` est bien hors du `try` dans `saveToDatabase`. Impact réel faible depuis `P0b` : une écriture vide ne fait plus autorité. **Reste ouvert, non prioritaire** | lecture complète du fichier |
+
+## Constats nouveaux — SE-065
+
+| ID | Constat | Impact utilisateur | Destination |
+|---|---|---|---|
+| **AUD-32** | 🔴 **Écriture Firestore refusée en production.** `Firestore Error: {"error":"Missing or insufficient permissions","operationType":"write","path":"schedules/<uid>"}`, remontée par `useFirestore.ts:39` puis `usePersistence.ts:130`. Le document ID est un UID Auth valide : la règle `uid == documentId` n'est donc pas en cause. Reste `data.size() <= 100` ou le timestamp monotone (`AUD-27`) — **non tranché** | Une sauvegarde échoue ; le toast d'erreur s'affiche bien, mais la donnée cloud diverge du local | `US-FIRESTORE-LIMITS` — S41. 🔴 **Lire `firestore.rules` et compter les entrées du document AVANT de rédiger** |
+| **AUD-33** | 🟠 **AniList `429 Too Many Requests` au démarrage**, suivi d'erreurs CORS (`Access-Control-Allow-Origin` absent sur la réponse d'erreur). Plusieurs occurrences par chargement, depuis `anilistClient.ts:116` | Les animes n'apparaissent pas dans Week au premier chargement ; il faut actualiser | À instruire en SE-066 |
+| **AUD-34** | 🔴 **`TYPES_CONTRACT.md §9` affirmait `addAnime(input: Partial<AnimeEntry>)`.** Le vrai type est `AddAnimeInput` (14 champs obligatoires). Une US 🔴 a été livrée rouge sur la foi du contrat | Aucun — mais un aller-retour Gemini perdu | Corrigé en SE-065 |
+| **AUD-35** | 🔴 **`AGENTS.md R-CODE-2` impose le helper `makeAnime()`, supprimé du dépôt** (purge `helpers.ts`, `J11b-3`). Gemini a proposé de l'utiliser pour contourner un blocage | Aucun — mais l'agent opère sous une règle sans objet | Corrigé en SE-065 |
+| **AUD-36** | 🔴 **`US-PERSIST-P0a` est verte et sans effet.** Le correctif visait `to.meta.guestOnly && isLoggedIn`, branche jamais atteinte lors d'une connexion réelle. Le test de fidélité testait la même mauvaise branche : **vert par construction**. Aucune porte de qualité ne peut détecter ce défaut — c'est une erreur de spec | Aucun — code inoffensif, mais mort | Suppression à instruire en SE-066 |
