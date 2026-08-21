@@ -146,3 +146,28 @@ Il est *indistinguable* d'un résultat vide légitime : aucune erreur, aucun tes
 1. **Le vert ne prouve rien sur l'utilisabilité.** Type-check + tests + build au vert ≠ application fonctionnelle ≠ application utilisable. Quatre bugs runtime et toute la famille des events désalignés sont passés au vert intégral. D'où R2, R3, R4 et l'audit live du PO.
 2. **Un cadre d'audit identique révèle les angles morts.** Un dual audit (deux auditeurs, mêmes axes, même barème, même format) a montré que **chacun avait raté le finding n°1 de l'autre**. Sans cadre commun strict, on ne compare que du bruit.
 3. **Les incidents les plus coûteux ne sont pas des défauts de code, mais de fraîcheur de fait.** Une panne externe jamais remesurée (5 sprints gelés) et un backlog jamais confronté au code (3 US planifiées sur du déjà livré) ont coûté plus que tous les bugs de typage réunis.
+### AP-PROCESS-4 — Une US incomplète ne s'écrit pas
+
+Un bloc `## [US-XXX]` n'est produit que s'il est **immédiatement envoyable à Gemini**. Pas de
+brouillon, pas de « test de fidélité à suivre », pas de placeholder. S'il manque un fichier
+pour rédiger : demander le fichier, ne rien écrire.
+*Occurrence : SE-065, une US livrée sans son `.spec.ts`, capacité de conversation perdue.*
+
+### AP-PROCESS-5 — Un test de fidélité vert ne prouve pas que la spec vise la bonne branche
+
+La porte verte prouve que le code fait ce que le test dit. Elle ne prouve **jamais** que le
+test dit la bonne chose. Sur une US 🔴 d'orchestration, l'assertion doit porter sur la
+**séquence réelle** (quelle navigation, depuis quel état, déclenchée par quoi), pas sur la
+condition telle qu'on l'imagine.
+*Occurrence : SE-065, `US-PERSIST-P0a` mergée 270/270 verte, zéro effet — spec et test visaient
+tous deux `to.meta.guestOnly && isLoggedIn`, branche jamais atteinte pendant une connexion.*
+**Remède : DEC-161.**
+
+### AP-DIAG-3 — Chercher l'état impossible, pas rejouer le parcours
+
+Un bug qui survit des dizaines de sprints se cache dans une combinaison d'états que le
+développement ne produit jamais. Construire l'état artificiellement bat le fait de rejouer le
+parcours utilisateur.
+*Occurrence : `AUD-30` a résisté à trois hypothèses ; il est tombé en 30 s avec
+« `localStorage` vidé à la main + `F5` sans se déconnecter » — page chargée en état connecté
+avec un cache vierge. En dev, le cache est toujours chaud.*
