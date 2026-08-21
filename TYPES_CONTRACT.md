@@ -14,8 +14,8 @@
 - **`reconcileWithDatabase` n'existe plus.** La réconciliation au chargement se fait dans `loadFromDatabase`.
 - **`startBackgroundRelationFetch` n'existe plus** (DEC-147).
 - **`BASE_URL`, `fetchWithRetry`, `_resetJikanQueue` n'existent plus** dans `utils/helpers` — une spec de surface (`helpers.spec.ts`) échoue si un export réseau y réapparaît.
-
-> Les trois premiers ont été affirmés à tort par un handoff, puis réfutés par grep. **Un handoff est une source secondaire faillible : le code réel tranche** (R3).
+- - **`addAnime` n'accepte PAS un `Partial<AnimeEntry>`.** Le type réel est `AddAnimeInput`, défini dans `src/stores/anime.ts`. Une fixture incomplète est rejetée par `vue-tsc` — c'est voulu (AUD-14).
+-  Les trois premiers ont été affirmés à tort par un handoff, puis réfutés par grep. **Un handoff est une source secondaire faillible : le code réel tranche** (R3).
 
 ### Règles de forme, opposables à toute US
 
@@ -319,8 +319,8 @@ isOnHiatus(anime: AnimeEntry): boolean
 // stores/anime (actions)
 setData(data: AnimeEntry[]): void            // PAS de setAllData
 clearAll(): void
-addAnime(input: Partial<AnimeEntry>): void   // upsert — reset episodeOverride (DEC-84)
-addAnimeSilent(input: Partial<AnimeEntry>): void
+addAnime(input: AddAnimeInput): void         // ⚠️ PAS Partial — 14 champs OBLIGATOIRES
+addAnimeSilent(input: AddAnimeInput): void   // AddAnimeInput ≈ Omit<AnimeEntry,'id'|'state'> + id/state optionnels
 removeAnime(id: number): void
 setDate(date: Date): void
 
