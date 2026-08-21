@@ -12,11 +12,11 @@
 
 | | |
 |---|---|
-| Session | **SE-064** — hors sprint (chantier P0 « zéro zone d'ombre ») |
-| Sprint | **S41 composé, non démarré.** Démarre en SE-065 |
-| Version | **v0.34.0** — aucun bump (aucune US livrée) |
-| Commit main | `365a6aa` + micro-patch P0-6 (DEC-128, non commité au moment de la clôture) |
-| Prochaine session | **SE-065 = ouverture S41**, US n°1 = `US-PERSIST-P0` |
+| Session | **SE-065** — ouverture et exécution de S41 |
+| Sprint | **S41 démarré** — 3 US mergées sur 10 |
+| Version | **v0.34.0** — pas de bump : le sprint n'est pas clos |
+| Commit main | `27ee0ca` |
+| Prochaine session | **SE-066** — `US-ONBOARD-PERSIST` puis `US-FIRESTORE-LIMITS` |
 
 ---
 
@@ -24,9 +24,9 @@
 
 | Métrique | Valeur | Fraîcheur |
 |---|---|---|
-| Tests unitaires | **265** / 29 fichiers | SE-064 (micro-patch P0-6) |
-| Build | **180 modules**, `index` 368,71 kB (gzip 108,15) | SE-064 |
-| Sweep E2E | **52/52** | SE-063 |
+| Tests unitaires | **271** / 30 fichiers | SE-065 |
+| Build | **180 modules**, `index` 368,76 kB (gzip 108,15) | SE-065 |
+| Sweep E2E | **52/52** | SE-063 — non rejoué en SE-065 |
 | Specs E2E | 42 enregistrées en 5 batchs | SE-063 |
 | ESLint | ❌ **jamais exécuté** — « zéro `any` » vérifié par aucun outil | — |
 
@@ -37,42 +37,42 @@
 | Métrique | Valeur |
 |---|---|
 | Corpus | **15 documents** (10 en ordre de lecture + 5 satellites) |
-| Nouveau satellite | `ROADMAP.md` (DEC-156) |
 | Documents au-dessus du plafond H7 | **0** |
 
 ---
 
-## 📋 Kanban — S41 · SE-064
+## 📋 Kanban — S41 · SE-065
 
-### ✅ Done — hors sprint (SE-064)
+### ✅ Done — Sprint S41
 
-| Chantier | Sortie |
-|---|---|
-| **P0 « zéro zone d'ombre »** | 22 constats tranchés par grep. 7 soldés, 11 confirmés vivants, 6 nouveaux (AUD-26→31) |
-| **Micro-patch P0-6** | Stub `_startBackgroundRelationFetch` supprimé de `usePersistence.ts`. Porte verte ✅ |
-| **Déploiement `AGENTS.md`** | Racine `A-Anime` alignée : `installAniListMock` présent, patterns REST morts absents |
-| **PI Planning S41→S50** | → `ROADMAP.md`. DEC-155→159 |
+| US | Sortie | Impact utilisateur livré |
+|---|---|---|
+| **`US-PERSIST-P0b`** | 3 fichiers · 268 tests | Se déconnecter ne détruit plus la bibliothèque locale ; tout appareil déjà cassé se répare seul au chargement suivant |
+| **`US-PERSIST-P0a`** | 2 fichiers · 270 tests | ⚠️ **Aucun** — branche jamais atteinte (voir Trou n°1) |
+| **`US-PERSIST-P0a2`** | 2 fichiers · 271 tests | **La bibliothèque revient à la connexion.** Vérifié par le PO en conditions réelles |
+
+**Micro-patchs DEC-128 appliqués :** suppression du stub mort `_syncAnimeUpdates`
+(`usePersistence.ts`) · correction de la fixture `addAnime` dans `usePersistence.guard.spec.ts`.
 
 ### 🔄 In Progress
-Aucune. S41 non démarré.
+Aucune.
 
 ### 📝 To Do — Sprint S41 · 🎯 **« Ce que j'ajoute reste »**
 
 > **Dérogation DEC-155 déclarée : 10 planifiées / 0 flex.** Aucun bêta-testeur n'entre avant
-> `US-PERSIST-P0` — il n'y a donc pas de retour à absorber pendant ce sprint.
+> que les trous n°2 et n°3 soient fermés.
 
 | # | US | Risque | Effort | Impact utilisateur |
 |---|---|---|---|---|
-| 1 | **`US-PERSIST-P0`** | 🔴 | M | Ce que l'utilisateur ajoute survit à une déconnexion, un changement d'appareil, un vidage de cache |
-| 2 | **`US-FIRESTORE-LIMITS`** | 🔴 | M | La liste cesse de s'arrêter silencieusement à 100 titres ; un échec de sauvegarde devient visible |
-| 3 | `US-ONBOARD-PERSIST` | 🟠 | S | L'onboarding n'est plus rejoué à chaque connexion ni sur chaque appareil |
-| 4 | `US-MALIMPORT-FIX` | 🟠 | XS | Un import MAL de 300 titres atterrit dans les bons bacs, pas 100 % en Coming Soon |
-| 5 | `US-MONTH-FIX` | 🟢 | XS | La vue Mois redevient lisible en thème clair (titres blancs sur blanc aujourd'hui) |
-| 6 | `US-SEASON-1TAP` | 🟠 | S | This Season : 1 tap au lieu de 2 + modale. Skip session-only (DEC-159) |
-| 7 | `US-CARD-ORDER` | 🟢 | XS | On lit le titre **avant** de décider Skip/Add |
-| 8 | `US-REC-WHY-2LINES` | 🟢 | XS | La raison d'une reco n'est plus coupée en plein mot |
-| 9 | `US-TOUCH-A` | 🟢 | S | 6 contrôles deviennent tapables — zéro pixel visuel changé |
-| 10 | `US-TOUCH-B` | 🟢 | S | 24 à 48 cibles remontées à 44 px sur les écrans de tri |
+| 1 | **`US-ONBOARD-PERSIST`** | 🟠 | S | L'onboarding cesse d'être rejoué à chaque connexion et sur chaque appareil |
+| 2 | **`US-FIRESTORE-LIMITS`** | 🔴 | M | Les sauvegardes cessent d'être refusées en silence ; la liste ne s'arrête plus à 100 titres |
+| 3 | `US-MALIMPORT-FIX` | 🟠 | XS | Un import MAL de 300 titres atterrit dans les bons bacs |
+| 4 | `US-MONTH-FIX` | 🟢 | XS | La vue Mois redevient lisible en thème clair |
+| 5 | `US-SEASON-1TAP` | 🟠 | S | This Season : 1 tap au lieu de 2 + modale. Skip session-only (DEC-159) |
+| 6 | `US-CARD-ORDER` | 🟢 | XS | On lit le titre **avant** de décider Skip/Add |
+| 7 | `US-REC-WHY-2LINES` | 🟢 | XS | La raison d'une reco n'est plus coupée en plein mot |
+| 8 | `US-TOUCH-A` | 🟢 | S | 6 contrôles deviennent tapables — zéro pixel visuel changé |
+| 9 | `US-TOUCH-B` | 🟢 | S | 24 à 48 cibles remontées à 44 px sur les écrans de tri |
 
 ### 🗂️ Backlog
 Cap S42 → S50 : **`ROADMAP.md`**. Aucun item de backlog n'est listé ici.
@@ -83,11 +83,11 @@ Cap S42 → S50 : **`ROADMAP.md`**. Aucun item de backlog n'est listé ici.
 
 | Fait | Mesure | Date | Méthode |
 |---|---|---|---|
-| AniList — Recherche · This Season · For You · Library Upcoming | **fonctionnels** | SE-063.b | constat PO |
-| Firestore — base cible | `ai-studio-58fc34cb-5a66-41ef-afc5-08d725019708`, europe-west2 | **SE-064** | console Firebase |
-| Firestore — règles déployées | **identiques au dépôt**, déployées le 14/05/2026 | **SE-064** | console → Sécurité |
-| Firestore — moteur de règles | 176 autorisations · **0 refus · 0 erreur** sur 7 j | **SE-064** | console → Utilisation |
-| Firestore — trafic app | lecture `useFirestore.ts:60` · écriture `:85`, WebChannel 200 | **SE-064** | DevTools Réseau |
+| AniList — Recherche · This Season | **fonctionnels** | **SE-065** | constat PO |
+| AniList — quota | 🔴 **`429 Too Many Requests` au boot**, suivi d'erreurs CORS | **SE-065** | console DevTools PO |
+| Firestore — écriture | 🔴 **refusée** : `Missing or insufficient permissions` sur `schedules/<uid>` | **SE-065** | console DevTools PO |
+| Firestore — base cible | `ai-studio-58fc34cb-…`, europe-west2 | SE-064 | console Firebase |
+| Firestore — règles déployées | identiques au dépôt, déployées le 14/05/2026 | SE-064 | console → Sécurité |
 
 > ⚠️ Un `channel?VER=8` en 200 **ne prouve pas** le succès : les erreurs Firestore voyagent
 > dans le flux WebChannel, jamais dans le statut HTTP.
@@ -96,15 +96,17 @@ Cap S42 → S50 : **`ROADMAP.md`**. Aucun item de backlog n'est listé ici.
 
 ## 🕳️ Trous ouverts
 
-1. **🔴 `US-PERSIST-P0` non livrée** — aucun accès bêta-testeur avant sa livraison **et** sa
-   vérification par le PO sur deux appareils.
-2. **⚠️ Un seul grep de la session P0 n'a pas été exécuté** — `_syncAnimeUpdates`
-   (`usePersistence.ts:13`) est un stub vide `await`é l.284. `AUDIT.md` (SE-061/062) situe la
-   vraie sync en 4 points vivants (`App.vue:52`, `AnimeModal.vue:134`/`:145`,
-   `DiscoverExplorePage.vue:225`), ce qui en ferait un doublon mort — **non prouvé, AP-PROCESS-2**.
-   Commande de levée : `findstr /n /s /c:"syncAnimeUpdates" src\*.ts src\*.vue`
-3. **ESLint jamais exécuté** — R-CODE-1 non vérifiée. → S43.
-4. **12 specs E2E vertes tapant le réseau réel** (`AUD-24`) — sweep non déterministe. → S43.
-5. **8 documents fossiles dans `schedules`** (`AUD-31`) — purge console manuelle avant lancement public.
-6. **`ARCHITECTURE_TECHNIQUE §6`** — la séquence de boot documente une étape « sync » qui
-   pourrait ne rien faire. À corriger après levée du trou n°2.
+1. **🔴 `US-PERSIST-P0a` est une US morte.** Sa branche (`to.meta.guestOnly && isLoggedIn`)
+   n'est jamais atteinte lors d'une connexion réelle. Elle est **inoffensive** et couvre son
+   propre cas (utilisateur connecté visitant `/login`). `P0a2` porte le correctif réel.
+   **Décision de suppression à instruire en SE-066** — ne pas supprimer sans US.
+2. **🔴 `AUD-32` — écritures Firestore refusées.** Une sauvegarde réelle a été rejetée par le
+   serveur. Cause non établie. **Bloquant bêta.** → `US-FIRESTORE-LIMITS`.
+3. **🟠 `AUD-33` — AniList `429` au démarrage.** Le PO doit actualiser pour voir ses animes
+   dans Week. Cause non établie. → à instruire en SE-066.
+4. **🟠 `AUD-17` rouvert** — le stub `_startBackgroundRelationFetch` avait été supprimé, pas
+   `_syncAnimeUpdates`. Ce dernier l'est depuis SE-065 : **le constat est maintenant soldé
+   pour de bon.**
+5. **ESLint jamais exécuté** — `R-CODE-1` non vérifiée. → S43.
+6. **12 specs E2E vertes tapant le réseau réel** (`AUD-24`) — sweep non déterministe. → S43.
+7. **8 documents fossiles dans `schedules`** (`AUD-31`) — purge console avant lancement public.
