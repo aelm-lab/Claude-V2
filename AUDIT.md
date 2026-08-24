@@ -378,3 +378,45 @@ sur le compte du PO. Ils passent en tête de S41.
 | **AUD-34** | 🔴 **`TYPES_CONTRACT.md §9` affirmait `addAnime(input: Partial<AnimeEntry>)`.** Le vrai type est `AddAnimeInput` (14 champs obligatoires). Une US 🔴 a été livrée rouge sur la foi du contrat | Aucun — mais un aller-retour Gemini perdu | Corrigé en SE-065 |
 | **AUD-35** | 🔴 **`AGENTS.md R-CODE-2` impose le helper `makeAnime()`, supprimé du dépôt** (purge `helpers.ts`, `J11b-3`). Gemini a proposé de l'utiliser pour contourner un blocage | Aucun — mais l'agent opère sous une règle sans objet | Corrigé en SE-065 |
 | **AUD-36** | 🔴 **`US-PERSIST-P0a` est verte et sans effet.** Le correctif visait `to.meta.guestOnly && isLoggedIn`, branche jamais atteinte lors d'une connexion réelle. Le test de fidélité testait la même mauvaise branche : **vert par construction**. Aucune porte de qualité ne peut détecter ce défaut — c'est une erreur de spec | Aucun — code inoffensif, mais mort | Suppression à instruire en SE-066 |
+# Campagne SE-066 — exécution S41 (onboarding, import MAL, saison)
+
+## 🔴 Note de réconciliation d'identifiants — à lire avant d'utiliser AUD-32 / AUD-33
+
+Deux campagnes de ce fichier portent le titre « SE-065 » et attribuent **les mêmes numéros à
+des constats différents**. `AUDIT.md` étant append-only, rien n'est réécrit. Arbitrage retenu,
+aligné sur `STATE.md` :
+
+| ID | Constat qui garde l'ID | Constat évincé |
+|---|---|---|
+| **AUD-32** | Écriture Firestore refusée en production 🔴 | AniList 429 |
+| **AUD-33** | AniList 429 au boot 🟠 | Piège d'ordre `usePersistence.guard.spec.ts` |
+
+Le piège d'ordre de `usePersistence.guard.spec.ts` **reste vrai et sans ID** : le watcher étant
+module-level, seul le premier test du fichier dispose d'un watcher vivant. Le commentaire de
+garde est posé dans le fichier — c'est sa seule trace opposable. Aucune US.
+
+**Leçon de méthode :** un identifiant attribué deux fois coûte plus cher qu'un trou de
+numérotation. Un `AUD-xx` neuf se prend **au-dessus du max constaté**, jamais au premier
+numéro qui paraît libre.
+
+## Constat requalifié
+
+| ID | Correction |
+|---|---|
+| **AUD-13** | 🔁 **Marqué ✅ Soldé à tort en campagne « SE-065 — exécution S41 ».** `US-PERSIST-P0b` n'avait supprimé que `clearAll()`. La purge `localStorage` de toutes les clés `aanime_` a survécu dans `AppHeader.vue:54-56` jusqu'à `US-ONBOARD-PERSIST-A`. **Soldé pour de bon depuis `b509ca0`.** Deuxième clôture prématurée du fichier après `AUD-17` : un constat portant sur N éléments ne se ferme qu'après vérification des N |
+
+## Constats nouveaux — SE-066
+
+| ID | Constat | Impact utilisateur | Destination |
+|---|---|---|---|
+| **AUD-37** | 🟠 Un anime MAL au statut « Watching » atterrit en Plan to Watch, pas au calendrier. **Correct techniquement** : MAL n'exporte aucun jour de diffusion, et `addAnime` refuse toute entrée `state:'calendar'` sans `day` (garde anti-`AUD-01`). **Non vérifié :** `useSync` récupère-t-il ensuite le `day` chez AniList et fait-il remonter l'entrée au calendrier ? | « J'ai importé mes 40 séries en cours et elles sont toutes en *à voir plus tard* » | **À trancher sur un vrai fichier MAL, pas sur du code** |
+| **AUD-38** | ✅ **Corrigé par `US-SEASON-SKIP-SESSION` (`80f9d11`).** `dismissRec` appelait `trackNegative` sans condition — DEC-159 était violée en production depuis sa rédaction | Écarter un titre de This Season le bannissait définitivement de For You. `localStorage` vérifié `null` après correctif | Soldé |
+
+## 🎓 Contre-mesure de campagne
+
+Le test rouge de `US-MALIMPORT-FIX` était **une erreur de spec, pas de code**. Il attendait
+`state:'calendar'` ; le store requalifie en `watchlist` + `awaitingSchedule: true`. **Le store
+a refusé la spec du Tech Lead et il avait raison.** Corrigé par micro-patch DEC-128, escalade
+Gemini exemplaire (test rouge signalé sans toucher au test ni au store).
+
+→ Généralisé en **DEC-165**.
