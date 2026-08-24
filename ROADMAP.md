@@ -46,6 +46,14 @@
 | `US-STALE-SIGNAL` (`AUD-05`, DEC-158) | 🟠 | M | L'utilisateur voit quand ses données sont périmées au lieu de croire à un calendrier faux |
 | `US-PERF-BASELINE` | 🟢 | M | Aucun direct — mesure boot, premier rendu, latence perçue sur mock déterministe. Chiffres → `STATE.md` |
 | `US-PERF-GATE` | 🟠 | S | Un ralentissement futur devient une spec rouge, bloqué au merge. **Après la baseline, jamais avant** |
+| `US-ADD-EXTRACT` | 🟢 | S | **Aucun — refactor pur.** La logique d'ajout sort d'`AnimeModal.vue` (`onAdd`, l.139-150 : 3 `newState` possibles, 3 toasts) vers un composable partagé. Prérequis strict d'`US-SEASON-1TAP` |
+| `US-SEASON-1TAP` | 🟠 | S | This Season : 1 tap au lieu de 2 + modale. Skip session-only (DEC-159). **Après `US-ADD-EXTRACT`, jamais avant** |
+| `US-FIRESTORE-LIMITS` (`AUD-32`) | 🔴 | M | Les sauvegardes cessent d'être refusées en silence ; la liste ne s'arrête plus à 100 titres. **Glissée de S41 — bloquant bêta, non soldé** |
+
+Groupage S42 : US-ADD-EXTRACT, US-SEASON-1TAP et US-MORELIKETHIS-FIX touchent
+AnimeModal.vue. À enchaîner dans la même session, dans cet ordre.
+⛔ Ne jamais réécrire une logique d'ajout simplifiée dans une page — c'est le motif
+exact d'AUD-03.
 
 ### S43 — « Rien ne casse en douce » · 7 planifiées + 3 flex
 
@@ -83,8 +91,9 @@
 | Composition de la modale (`BM-10`) | S48 — sans données d'usage, y toucher serait de l'esthétique |
 | Contrôles de modale rares (`#7/#12/#15/#16` du benchmark Q2) | Nettoyage, sans sprint assigné |
 | `AUD-13` — `localStorage` piloté depuis `AppHeader.vue` | P3 dette, 1 occurrence. Sera probablement absorbé par `US-PERSIST-P0` |
-| **Vue Mois : exister ou non** | 🔴 **Décision produit due à la clôture S42**, après avoir vu `US-MONTH-FIX` vivre. Sans verdict à cette date : retrait de la vue |
-
+| **Vue Mois** | ✅ **Tranchée en avance (DEC-163).** Elle existe, mais pas encore : `US-MONTH-COMINGSOON` livrée en S41. Refonte complète à planifier — S48 polish ou sprint dédié. `MonthDayCell.vue` et les classes `month-*` conservés |
+| `AUD-13` — `localStorage` piloté depuis `AppHeader.vue` | ✅ **Soldé** par `US-ONBOARD-PERSIST-A` (`b509ca0`). La clôture antérieure était fausse |
+| **Libellé « Dismiss » trompeur** | Candidat US copie S42. Le mot ne distingue pas « je masque » de « je bannis », même après correction d'`AUD-38`. Proposition : « Not this season » sur This Season, « Not interested » sur For You. Zéro logique, du texte |
 ### Refusé — ne pas remettre au backlog
 
 | Item | Raison |
