@@ -17,7 +17,7 @@
 
 | Sprint | 🎯 Sprint Goal | Confiance |
 |---|---|---|
-| **S41** | **Ce que j'ajoute reste** — la persistance cesse de mentir | 🟢 Ferme (composé) |
+| **S41** | **Ce que j'ajoute reste** — la persistance cesse de mentir | ✅ **CLOS — v0.35.0, 10/10** |
 | **S42** | **On peut nous faire confiance** — plus aucun écran vide ni muet | 🟢 Ferme |
 | **S43** | **Rien ne casse en douce** — filets automatisés et sweep déterministe | 🟢 Ferme |
 | **S44** | **L'arrivée vaut le produit** — onboarding et premiers retours bêta | 🟡 Moyenne |
@@ -49,6 +49,18 @@
 | `US-ADD-EXTRACT` | 🟢 | S | **Aucun — refactor pur.** La logique d'ajout sort d'`AnimeModal.vue` (`onAdd`, l.139-150 : 3 `newState` possibles, 3 toasts) vers un composable partagé. Prérequis strict d'`US-SEASON-1TAP` |
 | `US-SEASON-1TAP` | 🟠 | S | This Season : 1 tap au lieu de 2 + modale. Skip session-only (DEC-159). **Après `US-ADD-EXTRACT`, jamais avant** |
 | `US-FIRESTORE-LIMITS` (`AUD-32`) | 🔴 | M | Les sauvegardes cessent d'être refusées en silence ; la liste ne s'arrête plus à 100 titres. **Glissée de S41 — bloquant bêta, non soldé** |
+| `US-CARD-CONVERGE-A` (`AUD-25`, `AUD-39`) | 🟠 | S | **P1.** This Season passe sur `RecCard` : Skip/Add en surface, 1 tap au lieu de 2 + modale. Absorbe l'asymétrie d'action et le double nommage. **Après `US-ADD-EXTRACT`** |
+| `US-CARD-CONVERGE-B` (`AUD-25`) | 🟠 | S | **P1.** Coming Soon passe sur `RecCard`. Même geste que CONVERGE-A |
+| `US-ONBOARD-PERSIST-B` (`AUD-42`) | 🔴 | M | Le multi-appareil cesse d'être dégradé ; un appareil neuf ne relance plus une sync complète au premier lancement |
+| `US-TOUCH-A` | 🟢 | S | Glissée de S41. 6 contrôles deviennent tapables — zéro pixel visuel changé |
+| `US-TOUCH-B` | 🟢 | S | Glissée de S41. 24 à 48 cibles remontées à 44 px sur les écrans de tri |
+| `US-SWEEP-S41` | 🟢 | S | **Premier geste de S42.** Rejeu du sweep E2E, non armé depuis SE-063 — 4 sessions, 10 US |
+
+Groupage obligatoire S42 : US-ADD-EXTRACT → US-CARD-CONVERGE-A → US-CARD-CONVERGE-B → US-MORELIKETHIS-FIX. Tous touchent AnimeModal.vue ou RecCard.vue. À enchaîner dans la même session, dans cet ordre.
+
+⛔ Ne jamais réécrire une logique d'ajout simplifiée dans une page — motif exact d'AUD-03.
+
+🔴 La ligne de partage n'est pas le composant, c'est découverte vs bibliothèque. RecCard (avec Skip/Add) : For You, This Season, Coming Soon, Library › Upcoming. AnimeCard (sans) : Library › Plan to Watch, Library › Completed. Un bouton Add sur Completed n'a aucun sens.
 
 Groupage S42 : US-ADD-EXTRACT, US-SEASON-1TAP et US-MORELIKETHIS-FIX touchent
 AnimeModal.vue. À enchaîner dans la même session, dans cet ordre.
