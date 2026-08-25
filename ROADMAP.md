@@ -107,6 +107,9 @@ exact d'AUD-03.
 | `AUD-13` — `localStorage` piloté depuis `AppHeader.vue` | ✅ **Soldé** par `US-ONBOARD-PERSIST-A` (`b509ca0`). La clôture antérieure était fausse |
 | **Libellé « Dismiss » trompeur** | Candidat US copie S42. Le mot ne distingue pas « je masque » de « je bannis », même après correction d'`AUD-38`. Proposition : « Not this season » sur This Season, « Not interested » sur For You. Zéro logique, du texte |
 ### Refusé — ne pas remettre au backlog
+| `DiscoverSeasonPage.vue` — tokens CSS inexistants | `var(--text-color)` n'existe pas et n'a **aucun fallback** (le vrai token est `--text`) : le titre « Current Season » s'affiche par héritage, par chance. **En thème sombre, candidat sérieux à l'illisibilité — non testé.** Plus `--danger-color` et `--primary-color`, sauvés par des fallbacks en bleu Bootstrap. Viole DEC-97. Absorbé par `US-CARD-CONVERGE-A` |
+| Padding de page non homogène | `.discover-season-page { padding: 1.5rem }` — This Season laisse 342 px à sa grille sur 390 px, les autres pages n'ont pas ce padding. C'est la cause de l'écart de taille des cartes entre écrans, pas le composant |
+| Libellé « Dismiss » trompeur | Candidat US copie S42. Proposition : « Not this season » sur This Season, « Not interested » sur For You. Zéro logique, du texte |
 
 | Item | Raison |
 |---|---|
