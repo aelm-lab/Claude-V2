@@ -420,3 +420,46 @@ a refusé la spec du Tech Lead et il avait raison.** Corrigé par micro-patch DE
 Gemini exemplaire (test rouge signalé sans toucher au test ni au store).
 
 → Généralisé en **DEC-165**.
+# Campagne SE-067 — clôture S41 (réseau, quotas, cartes)
+
+## Constats soldés
+
+| ID | Verdict | Preuve |
+|---|---|---|
+| **AUD-32** | ✅ **MORT — et il n'a jamais existé sous cette forme.** L'écriture Firestore est autorisée : `title: "Chainsmoker Cat"` présent dans `schedules/<uid>`, `timestamp: 1787567729316`, console Firebase. Le constat a gelé `US-FIRESTORE-LIMITS` et l'accès bêta pendant **trois sessions** sur une erreur observée une seule fois et jamais rejouée. `PILOTAGE §6` interdit exactement ça | console Firebase, SE-067 |
+| **AUD-27** | ✅ **Soldé.** Plafond `data.size()` porté de 100 à 500 dans `firestore.rules` **et publié en console**. Poids réel d'une entrée mesuré à **~1,1 ko** sur échantillon : 500 entrées ≈ 550 ko, soit 45 % de marge sous la limite plateforme de 1 Mo. Le plafond dur réel se situe vers 900 titres | échantillon réel + console → Règles |
+| **AUD-31** | ✅ **Soldé.** Collection `schedules` purgée par le PO. Un seul document vivant. Le constat annonçait 8 fossiles ; la capture console en montrait **au moins 14** (`Adn`, `Ae`, `Ael`, `ade`, `adn`, `adnanne`, `aer`, `aze`…), aucun n'étant un UID Auth valide | console Firebase |
+| **AUD-33** | ⚠️ **Soldé sous réserve.** Quatre causes chaînées établies par lecture de code, trois corrigées (`US-ANILIST-QUEUE-A/B`, `US-SYNC-PRIORITY`). Plus aucun 429 observé en production. **Mais le hash du chunk servi n'a pas été relevé** : le correctif est plausiblement en ligne, pas prouvé. Falsifiable par un 429 après 5+ ajouts d'affilée | constat PO en prod |
+| **AUD-38** | ✅ Soldé en SE-066 par `US-SEASON-SKIP-SESSION` | `80f9d11` |
+
+## Les quatre causes d'AUD-33 — à conserver, elles reviendront
+
+1. **File unique sans priorité.** `anilistClient.ts` n'a qu'une `requestQueue`. La sync de fond et la recherche de l'utilisateur passent par le même tuyau, dans l'ordre d'arrivée. `AUD-19` notait que l'ancienne file `low`/`high` avait été supprimée — **elle n'a jamais été remplacée.**
+2. **L'attente d'un 429 se faisait DANS la file.** `Retry-After: 60` × `retries: 3` = jusqu'à **120 s de gel total**. `F5` vidait la file (`requestQueue = []` au rechargement du module) — d'où « il faut actualiser pour voir ses animes ». Corrigé : plafond `MAX_RATELIMIT_WAIT_MS = 3000`.
+3. **Un anime rate-limité n'était jamais horodaté.** `if (result.failed) continue;` sans `setSyncTimestamp` → il revenait à **chaque** démarrage. Boucle auto-entretenue : plus d'échecs → plus d'entrées non horodatées → plus de requêtes au boot → plus d'échecs. Corrigé par horodatage antidaté (`RETRY_TTL_MS`).
+4. **700 ms = 85,7 req/min contre une limite nominale de 90/min.** Le régulateur tournait à 95 % du plafond, sans marge. Porté à 1 200 ms (50 req/min, 55 %).
+
+## 🔗 AUD-37 est un symptôme d'AUD-33, pas un constat indépendant
+
+Un import MAL pose `awaitingSchedule: true` sur toutes ses entrées — exactement ce que capte le filtre de `useSync`. **300 titres = 300 requêtes d'affilée**, rate limit garanti, entrées non horodatées (cause 3), donc jamais de `day` récupéré, donc blocage définitif en « Plan to Watch ».
+
+`usePersistence.ts:245` aggrave en forçant `status = 'Continuing'` sur les shows sans horaire, ce qui les remet dans le filtre à chaque boot.
+
+**Non vérifié sur un vrai fichier MAL.** Trois correctifs le visent ; aucun n'est observé.
+
+## Constats nouveaux — SE-067
+
+| ID | Constat | Impact utilisateur | Destination |
+|---|---|---|---|
+| **AUD-39** | 🟢 `AnimeCard.vue` affiche `anime.title`, `RecCard.vue` affiche `anime.title_english \|\| anime.title`. **Le même anime porte deux noms selon l'écran** | On ne reconnaît pas une série déjà croisée, donc on ne la retrouve pas | Absorbé par `US-CARD-CONVERGE-A/B` — S42 |
+| **AUD-40** | 🟢 **CSS mort et contradictoire.** `.card-cp-why` + ses 3 enfants : zéro occurrence dans `src\*.vue`. `.rec-why-panel`, `.rec-why-signals`, `.rec-why-signal`, `.rec-why-not-interested` : mortes aussi — `RecCard` utilise `why-panel` / `signal-chip` / `why-act-btn`. Plus le doublon `.card-cp-title` (l.931 et l.1936, même spécificité, la seconde gagne). ~40 lignes | Aucun direct — mais quiconque éditera le mauvais bloc croira que le CSS ne s'applique pas | Lot dette CSS — S43 |
+| **AUD-41** | 🟢 `studios: ["8-bit", "8-bit"]` observé sur une entrée Firestore réelle : doublon dans la normalisation AniList. **Non vérifié à l'écran** | Possible « 8-bit, 8-bit » affiché | À instruire, sans US |
+| **AUD-42** | 🟠 `aanime_sync_ts` vit en `localStorage`, **jamais dans Firestore**. Chaque nouvel appareil repart d'une carte vierge et relance une sync complète au premier démarrage — 100 titres = 2 min de rafale sur un appareil neuf | Un appareil neuf est lent et se rate-limite au premier lancement | Avec `US-ONBOARD-PERSIST-B` — S42 |
+| **AUD-43** | 🟠 **Gemini ne construit pas le même arbre.** 3ᵉ occurrence d'écart de build (439,5 kB annoncés vs 368,7 kB réels, écart constant de 71 kB). La vraie cause n'est pas un mensonge sur les chiffres : les **noms de chunks diffèrent structurellement** (`AnimeCard-*.js` vs `AnimeCard.vue_vue_type_script_setup_true_lang-*.js`) et `index.html` lui-même diverge de 10 o. Plugin Vue ou version Vite différents. **Conséquence dépassant le bundle : son `vue-tsc` peut tourner sur un autre TypeScript — un type-check vert chez lui ne prouve rien** | Aucun | Note permanente, aucune US |
+| **AUD-44** | 🟢 `syncAnimeUpdates` pose `isSyncing.value = true` en entrée et `= false` en sortie, **hors de tout `try/finally`**. Un throw sur `saveToDatabase` laisserait le spinner de `SyncIndicator.vue` tourner indéfiniment. Latent : `saveToDatabase` capture et ne relance pas | Aucun aujourd'hui — spinner bloqué si la condition se réalise | S43, lot ESLint. **Ne pas corriger en marge d'une autre US** : le `try/finally` impose de réindenter ~90 lignes, terrain idéal pour une réécriture silencieuse |
+
+## 🎓 Deux leçons de méthode de la campagne
+
+**1. Une erreur observée une fois n'est pas un fait.** `AUD-32` a gelé le bloquant n°1 du projet pendant trois sessions. Deux minutes de console Firebase l'ont tué. Symétriquement, `AUD-33` est déclaré soldé sans que le hash servi ait été relevé : le même défaut de preuve, dans l'autre sens.
+
+**2. Un correctif peut créer le bug suivant.** `US-ANILIST-QUEUE-B` a plafonné la sync à 25 sans toucher au tri : les entrées `awaitingSchedule` étant `state: 'watchlist'`, elles passaient **après** toute la bibliothèque déjà visible. Famine ordonnancée introduite par le correctif lui-même, rattrapée par `US-SYNC-PRIORITY` dans la même session. **Un plafond sans révision de la priorité change qui est servi, pas seulement combien.**
