@@ -71,7 +71,27 @@ Il est *indistinguable* d'un résultat vide légitime : aucune erreur, aucun tes
 - ❌ **`width:100%` + `padding` sans `box-sizing:border-box`.** Produit un élément plus large que son conteneur (417 px dans 387 px). 🔴 **Piège aggravant : le symptôme apparaît loin de la cause** — ici, des modales `position:fixed` paraissant décentrées alors que leur CSS était correct. **Devant un décentrage, mesurer d'abord `document.documentElement.scrollWidth` vs `window.innerWidth`.**
 - ❌ **Grille en `minmax()` sans marge de sécurité.** `minmax(160px,1fr)` + padding + gap réclamait 344 px sur 339 px utiles → bascule en 1 colonne **pour 5 px**.
 - ❌ **Redéclarer une couleur en dur** au lieu de réutiliser un token existant.
+### AP-CSS-1 — Poser un `z-index` sans vérifier que l'élément est positionné
 
+**Symptôme :** un élément reste derrière un autre malgré un `z-index` élevé. On augmente la
+valeur. Rien ne change. On l'augmente encore.
+
+**Cause :** `z-index` est **ignoré** sur un élément en `position: static`. Aucune valeur, si
+grande soit-elle, ne produira le moindre effet. Le piège est aggravé quand la règle imposant
+`static` vit dans une **feuille non scopée d'un composant parent** : elle gagne l'arbitrage de
+spécificité contre le style scoped de l'élément lui-même, et reste invisible à qui ne lit que
+le composant concerné.
+
+**Aggravant fréquent :** `backdrop-filter`, `filter`, `transform` et `opacity < 1` créent un
+contexte d'empilement **même en `position: static`**. Un enfant, quel que soit son `z-index`,
+est alors plafonné à l'intérieur de cet ancêtre.
+
+**Contre-mesure :** avant de toucher une valeur de `z-index`, lire la chaîne d'ancêtres et
+répondre à deux questions — (1) l'élément est-il positionné ? (2) un ancêtre crée-t-il un
+contexte d'empilement ? Sans ces deux réponses, toute valeur proposée est un tir à l'aveugle.
+
+**Coût constaté :** 3 hypothèses fausses, 1 patch mort commité en `main` puis révoqué,
+2 sessions. La lecture qui a tranché a pris 30 secondes.
 ## 6. Test E2E — la famille des faux-verts
 
 > Ces bugs ont tous passé `vue-tsc` + tous les tests + le build **au vert**. C'est la raison d'être de R4.
