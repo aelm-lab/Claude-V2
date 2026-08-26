@@ -496,4 +496,24 @@ Un import MAL pose `awaitingSchedule: true` sur toutes ses entrées — exacteme
 | **AUD-33** | ✅ **FERMÉ, sur preuve.** Le chunk prod a changé **seul** entre deux mesures (`index-CjMjFEX.js` → `index-BzwbH0aX.js`), sans déploiement manuel → **AI Studio redéploie automatiquement depuis `main`**. Combiné à `AUD-45` (SW sans cache), ce qui est servi est ce qui est déployé. 🔻 Falsifiable par un 429 après 5+ ajouts d'affilée |
 | **AUD-37** | 🟠 **DÉLÉGUÉ À LA BÊTA** (décision PO, `DEC-175`). Jamais vérifié sur un vrai fichier MAL. Test transféré aux testeurs, sur 300 titres au lieu de 10, sans instrumentation |
 | **AUD-42** | 🔴 **OBSERVÉ EN VRAI** (SE-068). Après purge du stockage local, l'onboarding est intégralement rejoué alors que les données Firestore sont saines. Vécu exact d'un testeur sur un second appareil |
+## Campagne SE-069 — lecture de code en cours de sprint
 
+> Ces cinq constats n'ont pas été trouvés par un audit dédié : ils sont sortis de la lecture
+> préalable exigée avant rédaction d'US (`PILOTAGE.md §6`). Trois ont été soldés dans la
+> session même.
+
+| ID | Constat | Statut |
+|---|---|---|
+| **AUD-46** | Le dropdown de recherche s'affiche derrière les cartes de contenu. **Cause réelle :** `AppLayout.vue` porte une règle non scopée `.app-layout .app-header { position: static }`. Un `z-index` sur un élément non positionné est ignoré — les trois valeurs successivement essayées (100, 9000, puis toute autre) ne pouvaient rien changer. Le `backdrop-filter` du header crée par ailleurs un contexte d'empilement même en `static`, ce qui plafonne le `9999` du dropdown à l'intérieur du header. | ✅ **SOLDÉ** — micro-patch `position: relative; z-index: 200`. Vérifié à l'œil sur tous les écrans |
+| **AUD-47** | `SearchInput.onQuickAdd` réimplémentait la règle d'ajout au lieu d'appeler `useAddAnime` (violation `AUD-03`), et annonçait dans le toast l'état **demandé** au lieu de l'état **appliqué** — le même mensonge qu'`US-ADD-TOAST-TRUTH` avait soldé côté modale seulement. Second écart : un anime « Not yet aired » atterrissait en *Plan to Watch* au lieu de *Coming Soon*. Troisième : `resolveTargetState` ignorait le statut `Continuing`. | ✅ **SOLDÉ** — `US-SEARCH-USE-ADDANIME` |
+| **AUD-48** | `DiscoverSeasonPage` filtrait le pool contre la bibliothèque **une seule fois**, au chargement. La page étant sous `<KeepAlive>`, un anime ajouté depuis un autre écran restait proposé indéfiniment. | ✅ **SOLDÉ** — `US-SEASON-FRESH`, filtre passé en `computed` |
+| **AUD-49** | `DECISIONS.md` porte **deux entrées numérotées DEC-158** : (a) source unique du signal `stale`, (b) rechargement complet du navigateur en entrée/sortie de session. Tout renvoi à « DEC-158 » est ambigu — `ROADMAP.md` en cite un pour `US-STALE-SIGNAL`. | 🟠 **OUVERT** — renumérotation (b) → `DEC-176`, micro-patch documentaire |
+| **AUD-50** | `AnimeCard.vue` conserve **3 consommateurs** : `DiscoverComingUpPage`, `LibraryCompletedPage`, `LibraryPlanToWatchPage`. La convergence ne peut pas se faire en une US : les trois écrans appellent des sémantiques d'action différentes (« Add » / « Rewatch » ? / « Start watching » ?). | 🟠 **OUVERT** — découpage acté par `DEC-181` |
+| **AUD-51** | La pastille « Add » de `RecCard` en mode sans Skip mesure **36 px**, sous la cible tactile recommandée de 44 px. C'est le seul bouton d'action de la carte. | 🟠 **OUVERT** — arbitrage PO assumé, à revoir sur constat de testeur |
+
+- **AUD-05** — débloqué. `DEC-158` (a) tranche la source unique du signal `stale`.
+  Reste porté par `US-STALE-SIGNAL`, planifiée S43.
+- **AUD-42** — atténué par `US-ONBOARD-PERSIST-B` (bande de rattrapage).
+  🔻 **Non revérifié à l'œil.** Le comportement réel sur second appareil reste à mesurer.
+- **AUD-03** — une occurrence supplémentaire soldée (`SearchInput`). Une occurrence
+  résiduelle connue : `utils/onboardingFilter.ts` (voir `DEC-178`).
