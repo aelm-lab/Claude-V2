@@ -18,7 +18,7 @@
 | Sprint | 🎯 Sprint Goal | Confiance |
 |---|---|---|
 | **S41** | **Ce que j'ajoute reste** — la persistance cesse de mentir | ✅ **CLOS — v0.35.0, 10/10** |
-| **S42** | **On peut nous faire confiance** — plus aucun écran vide ni muet | 🟢 Ferme |
+| **S42** | **On peut nous faire confiance** — plus aucun écran vide ni muet | 🟢 Ferme >🔵 EN COURS — 4/10 slots, v0.35.0|
 | **S43** | **Rien ne casse en douce** — filets automatisés et sweep déterministe | 🟢 Ferme |
 | **S44** | **L'arrivée vaut le produit** — onboarding et premiers retours bêta | 🟡 Moyenne |
 | **S45** | Consolidation bêta 1 — le top des irritants remontés | 🟠 Thématique |
@@ -47,25 +47,27 @@
 | `US-PERF-BASELINE` | 🟢 | M | Aucun direct — mesure boot, premier rendu, latence perçue sur mock déterministe. Chiffres → `STATE.md` |
 | `US-PERF-GATE` | 🟠 | S | Un ralentissement futur devient une spec rouge, bloqué au merge. **Après la baseline, jamais avant** |
 | `US-ADD-EXTRACT` | 🟢 | S | **Aucun — refactor pur.** La logique d'ajout sort d'`AnimeModal.vue` (`onAdd`, l.139-150 : 3 `newState` possibles, 3 toasts) vers un composable partagé. Prérequis strict d'`US-SEASON-1TAP` |
-| `US-SEASON-1TAP` | 🟠 | S | This Season : 1 tap au lieu de 2 + modale. Skip session-only (DEC-159). **Après `US-ADD-EXTRACT`, jamais avant** |
-| `US-FIRESTORE-LIMITS` (`AUD-32`) | 🔴 | M | Les sauvegardes cessent d'être refusées en silence ; la liste ne s'arrête plus à 100 titres. **Glissée de S41 — bloquant bêta, non soldé** |
 | `US-CARD-CONVERGE-A` (`AUD-25`, `AUD-39`) | 🟠 | S | **P1.** This Season passe sur `RecCard` : Skip/Add en surface, 1 tap au lieu de 2 + modale. Absorbe l'asymétrie d'action et le double nommage. **Après `US-ADD-EXTRACT`** |
 | `US-CARD-CONVERGE-B` (`AUD-25`) | 🟠 | S | **P1.** Coming Soon passe sur `RecCard`. Même geste que CONVERGE-A |
 | `US-ONBOARD-PERSIST-B` (`AUD-42`) | 🔴 | M | Le multi-appareil cesse d'être dégradé ; un appareil neuf ne relance plus une sync complète au premier lancement |
 | `US-TOUCH-A` | 🟢 | S | Glissée de S41. 6 contrôles deviennent tapables — zéro pixel visuel changé |
 | `US-TOUCH-B` | 🟢 | S | Glissée de S41. 24 à 48 cibles remontées à 44 px sur les écrans de tri |
-| `US-SWEEP-S41` | 🟢 | S | **Premier geste de S42.** Rejeu du sweep E2E, non armé depuis SE-063 — 4 sessions, 10 US |
+| `US-ONBOARD-FALLBACK` | 🟠 | S | **Flex.** Liste de secours embarquée (~10 titres populaires en dur) pour le dernier écran de l'onboarding. Aujourd'hui ce premier contact dépend d'un appel réseau externe : si AniList est en panne, un nouvel utilisateur voit un état vide. C'est le seul écran du produit qui n'a pas droit à une seconde chance |
 
-Groupage obligatoire S42 : US-ADD-EXTRACT → US-CARD-CONVERGE-A → US-CARD-CONVERGE-B → US-MORELIKETHIS-FIX. Tous touchent AnimeModal.vue ou RecCard.vue. À enchaîner dans la même session, dans cet ordre.
+Groupage obligatoire S42 : US-CARD-CONVERGE-A → US-CARD-CONVERGE-B → US-MORELIKETHIS-FIX.
+Tous touchent AnimeModal.vue ou RecCard.vue. À enchaîner dans la même session, dans cet ordre.
 
+✅ US-ADD-EXTRACT est LIVRÉE (SE-068). La logique d'ajout vit dans `useAddAnime.ts`
+(`addToLibrary`, `resolveTargetState`). Toute page qui ajoute un anime l'APPELLE.
 ⛔ Ne jamais réécrire une logique d'ajout simplifiée dans une page — motif exact d'AUD-03.
+⛔ DEC-172 : dans useAddAnime, toast sur l'état appliqué, sync sur l'état demandé. Ne pas
+   unifier les deux.
 
-🔴 La ligne de partage n'est pas le composant, c'est découverte vs bibliothèque. RecCard (avec Skip/Add) : For You, This Season, Coming Soon, Library › Upcoming. AnimeCard (sans) : Library › Plan to Watch, Library › Completed. Un bouton Add sur Completed n'a aucun sens.
+🔴 La ligne de partage n'est pas le composant, c'est découverte vs bibliothèque.
+RecCard (avec Skip/Add) : For You, This Season, Coming Soon, Library › Upcoming.
+AnimeCard (sans) : Library › Plan to Watch, Library › Completed.
 
-Groupage S42 : US-ADD-EXTRACT, US-SEASON-1TAP et US-MORELIKETHIS-FIX touchent
-AnimeModal.vue. À enchaîner dans la même session, dans cet ordre.
-⛔ Ne jamais réécrire une logique d'ajout simplifiée dans une page — c'est le motif
-exact d'AUD-03.
+⛔ US-STALE-SIGNAL est BLOQUÉE tant que DEC-151 n'est pas arbitré (source unique du signal stale).
 
 ### S43 — « Rien ne casse en douce » · 7 planifiées + 3 flex
 
