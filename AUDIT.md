@@ -462,4 +462,38 @@ Un import MAL pose `awaitingSchedule: true` sur toutes ses entrées — exacteme
 
 **1. Une erreur observée une fois n'est pas un fait.** `AUD-32` a gelé le bloquant n°1 du projet pendant trois sessions. Deux minutes de console Firebase l'ont tué. Symétriquement, `AUD-33` est déclaré soldé sans que le hash servi ait été relevé : le même défaut de preuve, dans l'autre sens.
 
-**2. Un correctif peut créer le bug suivant.** `US-ANILIST-QUEUE-B` a plafonné la sync à 25 sans toucher au tri : les entrées `awaitingSchedule` étant `state: 'watchlist'`, elles passaient **après** toute la bibliothèque déjà visible. Famine ordonnancée introduite par le correctif lui-même, rattrapée par `US-SYNC-PRIORITY` dans la même session. **Un plafond sans révision de la priorité change qui est servi, pas seulement combien.**
+**2. Un correctif peut créer le bug suivant.** `US-ANILIST-QUEUE-B` a plafonné la sync à 25 sans toucher au tri : les entrées `awaitingSchedule` étant `state: 'watchlist'`, elles passaient **après** toute la bibliothèque déjà visible. Famine ordonnancée introduite par le correctif lui-même, rattrapée par `US-SYNC-PRIORITY` dans la même session. **Un plafond sans révision de la priorité change qui est servi, pas seulement combien.**## SE-068 — deux constats, un fermé
+
+- **`AUD-45` — service worker en production. ⛔ REQUALIFIÉ NON-CONSTAT, FERMÉ À L'OUVERTURE.**
+  La production sert un service worker qui intercepte les chunks de l'app. Suspicion initiale :
+  cache d'anciennes versions chez les testeurs. **Réfuté par lecture du fichier :** c'est le SW
+  d'AI Studio (`Copyright 2025 Google LLC`), qui ne proxifie que
+  `generativelanguage.googleapis.com` ; tout le reste passe en
+  `event.respondWith(fetch(event.request))`. **L'API `caches` n'apparaît nulle part.**
+  Le `findstr` vide côté dépôt était la bonne réponse, pas un trou.
+  *Résidu non actionnable : chaque requête traverse un SW tiers non contrôlé.*
+
+- **`AUD-46` — le dropdown de recherche s'affiche derrière les cartes de contenu.** 🟠 OUVERT.
+  Constaté en captures PO sur This Season et sur la semaine. **Ce n'est pas une régression :** le
+  correctif passé (`ui.setSearchOpen`, `search-hides-nav.spec.ts`) masquait la *barre de
+  navigation* ; les cartes n'ont jamais été traitées. Trou d'origine.
+  **Établi :** `.search-dropdown` a `z-index: 9999` (`SearchInput.vue:221`), en `position: absolute`
+  dans `.search-container` · `.app-header` a `backdrop-filter: blur(12px)` + `sticky` + `z-index: 100`
+  → **crée un contexte d'empilement**, donc le 9999 n'a jamais pesé 9999 · `.aa-card-grid`
+  (`style.css:1602`) n'a **aucun** `z-index`.
+  🔴 **Réfuté :** passer `.app-header` à `z-index: 9000` **ne change rien** (test à l'œil, SE-068).
+  **Hypothèse restante, non vérifiée :** conteneur racine créant un contexte plafonné → aucune
+  valeur sur le header ne servirait, la correction serait structurelle (téléportation du dropdown).
+  ⛔ **Ne pas proposer de 4ᵉ valeur de `z-index` avant `type src\App.vue`.**
+  **Impact utilisateur : la recherche, geste central du produit, est illisible sur deux écrans.**
+
+## Constats mis à jour en SE-068
+
+| ID | État |
+|---|---|
+| **AUD-06** | ✅ **Soldé.** Recadré par lecture : le volet `LoginPage.vue` était **déjà en production**. Seul le volet onboarding manquait → `US-ONBOARD-TOAST` |
+| **AUD-23** | ⛔ **CADUC.** `onboarding-toast.spec.ts` est **verte** (batch4, 2 passages, SE-068). Le constat la décrit comme spec rouge. Soldée sans avoir été notée |
+| **AUD-33** | ✅ **FERMÉ, sur preuve.** Le chunk prod a changé **seul** entre deux mesures (`index-CjMjFEX.js` → `index-BzwbH0aX.js`), sans déploiement manuel → **AI Studio redéploie automatiquement depuis `main`**. Combiné à `AUD-45` (SW sans cache), ce qui est servi est ce qui est déployé. 🔻 Falsifiable par un 429 après 5+ ajouts d'affilée |
+| **AUD-37** | 🟠 **DÉLÉGUÉ À LA BÊTA** (décision PO, `DEC-175`). Jamais vérifié sur un vrai fichier MAL. Test transféré aux testeurs, sur 300 titres au lieu de 10, sans instrumentation |
+| **AUD-42** | 🔴 **OBSERVÉ EN VRAI** (SE-068). Après purge du stockage local, l'onboarding est intégralement rejoué alors que les données Firestore sont saines. Vécu exact d'un testeur sur un second appareil |
+
