@@ -511,6 +511,8 @@ Un import MAL pose `awaitingSchedule: true` sur toutes ses entrées — exacteme
 | **AUD-50** | `AnimeCard.vue` conserve **3 consommateurs** : `DiscoverComingUpPage`, `LibraryCompletedPage`, `LibraryPlanToWatchPage`. La convergence ne peut pas se faire en une US : les trois écrans appellent des sémantiques d'action différentes (« Add » / « Rewatch » ? / « Start watching » ?). | 🟠 **OUVERT** — découpage acté par `DEC-181` |
 | **AUD-51** | La pastille « Add » de `RecCard` en mode sans Skip mesure **36 px**, sous la cible tactile recommandée de 44 px. C'est le seul bouton d'action de la carte. | 🟠 **OUVERT** — arbitrage PO assumé, à revoir sur constat de testeur |
 
+
+→ Statuts à mettre à jour dans les campagnes antérieures
 - **AUD-05** — débloqué. `DEC-158` (a) tranche la source unique du signal `stale`.
   Reste porté par `US-STALE-SIGNAL`, planifiée S43.
 - **AUD-42** — atténué par `US-ONBOARD-PERSIST-B` (bande de rattrapage).
