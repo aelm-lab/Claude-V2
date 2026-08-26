@@ -145,6 +145,21 @@ S'il manque un fichier, on demande le fichier — on ne rédige pas un squelette
 
 ---
 
+## 9. Méthode d'analyse (Claude)
+
+- ❌ **`AP-METHOD-1` — énoncer une cause sur du code non lu.** Trois occurrences sur deux sessions
+  consécutives : `AUD-33` déclaré soldé sans mesure (SE-067) ; comparaison de hash de chunk entre
+  deux environnements de build, **non falsifiable par construction** (SE-068) ; service worker
+  déclaré bloquant bêta avant lecture du fichier — il ne cachait rien (SE-068) ; `backdrop-filter`
+  désigné comme cause unique d'`AUD-46`, patch sans effet (SE-068).
+  **Coût mesuré :** deux des trois se sont réglées par un `type` de fichier qui aurait pu être
+  demandé d'emblée ; la troisième a produit un patch mort commité en `main`.
+  ✅ **Contre-mesure :** avant d'énoncer une cause, demander la lecture qui tranche. Une commande
+  `type` coûte un aller-retour ; une hypothèse fausse en coûte trois et brûle un patch.
+  Corollaire de `PILOTAGE §6` (« toute US sortant du backlog démarre par un grep »), étendu au
+  **diagnostic**, pas seulement à la rédaction d'US.
+----
+
 ## 🎓 Les 3 leçons de méthode les plus chères
 
 1. **Le vert ne prouve rien sur l'utilisabilité.** Type-check + tests + build au vert ≠ application fonctionnelle ≠ application utilisable. Quatre bugs runtime et toute la famille des events désalignés sont passés au vert intégral. D'où R2, R3, R4 et l'audit live du PO.
