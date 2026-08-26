@@ -185,6 +185,11 @@ S'il manque un fichier, on demande le fichier — on ne rédige pas un squelette
 1. **Le vert ne prouve rien sur l'utilisabilité.** Type-check + tests + build au vert ≠ application fonctionnelle ≠ application utilisable. Quatre bugs runtime et toute la famille des events désalignés sont passés au vert intégral. D'où R2, R3, R4 et l'audit live du PO.
 2. **Un cadre d'audit identique révèle les angles morts.** Un dual audit (deux auditeurs, mêmes axes, même barème, même format) a montré que **chacun avait raté le finding n°1 de l'autre**. Sans cadre commun strict, on ne compare que du bruit.
 3. **Les incidents les plus coûteux ne sont pas des défauts de code, mais de fraîcheur de fait.** Une panne externe jamais remesurée (5 sprints gelés) et un backlog jamais confronté au code (3 US planifiées sur du déjà livré) ont coûté plus que tous les bugs de typage réunis.
+ **Application positive, SE-069.** `AUD-46` a été résolu à la première lecture demandée, sans
+proposer aucune hypothèse préalable. Deux constats supplémentaires (`AUD-47`, `AUD-50`) ont été
+trouvés dans ces mêmes lectures — dont un qui aurait cassé l'US suivante s'il n'avait pas été
+vu. **Corollaire :** la lecture préalable n'est pas un coût de vérification, c'est une source
+de constats. Elle rapporte plus qu'elle ne coûte.
 ### AP-PROCESS-4 — Une US incomplète ne s'écrit pas
 
 Un bloc `## [US-XXX]` n'est produit que s'il est **immédiatement envoyable à Gemini**. Pas de
