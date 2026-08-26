@@ -11,11 +11,11 @@
 
 | | |
 |---|---|
-| Session | **SE-067** — clôture S41 |
-| Sprint | **S41 CLOS** — 10 US mergées sur 10 slots + 4 micro-patchs |
-| Version | **v0.35.0** — bump de clôture de sprint |
-| Commit main | `9e3923e` |
-| Prochaine session | **SE-068** — ouverture S42 « On peut nous faire confiance » |
+| Session | **SE-068** — ouverture S42 |
+| Sprint | **S42 EN COURS** — « On peut nous faire confiance » — 4 US livrées / 10 slots |
+| Version | **v0.35.0** — pas de bump, sprint non clos |
+| Commit main | 🔻 **3 hash non relevés** — `git log --oneline -6` en ouverture SE-069 |
+| Prochaine session | **SE-069** — poursuite S42 |
 
 ---
 
@@ -23,16 +23,14 @@
 
 | Métrique | Valeur | Fraîcheur |
 |---|---|---|
-| Tests unitaires | **295** / 32 fichiers | SE-067 |
-| Build | **178 modules**, `index` 368,90 kB (gzip 108,20) | SE-067 |
-| Sweep E2E | **52/52** | SE-063 — **non rejoué depuis 4 sessions** |
+| Tests unitaires | **315** / 35 fichiers | SE-068 |
+| Build | **179 modules**, `index` 369,16 kB (gzip 108,36) | SE-068 |
+| Sweep E2E | **52/52** | **SE-068 — rejoué** |
 | Specs E2E | 42 enregistrées en 5 batchs | SE-063 |
 | ESLint | ❌ **jamais exécuté** — « zéro `any` » vérifié par aucun outil | — |
 
 > `vue-tsc --noEmit` est embarqué dans `npm run build` : un build vert vaut type-check vert.
-> ⚠️ **Aucune sortie de Gemini n'a valeur de preuve** (`AUD-43`) : son `node_modules` diverge
-> du nôtre — noms de chunks et `index.html` différents. Écart de build reproductible de 71 kB
-> sur 3 livraisons. Seule la machine du PO mesure.
+> ⚠️ **Aucune sortie de Gemini n'a valeur de preuve** (`AUD-43`). Seule la machine du PO mesure.
 
 ## 📚 Métriques documentaires
 
@@ -43,51 +41,39 @@
 
 ---
 
-## 📋 Kanban — S41 CLOS · SE-067
+## 📋 Kanban — S42 · SE-068
 
-### ✅ Done — Sprint S41 · 10/10 slots
+### ✅ Done — Sprint S42 · 4/10 slots
 
-| US | Commit | Impact utilisateur livré |
-|---|---|---|
-| `US-PERSIST-P0b` | — | Se déconnecter ne détruit plus la bibliothèque locale |
-| `US-PERSIST-P0a` | — | ⚠️ **Aucun** — branche jamais atteinte (Trou n°1) |
-| `US-PERSIST-P0a2` | — | La bibliothèque revient à la connexion |
-| `US-ONBOARD-PERSIST-A` | `b509ca0` | L'onboarding ne rejoue plus après reconnexion |
-| `US-MALIMPORT-FIX` | `b469a18` | Un import MAL atterrit dans les bons bacs |
-| `US-MONTH-COMINGSOON` | `e84b2aa` | La vue Mois illisible devient un « Coming Soon » assumé |
-| `US-SEASON-SKIP-SESSION` | `80f9d11` | Écarter un titre de This Season ne le bannit plus de For You |
-| `US-ANILIST-QUEUE-A` | `1256d20` | Un pic AniList gèle l'app 6 s au pire, au lieu de 120 s |
-| `US-ANILIST-QUEUE-B` | `c3980cc` | Un anime en échec réessaie en 15 min ; 25 max par démarrage |
-| `US-SYNC-PRIORITY` | `9e3923e` | Les séries invisibles (`awaitingSchedule`) passent devant |
+| US | Impact utilisateur livré |
+|---|---|
+| `US-SWEEP-S41` 🟢 | Aucun direct — sweep E2E rejoué, 52/52, zéro régression S41 |
+| `US-ADD-EXTRACT` 🟠 | Aucun — refactor pur, la règle d'ajout vit dans `useAddAnime.ts` |
+| `US-ADD-TOAST-TRUTH` 🟠 | Le message de confirmation annonce l'onglet réel, plus l'onglet demandé |
+| `US-ONBOARD-EMPTY` 🟠 | Saison vide → état vide + « Try again », au lieu d'une zone blanche |
+| `US-ONBOARD-TOAST` 🟠 | Un échec de sauvegarde ne bloque plus la fin de l'inscription |
 
-**Micro-patchs DEC-128 (hors slots) :** `US-CARD-ORDER-A` · `US-CARD-ORDER-B` ·
-`US-FIRESTORE-LIMITS` (plafond 100 → 500, règles publiées en console) · `US-REC-WHY-2LINES`.
-
-**Retirées de S41 :** `US-MONTH-FIX` (annulée, DEC-163) · `US-SEASON-1TAP` (découpée → S42).
+**Gemini : 4 US 🟠, 4 merges au premier coup. Streak 19.**
 
 ### 🔄 In Progress
 Aucune.
 
-### 📝 To Do
-Aucune. **S41 est clos.** Le cap S42 vit dans `ROADMAP.md`.
+### 📝 To Do — S42 (6 slots restants)
 
-**Glissent en S42 :** `US-TOUCH-A` · `US-TOUCH-B` (clôture à date, DEC-155).
+| US | Risque | Note |
+|---|---|---|
+| `US-STALE-SIGNAL` | 🟠 M | **Bloquée** : exige l'arbitrage `DEC-151` (source unique du signal `stale`) |
+| `US-ADD-EXTRACT` → `US-CARD-CONVERGE-A` | 🟠 S | This Season sur `RecCard`, 1 tap. Absorbe `US-SEASON-1TAP` |
+| `US-CARD-CONVERGE-B` | 🟠 S | Coming Soon, même geste |
+| `US-MORELIKETHIS-FIX` | 🔴 S | « More like this » revit |
+| `US-ONBOARD-PERSIST-B` | 🔴 M | **Priorité relevée** — `AUD-42` observé en vrai |
+| `US-PERF-BASELINE` → `US-PERF-GATE` | 🟢 M / 🟠 S | Ordre imposé |
+
+**Flex :** `US-TOUCH-A` · `US-HEADER-ICONS` · `US-ONBOARD-FALLBACK`
+*(slot `US-TOUCH-B` consommé par `US-ADD-TOAST-TRUTH`)*
 
 ### 🗂️ Backlog
-Cap S42 → S50 : **`ROADMAP.md`**. Aucun item de backlog n'est listé ici.
-
----
-
-## 🎯 Sprint Outcome Gate — S41 « Ce que j'ajoute reste »
-
-> *« Qu'est-ce que l'utilisateur peut faire / voir / ressentir aujourd'hui qu'il ne pouvait
-> pas avant ce sprint ? »*
-
-**Réponse : gain de fiabilité visible (cas n°2).** Ce qu'il ajoute part au cloud, y reste,
-revient à la connexion, tient jusqu'à 500 titres, et n'est plus perdu par une file réseau
-gelée. Aucune fonctionnalité ajoutée — c'est la forme attendue de ce Goal.
-
-**Budget dette respecté :** 0 US de dette pure sur 10.
+Cap S43 → S50 : **`ROADMAP.md`**.
 
 ---
 
@@ -95,51 +81,37 @@ gelée. Aucune fonctionnalité ajoutée — c'est la forme attendue de ce Goal.
 
 | Fait | Mesure | Date | Méthode |
 |---|---|---|---|
-| AniList — quota | ✅ **Aucun 429 observé** après `US-ANILIST-QUEUE-A/B` | **SE-067** | constat PO en prod |
-| AniList — Recherche · This Season | fonctionnels | SE-067 | constat PO |
-| Firestore — écriture | ✅ **AUTORISÉE.** `title: "Chainsmoker Cat"` présent dans `schedules/<uid>`, `timestamp: 1787567729316` | **SE-067** | console Firebase |
-| Firestore — plafond | **500 entrées**, règles publiées en console | **SE-067** | console → Règles |
-| Firestore — poids d'une entrée | **~1,1 ko** → 500 entrées ≈ 550 ko, marge 45 % sous la limite 1 Mo | **SE-067** | échantillon réel |
-| Firestore — collection `schedules` | ✅ **purgée** par le PO — un seul document vivant | **SE-067** | console Firebase |
+| Déploiement prod | ✅ **Automatique depuis `main`** — chunk changé seul, sans action manuelle | **SE-068** | onglet Réseau, 2 mesures |
+| Service worker prod | ✅ **Tiers (AI Studio), passe-plat, zéro cache** — aucun risque de version périmée | **SE-068** | lecture du fichier |
+| AniList — quota | ✅ Aucun 429 observé | SE-067 | constat PO en prod |
+| Thème sombre This Season | ✅ **Visible** | **SE-068** | constat PO |
+| Multi-appareil | 🔴 **Onboarding rejoué après purge locale** — `AUD-42` confirmé | **SE-068** | constat PO |
+| Firestore — écriture | ✅ AUTORISÉE | SE-067 | console Firebase |
+| Firestore — plafond | **500 entrées** (~1,1 ko/entrée, marge 45 %) | SE-067 | console → Règles |
 | Firestore — base cible | `ai-studio-58fc34cb-…`, europe-west2 | SE-064 | console Firebase |
 
 ---
 
 ## 🕳️ Trous ouverts
 
-1. **🔴 `US-PERSIST-P0a` est une US morte.** Branche jamais atteinte en connexion réelle.
-   Inoffensive. **Suppression non instruite depuis 3 sessions** (SE-065 → SE-067).
-2. **🟠 `AUD-33` soldé sous réserve.** Plus de 429 en prod, mais le hash du chunk servi n'a
-   pas été relevé : le correctif est **plausiblement** en ligne, pas prouvé. Falsifiable par
-   un 429 après 5+ ajouts d'affilée ou après un import MAL.
-3. **🟠 `AUD-37` non vérifié.** Le rattrapage d'horaire d'un import MAL n'a pas été testé sur
-   un vrai fichier MAL. Trois correctifs le visent — aucun n'est observé.
-4. **🔴 Multi-appareil dégradé** — `aanime_sync_ts` est local (`AUD-42`), `US-ONBOARD-PERSIST-B`
-   non faite. **Limite à annoncer aux bêta-testeurs, pas un bloquant.**
-5. **🟠 Sweep E2E non rejoué depuis SE-063** — 4 sessions, 10 US. Le filet le plus large du
-   projet n'a pas été armé de tout le sprint. → **premier geste de S42.**
-6. **🟠 `AUD-44` — `isSyncing` sans `try/finally`.** Un throw laisserait le spinner à `true`
-   indéfiniment. Latent. → S43 avec le lot ESLint.
-7. **`AUD-39`** — `AnimeCard` affiche `title`, `RecCard` affiche `title_english || title`.
-8. **`AUD-40`** — ~40 lignes de CSS mort (`.card-cp-why`, `.rec-why-*`) + doublon `.card-cp-title`.
-9. **`AUD-41`** — `studios: ["8-bit", "8-bit"]`, doublon de normalisation AniList. Non vérifié.
-10. **ESLint jamais exécuté** — `R-CODE-1` non vérifiée. → S43.
-11. **12 specs E2E vertes tapant le réseau réel** (`AUD-24`) — sweep non déterministe. → S43.
-12. **🔴 Collision d'ID `AUD-32`/`AUD-33`** dans `AUDIT.md` — arbitrée par ce fichier, note de
-    réconciliation en campagne SE-066.
+1. **🔴 `AUD-46` — dropdown de recherche recouvert par les cartes.** Trois hypothèses réfutées
+   (dont `z-index: 9000` sur `.app-header`, testé, sans effet). **Diagnostic requis avant US :
+   `type src\App.vue`.** ⛔ Ne pas proposer une 4ᵉ valeur de `z-index`.
+2. **🔴 Patch mort en `main`** — `AppHeader.vue:89` porte `z-index: 9000`, sans effet. **À révoquer
+   en commit séparé.**
+3. **🟠 3 hash de commit non relevés** (`TOAST-TRUTH`, `ONBOARD-EMPTY`, `ONBOARD-TOAST`).
+4. **🟠 `DEC-151` non arbitré** — deux signaux `stale` concurrents et morts. Bloque `US-STALE-SIGNAL`.
+5. **🔴 Multi-appareil dégradé** (`AUD-42`) — **observé, plus supposé.** Limite à annoncer aux testeurs.
+6. **🟠 `AUD-37` délégué à la bêta** — import MAL jamais vérifié sur un vrai fichier.
+7. **🟠 `AUD-44`** — `isSyncing` sans `try/finally`. Latent. → S43, seul.
+8. **🟠 Dette de vérité** — « We'll sync it later » promet une resync non garantie par le code.
+9. **🟠 Zéro retour terrain** — 15 US depuis S41, aucune observée par un utilisateur.
 
 ---
 
-## ✅ Bêta — état du verrou
+## 🎯 Sprint Outcome Gate — S42 (à répondre à la clôture)
 
-| Verrou | État |
-|---|---|
-| `AUD-32` écritures Firestore refusées | ✅ Mort, mesuré |
-| Plafond 100 titres | ✅ Levé à 500, publié |
-| Documents fossiles `schedules` | ✅ Purgés |
-| Onboarding rejoué à chaque connexion | ✅ Corrigé |
-| `AUD-33` AniList 429 au boot | ✅ Corrigé, sous réserve (trou n°2) |
-| Multi-appareil | ⚠️ Dégradé — limite à annoncer |
+> *« Qu'est-ce que l'utilisateur peut faire / voir / ressentir aujourd'hui qu'il ne pouvait pas
+> avant ce sprint ? »*
 
-> **Aucun bloquant technique ne subsiste.** L'ouverture aux bêta-testeurs est une décision
-> produit, pas une attente de correctif.
+**Budget dette :** 1 US de dette pure (`US-ADD-EXTRACT`) sur 4 livrées. Sous plafond.
