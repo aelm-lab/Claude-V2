@@ -11,11 +11,11 @@
 
 | | |
 |---|---|
-| Session | **SE-068** — ouverture S42 |
-| Sprint | **S42 EN COURS** — « On peut nous faire confiance » — 4 US livrées / 10 slots |
-| Version | **v0.35.0** — pas de bump, sprint non clos |
-| Commit main | 🔻 **3 hash non relevés** — `git log --oneline -6` en ouverture SE-069 |
-| Prochaine session | **SE-069** — poursuite S42 |
+| Session | **SE-069** — clôture S42 |
+| Sprint | **S42 CLOS** — « On peut nous faire confiance » — 10/10 slots |
+| Version | **v0.36.0** — bump de clôture de sprint |
+| Commit main | `d55952e` + 2 commits non relevés (voir Trou 1) |
+| Prochaine session | **SE-070** — ouverture S43 |
 
 ---
 
@@ -23,14 +23,15 @@
 
 | Métrique | Valeur | Fraîcheur |
 |---|---|---|
-| Tests unitaires | **315** / 35 fichiers | SE-068 |
-| Build | **179 modules**, `index` 369,16 kB (gzip 108,36) | SE-068 |
-| Sweep E2E | **52/52** | **SE-068 — rejoué** |
+| Tests unitaires | **331** / 38 fichiers | **SE-069** |
+| Build | **179 modules**, `index` 369,28 kB (gzip 108,39) | **SE-069** |
+| Sweep E2E | **52/52** | SE-068 — **non rejoué en SE-069** |
 | Specs E2E | 42 enregistrées en 5 batchs | SE-063 |
 | ESLint | ❌ **jamais exécuté** — « zéro `any` » vérifié par aucun outil | — |
 
 > `vue-tsc --noEmit` est embarqué dans `npm run build` : un build vert vaut type-check vert.
 > ⚠️ **Aucune sortie de Gemini n'a valeur de preuve** (`AUD-43`). Seule la machine du PO mesure.
+> 🔻 La mesure de build ci-dessus **précède** le micro-patch `RecCard` (style seul, non rebuildé).
 
 ## 📚 Métriques documentaires
 
@@ -41,36 +42,31 @@
 
 ---
 
-## 📋 Kanban — S42 · SE-068
+## 📋 Kanban — S42 · SE-069
 
-### ✅ Done — Sprint S42 · 4/10 slots
+### ✅ Done — Sprint S42 · 10/10 slots
 
 | US | Impact utilisateur livré |
 |---|---|
-| `US-SWEEP-S41` 🟢 | Aucun direct — sweep E2E rejoué, 52/52, zéro régression S41 |
-| `US-ADD-EXTRACT` 🟠 | Aucun — refactor pur, la règle d'ajout vit dans `useAddAnime.ts` |
-| `US-ADD-TOAST-TRUTH` 🟠 | Le message de confirmation annonce l'onglet réel, plus l'onglet demandé |
-| `US-ONBOARD-EMPTY` 🟠 | Saison vide → état vide + « Try again », au lieu d'une zone blanche |
-| `US-ONBOARD-TOAST` 🟠 | Un échec de sauvegarde ne bloque plus la fin de l'inscription |
+| `US-SWEEP-S41` 🟢 | Aucun direct — sweep E2E rejoué, 52/52 |
+| `US-ADD-EXTRACT` 🟠 | Aucun — refactor pur, règle d'ajout dans `useAddAnime.ts` |
+| `US-ADD-TOAST-TRUTH` 🟠 | Le toast de la modale annonce l'onglet réel |
+| `US-ONBOARD-EMPTY` 🟠 | Saison vide → état vide + « Try again » |
+| `US-ONBOARD-TOAST` 🟠 | Un échec de sauvegarde ne bloque plus l'inscription |
+| `AUD-46` 🟢 micro-patch | Le dropdown de recherche passe devant les cartes de contenu |
+| `US-SEARCH-USE-ADDANIME` 🟠 | Ajout depuis la recherche : bon onglet, message vrai |
+| `US-ONBOARD-PERSIST-B` 🔴 | Sur 2ᵉ appareil, une bande annonce le compte retrouvé |
+| `US-SEASON-FRESH` 🟠 | This Season se met à jour sans rechargement |
+| `US-CARD-CONVERGE-A` 🟠 | This Season : 1 tap pour ajouter, sur `RecCard` |
 
-**Gemini : 4 US 🟠, 4 merges au premier coup. Streak 19.**
+**Gemini : 6 US 🟠/🔴 en SE-069, 6 merges au premier coup. Streak 23.**
+**2 micro-patchs hors Gemini (DEC-128) : `AppLayout.vue`, `RecCard.vue`.**
 
 ### 🔄 In Progress
 Aucune.
 
-### 📝 To Do — S42 (6 slots restants)
-
-| US | Risque | Note |
-|---|---|---|
-| `US-STALE-SIGNAL` | 🟠 M | **Bloquée** : exige l'arbitrage `DEC-151` (source unique du signal `stale`) |
-| `US-ADD-EXTRACT` → `US-CARD-CONVERGE-A` | 🟠 S | This Season sur `RecCard`, 1 tap. Absorbe `US-SEASON-1TAP` |
-| `US-CARD-CONVERGE-B` | 🟠 S | Coming Soon, même geste |
-| `US-MORELIKETHIS-FIX` | 🔴 S | « More like this » revit |
-| `US-ONBOARD-PERSIST-B` | 🔴 M | **Priorité relevée** — `AUD-42` observé en vrai |
-| `US-PERF-BASELINE` → `US-PERF-GATE` | 🟢 M / 🟠 S | Ordre imposé |
-
-**Flex :** `US-TOUCH-A` · `US-HEADER-ICONS` · `US-ONBOARD-FALLBACK`
-*(slot `US-TOUCH-B` consommé par `US-ADD-TOAST-TRUTH`)*
+### 📝 To Do — S43
+Composition → **`ROADMAP.md §2`**.
 
 ### 🗂️ Backlog
 Cap S43 → S50 : **`ROADMAP.md`**.
@@ -81,11 +77,12 @@ Cap S43 → S50 : **`ROADMAP.md`**.
 
 | Fait | Mesure | Date | Méthode |
 |---|---|---|---|
-| Déploiement prod | ✅ **Automatique depuis `main`** — chunk changé seul, sans action manuelle | **SE-068** | onglet Réseau, 2 mesures |
-| Service worker prod | ✅ **Tiers (AI Studio), passe-plat, zéro cache** — aucun risque de version périmée | **SE-068** | lecture du fichier |
+| Déploiement prod | ✅ **Automatique depuis `main`** | SE-068 | onglet Réseau, 2 mesures |
+| Service worker prod | ✅ **Tiers (AI Studio), passe-plat, zéro cache** | SE-068 | lecture du fichier |
 | AniList — quota | ✅ Aucun 429 observé | SE-067 | constat PO en prod |
-| Thème sombre This Season | ✅ **Visible** | **SE-068** | constat PO |
-| Multi-appareil | 🔴 **Onboarding rejoué après purge locale** — `AUD-42` confirmé | **SE-068** | constat PO |
+| Dropdown de recherche | ✅ **Au-dessus des cartes, tous écrans** | **SE-069** | constat PO |
+| Thème sombre This Season | ✅ Visible | SE-068 | constat PO |
+| Multi-appareil | 🟠 **Bande de rattrapage livrée** — comportement non revérifié à l'œil | **SE-069** | à mesurer SE-070 |
 | Firestore — écriture | ✅ AUTORISÉE | SE-067 | console Firebase |
 | Firestore — plafond | **500 entrées** (~1,1 ko/entrée, marge 45 %) | SE-067 | console → Règles |
 | Firestore — base cible | `ai-studio-58fc34cb-…`, europe-west2 | SE-064 | console Firebase |
@@ -94,24 +91,31 @@ Cap S43 → S50 : **`ROADMAP.md`**.
 
 ## 🕳️ Trous ouverts
 
-1. **🔴 `AUD-46` — dropdown de recherche recouvert par les cartes.** Trois hypothèses réfutées
-   (dont `z-index: 9000` sur `.app-header`, testé, sans effet). **Diagnostic requis avant US :
-   `type src\App.vue`.** ⛔ Ne pas proposer une 4ᵉ valeur de `z-index`.
-2. **🔴 Patch mort en `main`** — `AppHeader.vue:89` porte `z-index: 9000`, sans effet. **À révoquer
-   en commit séparé.**
-3. **🟠 3 hash de commit non relevés** (`TOAST-TRUTH`, `ONBOARD-EMPTY`, `ONBOARD-TOAST`).
-4. **🟠 `DEC-151` non arbitré** — deux signaux `stale` concurrents et morts. Bloque `US-STALE-SIGNAL`.
-5. **🔴 Multi-appareil dégradé** (`AUD-42`) — **observé, plus supposé.** Limite à annoncer aux testeurs.
-6. **🟠 `AUD-37` délégué à la bêta** — import MAL jamais vérifié sur un vrai fichier.
-7. **🟠 `AUD-44`** — `isSyncing` sans `try/finally`. Latent. → S43, seul.
-8. **🟠 Dette de vérité** — « We'll sync it later » promet une resync non garantie par le code.
-9. **🟠 Zéro retour terrain** — 15 US depuis S41, aucune observée par un utilisateur.
+1. **🟠 2 hash non relevés** — `US-CARD-CONVERGE-A` et le micro-patch `RecCard`.
+   `git log --oneline -8` en ouverture SE-070.
+2. **🔴 Micro-patch `RecCard` non commité** — `git status` non vide en fin de SE-069.
+   Bloque toute livraison (`AP-PROCESS-3`). **Premier geste SE-070.**
+3. **🟠 Sweep E2E non rejoué** depuis SE-068, alors que 6 US ont touché
+   recherche, onboarding et This Season. **Rejeu obligatoire en ouverture S43.**
+4. **🟠 `AUD-49`** — collision de numérotation `DEC-158`. Renumérotation en `DEC-176` à appliquer.
+5. **🟠 `AUD-50`** — `AnimeCard.vue` a 3 consommateurs restants (Coming Soon, Completed, Plan to Watch).
+6. **🟠 `AUD-51`** — pastille « Add » à 36 px, sous la cible tactile de 44 px.
+7. **🟠 `AUD-37`** délégué à la bêta — import MAL jamais vérifié sur un vrai fichier.
+8. **🟠 `AUD-44`** — `isSyncing` sans `try/finally`. Latent. → S43, seul.
+9. **🟠 Dette de vérité** — « We'll sync it later » promet une resync non garantie par le code.
+10. **🟠 Zéro retour terrain** — 25 US depuis S41, aucune observée par un utilisateur.
 
 ---
 
-## 🎯 Sprint Outcome Gate — S42 (à répondre à la clôture)
+## 🎯 Sprint Outcome Gate — S42 · RÉPONDUE
 
 > *« Qu'est-ce que l'utilisateur peut faire / voir / ressentir aujourd'hui qu'il ne pouvait pas
 > avant ce sprint ? »*
 
-**Budget dette :** 1 US de dette pure (`US-ADD-EXTRACT`) sur 4 livrées. Sous plafond.
+**Il peut faire confiance à ce que l'écran lui dit.** Le message d'ajout annonce l'onglet réel,
+la recherche est lisible et range au bon endroit, un anime déjà suivi disparaît de la saison,
+un second appareil annonce le compte retrouvé au lieu de faire semblant de ne pas le connaître.
+
+**Type : gain de fiabilité visible** (réponse 2, `PILOTAGE.md §5`) — ✅ acceptable.
+
+**Budget dette :** 1 US de dette pure (`US-ADD-EXTRACT`) sur 10 livrées. Sous plafond.
