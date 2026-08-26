@@ -3,7 +3,7 @@
 > **Rôle :** les choix encore appliqués aujourd'hui, une ligne chacun. Un numéro n'est jamais supprimé ni réattribué.
 > **Pas ici :** décisions closes, périmées ou de migration (→ `DECISIONS_ARCHIVE.md`, hors ordre de lecture) · état courant (→ `STATE.md`) · règles opposables (→ `AGENTS.md`, `PILOTAGE.md`) · pièges répétés (→ `ANTIPATTERNS.md`).
 
-**Dernier numéro attribué : DEC-170.** 
+**Dernier numéro attribué : DEC-175.** 
 Une décision contredite est marquée `⛔ SUPERSEDED PAR DEC-xxx` et bascule dans l'archive ; les renvois `DEC-xx` des autres documents restent résolvables.
 
 ---
@@ -180,3 +180,30 @@ DEC-167	L'attente sur un 429 AniList est plafonnée à `MAX_RATELIMIT_WAIT_MS = 
 DEC-168	La priorité de synchronisation classe par INVISIBILITÉ, pas par visibilité : `awaitingSchedule` (2) > `calendar` (1) > reste (0). Un anime en échec est horodaté en antidaté (réessai 15 min), et la sync est plafonnée à 25 par démarrage.	Une entrée `awaitingSchedule` est stockée mais invisible partout ; une entrée `calendar` s'affiche déjà correctement. Sans ce classement, les 25 places d'un démarrage vont aux entrées déjà visibles et un import MAL n'a jamais son tour. Sans horodatage sur échec, un anime rate-limité revient à chaque démarrage et entretient sa propre famine.
 DEC-169	Aucune sortie de commande de Gemini n'a valeur de preuve — build, tests ET type-check. Son `node_modules` diverge du nôtre : noms de chunks structurellement différents, `index.html` différent, écart de build reproductible de 71 kB sur 3 livraisons.	R1 le posait déjà pour les tests. On sait maintenant POURQUOI, et que ça s'étend au type-check : un `vue-tsc` sur une autre version de TypeScript peut être vert chez lui et rouge chez nous.
 DEC-170	Une US de plomberie réseau (file d'attente, quota, TTL, ordre de synchronisation) peut déroger à l'exigence E2E d'une 🟠, sur déclaration explicite dans l'US et validation du PO. Gate alors exigée : R1 complète + test de fidélité. Ne s'applique JAMAIS à un correctif touchant un élément d'écran.	Un délai réseau ou un ordre de file n'est pas observable par un geste Playwright. Exiger un E2E produirait soit une spec fantoche, soit un test de timing fragile — un faux vert en puissance, pire que l'absence de filet.
+- **DEC-171 — `US-SEASON-1TAP` est supprimée, absorbée par `US-CARD-CONVERGE-A`.** Les deux
+  décrivaient le même livrable (« This Season : 1 tap au lieu de 2 + modale »). `ROADMAP.md` leur
+  allouait deux slots distincts. Un seul geste, un seul slot.
+
+- **DEC-172 — dans `useAddAnime`, le toast dérive de l'état APPLIQUÉ, la synchronisation de l'état
+  DEMANDÉ.** Le store peut démoter une entrée (auto-vault sur `Finished Airing`, démotion
+  `calendar` sans `day`). Le message doit suivre le store — sinon l'app annonce un onglet où
+  l'anime n'est pas. Mais la synchronisation doit rester sur l'état demandé : **c'est elle qui va
+  chercher la date manquante et repromeut l'entrée.** La brancher sur l'état appliqué la
+  désactiverait exactement dans le cas où elle est nécessaire.
+  ⛔ Corollaire opposable : le message s'aligne sur le store, **jamais l'inverse**. Ne pas
+  « corriger » les gardes de `stores/anime.ts` pour faire respecter l'état demandé.
+
+- **DEC-173 — `markOnboarded()` est appelé AVANT `saveToDatabase()`, et la redirection est
+  garantie.** Un échec de sauvegarde ne doit ni bloquer la fin de l'inscription, ni la faire
+  rejouer. L'utilisateur arrive sur son calendrier dans tous les cas ; un message unique lui dit
+  que la copie cloud a échoué. ⛔ Ne jamais déplacer `markOnboarded()` après la sauvegarde
+  « pour n'onboarder qu'en cas de succès » : le tunnel complet serait rejoué à chaque échec réseau.
+
+- **DEC-174 — le handoff se déclenche à 80 % de capacité, pas 90 %.** Un handoff coûte 8-10 % à
+  produire. Déclencher à 90 % garantit un document tronqué — l'inverse de ce que la règle protège.
+  Supersede le seuil de 90 % des instructions de projet.
+
+- **DEC-175 — `AUD-37` est délégué aux bêta-testeurs, pas soldé.** Décision PO explicite de ne pas
+  tester l'import MAL sur un vrai fichier. Contrepartie obligatoire : **la note aux testeurs doit
+  demander « combien de titres avais-tu, combien en retrouves-tu ? »** — sans quoi un import cassé
+  produirait un retour inexploitable (« ça marche pas ») au lieu d'un signal.
