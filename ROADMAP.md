@@ -22,7 +22,7 @@
 |---|---|---|
 | **S41** | **Ce que j'ajoute reste** — la persistance cesse de mentir | ✅ **CLOS — v0.35.0, 10/10** |
 | **S42** | **On peut nous faire confiance** — plus aucun écran vide ni muet | ✅ **CLOS — v0.36.0, 10/10** |
-| **S43** | **Rien ne casse en douce** — filets automatisés et sweep déterministe | 🔵 **EN COURS** (ouvert SE-070) |
+| **S43** | **Rien ne casse en douce** — filets automatisés et sweep déterministe | ✅ CLOS — v0.37.0, 10/10 |
 | **S44** | **L'arrivée vaut le produit** — onboarding et premiers retours bêta | 🟡 Moyenne |
 | **S45** | Consolidation bêta 1 — le top des irritants remontés | 🟠 Thématique |
 | **S46** | Stats enrichies (EPIC 11) — tendances, historique de visionnage | 🟠 Thématique |
@@ -271,6 +271,15 @@ aucun `page.route`. Rouge en fin de SE-070. À instruire en priorité.
 
 ---
 
+S43 : passer à ✅ CLOS — v0.37.0, 10/10. Réponse à la gate = gain ressenti (type 1). Sorties de périmètre : US-ESLINT-CI-1 ↦ S44 · AUD-54 ↦ S44 · US-DEMOCK-3 ↦ S44 flex. US non prévues entrées en cours : US-HEADER-TINT, US-DEMOCK-2c-3, correctif logout-modal-position.
+
+S44 — « L'arrivée vaut le produit ». 🔴 Arbitrage PO à trancher en SE-073 : le Goal écrit porte sur l'onboarding et la bêta, mais le PO a demandé l'audit pixel (AUD-56) et la refonte du chrome mobile en priorité. Les deux ne tiennent pas dans 7 slots avec J10e, US-MORELIKETHIS-FIX et US-STALE-SIGNAL déjà planifiés. Le Goal doit être réécrit ou le contenu arbitré.
+
+Déjà décidé pour S44 :
+
+Refonte du chrome mobile = option A (rangée unique logo + recherche + menu ⋯) puis option B (icônes nues teintées). Validé par le PO en SE-072.
+Audit pixel AUD-56 par parcours, pas écran par écran : 375 × 812, un thème à la fois, parcours ouvrir → ajouter → semaine → modale → déconnexion. Méthode proposée, à valider.
+-----
 ## §5 — Note aux testeurs — à rédiger avant tout envoi
 
 Document jamais écrit. Prérequis à la bêta, quelle que soit sa date.
