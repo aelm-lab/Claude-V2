@@ -114,7 +114,11 @@ Tout correctif issu d'un audit UX, et toute fonctionnalité touchant l'écran, l
 🔴 **Tu n'exécutes jamais Playwright.** Les specs E2E sont rédigées par le Tech Lead et exécutées par le PO. Ton rôle sur une US E2E se limite au code de production. Les deux sorties brutes rouge/verte sont produites par le PO, pas par toi.
 
 **R4-bis — Gating ↔ E2E.** Tout `v-if` ou gating conditionnel ajouté sur un **élément interactif** (bouton, lien, carte cliquable) déclenche, dans la **MÊME US**, un grep des specs E2E qui ouvrent ou cliquent cet élément. Si une spec cliquait l'élément désormais gaté, elle deviendra rouge **au sweep, pas au merge**. Vérifier et réaligner AVANT de livrer.
-
+**R4-ter — Contenu ↔ E2E.** Tout changement du **contenu textuel** d'un élément interactif
+(emoji, glyphe, libellé, `aria-label`) déclenche, dans la MÊME US, un `findstr` de `tests/e2e/`
+sur l'ancienne chaîne. Une spec qui ciblait l'ancien contenu deviendra rouge **au sweep, pas au
+merge**. Vérifier et réaligner AVANT de livrer. Une spec cible un élément par son `aria-label`,
+jamais par son emoji.
 **R5 — Tester l'impact, pas l'univers.**
 - *Pendant un epic :* chaque US ne livre qu'**UN** test ciblé sur ce qu'elle change.
 - *Fin d'epic :* grand check complet — `npm run test:run`, `npm run build`, suite E2E entière.
