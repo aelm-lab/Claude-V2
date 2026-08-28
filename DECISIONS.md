@@ -3,7 +3,7 @@
 > **Rôle :** les choix encore appliqués aujourd'hui, une ligne chacun. Un numéro n'est jamais supprimé ni réattribué.
 > **Pas ici :** décisions closes, périmées ou de migration (→ `DECISIONS_ARCHIVE.md`, hors ordre de lecture) · état courant (→ `STATE.md`) · règles opposables (→ `AGENTS.md`, `PILOTAGE.md`) · pièges répétés (→ `ANTIPATTERNS.md`).
 
-**Dernier numéro attribué : DEC-182.** 
+**Dernier numéro attribué : DEC-184.** 
 Une décision contredite est marquée `⛔ SUPERSEDED PAR DEC-xxx` et bascule dans l'archive ; les renvois `DEC-xx` des autres documents restent résolvables.
 
 ---
@@ -213,3 +213,5 @@ DEC-170	Une US de plomberie réseau (file d'attente, quota, TTL, ordre de synchr
 | **DEC-180** | `RecCard` accepte une prop `showSkip` (défaut `true`). *This Season* la passe à `false` : le bouton « Skip » n'apparaît pas hors *For You*. `DEC-159` devient **sans objet** sur cet écran | Sur *For You*, « Skip » signifie « ne me le remontre plus ». Sur *This Season*, `DEC-159` en faisait un rejet session-only. Un même bouton avec deux portées invisibles est un piège : masquer vaut mieux qu'expliquer |
 | **DEC-181** | `US-CARD-CONVERGE-B` ne couvre que **Coming Soon**. *Completed* et *Plan to Watch* font l'objet d'une **US produit distincte, post-bêta** | Ces deux écrans affichent des animes **déjà en bibliothèque** : le bouton n'y est pas « Add » mais « Rewatch », « Start watching », ou rien. Ce n'est pas de la convergence technique, c'est un arbitrage produit que ni le PO ni moi ne pouvons trancher sans usage réel |
 | **DEC-182** | **S42 est clos en v0.36.0**, 10/10 slots, sur réponse « gain de fiabilité visible » à la Sprint Outcome Gate. `US-HEADER-ICONS` non prise glisse en S43 | `DEC-155` : clôture à date et non à épuisement. Les 10 slots sont consommés ; une version taguée avant l'envoi aux testeurs vaut mieux qu'un sprint qui déborde |
+DEC-183	Une spec qui ne teste ni contenu ni données (layout, navigation, débordement, état vide) installe `installAniListMock(page, {})` — mock total à vide. Aucune graine, aucune URL	Mesuré en SE-071 : `grid-two-columns` et `no-horizontal-overflow` passent au vert avec une grille vide. Elles n'ont jamais eu besoin de données — elles routaient Jikan par mimétisme. Un mock à vide est plus fort qu'un mock peuplé : il prouve que le composant ne dépend pas du réseau
+DEC-184	Des specs INDÉPENDANTES migrent en lot : N fichiers, un geste identique, une seule gate. L'interdit porte sur deux changements dans un MÊME fichier, jamais sur N fichiers disjoints	Playwright nomme le fichier fautif : sur des fichiers disjoints la cause reste identifiable, donc le lot ne coûte rien en diagnostic. Appliqué 3 fois en SE-071 (3, 3 puis 2 fichiers), zéro rouge. Le coût résiduel est la gate : des specs de batchs différents imposent autant de commandes que de batchs
