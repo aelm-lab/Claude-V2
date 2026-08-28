@@ -542,3 +542,24 @@ Elle n'a jamais été une régression. **Elle a en revanche révélé `AUD-54`.*
 🎓 **Leçon SE-071 — un test capricieux n'est pas un test à réparer, c'est un capteur mal branché.**
 Le réflexe était de le déclarer flaky. Il voyait un comportement réel du produit que personne
 n'avait observé.
+## SE-072 — deux constats, une famille soldée
+
+| ID | Constat | Impact utilisateur | Destination |
+|---|---|---|---|
+| **AUD-55** | 🟢 **CLOS.** En-tête en bandeau gris clair sur fond noir en thème sombre. **Cause établie par variable unique** : les règles `:deep(html.dark)` ne matchent rien (`DEC-187`). Le `rgba(255,255,255,0.65)` du mode clair restait appliqué | Chaque écran, en thème sombre, portait une barre grise incohérente en haut. Corrigé en SE-072, vérifié à l'œil sur `/discover` | Soldé |
+| **AUD-56** | 🟠 **Audit pixel complet non fait.** Demande PO explicite : toutes les pages, toutes les modales, thèmes clair ET sombre. Aucune mesure existante. Sous-lot connu : aucun token de couleur hors `--accent` — les 5 teintes de l'en-tête sont en dur | Inconnu et potentiellement large : `AUD-55` prouve qu'un défaut visuel peut vivre des mois sans qu'aucun test ne le voie | **Tête de S44** |
+
+### `AUD-52` — SOLDÉ
+
+**Famille A (AniList) : 5/5.** **Famille B (Jikan mort) : 10/10** — les 5 dernières migrées en SE-072
+(`calendar-subnav-layout`, `week-no-duplicate-period`, `onboarding-genres`, `foryou-dedup`,
+`modal-status-gating`). **Zéro spec ne connaît plus une URL d'API.**
+**Famille C :** `week-empty-day-cta` (catch-all `**/*`) intacte → `US-DEMOCK-3`, flex S44.
+
+🔴 **Résultat contre-intuitif à retenir : aucun bug de production n'a été révélé.** Les 5 specs
+attendues comme risquées sont vertes avec un mock maîtrisé. L'hypothèse « elles cachent un bug
+depuis 5 sprints » est **infirmée**, pas « non testée ».
+
+🎓 **Leçon SE-072 — un test vert peut être détruit par une US qui ne le concerne pas.**
+Aucune spec n'asserte une couleur, aucune ne protège un emoji. Le filet couvre le comportement,
+pas l'apparence. C'est structurel, et ça fonde `AUD-56`.
