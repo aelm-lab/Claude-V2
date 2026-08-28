@@ -3,7 +3,7 @@
 > **Rôle :** les choix encore appliqués aujourd'hui, une ligne chacun. Un numéro n'est jamais supprimé ni réattribué.
 > **Pas ici :** décisions closes, périmées ou de migration (→ `DECISIONS_ARCHIVE.md`, hors ordre de lecture) · état courant (→ `STATE.md`) · règles opposables (→ `AGENTS.md`, `PILOTAGE.md`) · pièges répétés (→ `ANTIPATTERNS.md`).
 
-**Dernier numéro attribué : DEC-184.** 
+**Dernier numéro attribué : DEC-186.** 
 Une décision contredite est marquée `⛔ SUPERSEDED PAR DEC-xxx` et bascule dans l'archive ; les renvois `DEC-xx` des autres documents restent résolvables.
 
 ---
@@ -214,3 +214,6 @@ DEC-170	Une US de plomberie réseau (file d'attente, quota, TTL, ordre de synchr
 | **DEC-182** | **S42 est clos en v0.36.0**, 10/10 slots, sur réponse « gain de fiabilité visible » à la Sprint Outcome Gate. `US-HEADER-ICONS` non prise glisse en S43 | `DEC-155` : clôture à date et non à épuisement. Les 10 slots sont consommés ; une version taguée avant l'envoi aux testeurs vaut mieux qu'un sprint qui déborde |
 DEC-183	Une spec qui ne teste ni contenu ni données (layout, navigation, débordement, état vide) installe `installAniListMock(page, {})` — mock total à vide. Aucune graine, aucune URL	Mesuré en SE-071 : `grid-two-columns` et `no-horizontal-overflow` passent au vert avec une grille vide. Elles n'ont jamais eu besoin de données — elles routaient Jikan par mimétisme. Un mock à vide est plus fort qu'un mock peuplé : il prouve que le composant ne dépend pas du réseau
 DEC-184	Des specs INDÉPENDANTES migrent en lot : N fichiers, un geste identique, une seule gate. L'interdit porte sur deux changements dans un MÊME fichier, jamais sur N fichiers disjoints	Playwright nomme le fichier fautif : sur des fichiers disjoints la cause reste identifiable, donc le lot ne coûte rien en diagnostic. Appliqué 3 fois en SE-071 (3, 3 puis 2 fichiers), zéro rouge. Le coût résiduel est la gate : des specs de batchs différents imposent autant de commandes que de batchs
+ID	Décision	Pourquoi ça casse si on l'ignore
+DEC-185	🔴 Dans un <style scoped>, un sélecteur d'ancêtre global (html.dark, body.x) s'écrit nu, jamais dans :deep(). :deep() ne sert qu'à percer vers un descendant d'un composant enfant	Mesuré en SE-072 par variable unique : les 6 règles :deep(html.dark) d'AppHeader.vue ne s'appliquaient à rien. Le thème sombre de l'en-tête était mort depuis sa création — fond blanc à 65 % sur noir, d'où le bandeau gris (AUD-55). Un sélecteur qui ne matche rien ne produit aucune erreur : ni le build, ni vue-tsc, ni aucune spec ne le voient
+DEC-186	🔴 R4-ter — Contenu ↔ E2E. Tout changement du contenu textuel d'un élément interactif (emoji → icône, libellé, aria-label) déclenche, dans la MÊME US, un findstr de tests/e2e/ sur l'ancienne chaîne. Étend R4-bis, qui ne couvrait que le gating	US-HEADER-ICONS a retiré l'emoji 🚪 ; logout-modal-position.spec.ts le cherchait par hasText: '🚪'. Rouge au sweep, pas au merge — 4 échanges après la livraison. Corollaire appliqué : une spec cible un élément par son aria-label, jamais par son emoji ni son glyphe
