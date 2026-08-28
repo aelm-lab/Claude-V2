@@ -519,3 +519,26 @@ Un import MAL pose `awaitingSchedule: true` sur toutes ses entrées — exacteme
   🔻 **Non revérifié à l'œil.** Le comportement réel sur second appareil reste à mesurer.
 - **AUD-03** — une occurrence supplémentaire soldée (`SearchInput`). Une occurrence
   résiduelle connue : `utils/onboardingFilter.ts` (voir `DEC-178`).
+
+  ## SE-071 — un constat neuf, une famille soldée
+
+| ID | Constat | Impact utilisateur | Destination |
+|---|---|---|---|
+| **AUD-54** | 🟠 **La vue Semaine reconstruit ses cartes pendant la synchronisation.** Observé par Playwright (élément détaché du DOM, 29,5 s de tentatives de clic) puis confirmé à l'œil par le PO en 3G simulée. Mesures : `Load 6,88 s` en 3G contre `2,22 s` en Slow 4G, `Finish 23,21 s`, 5,8 Mo transférés pour un écran. Les réponses AniList arrivent en ~3 s chacune et chaque arrivée semble reconstruire la liste au lieu de la mettre à jour | **Requalifié 🟠 après observation : le tap atterrit sur la bonne fiche.** Vérifié explicitement par le PO sur deux ouvertures. Ce n'est donc pas une perte de clic mais une agitation visuelle de ~7 s au démarrage, sur l'écran ouvert quotidiennement | Flex S43 ou S44. 🔻 Cause non établie — le composant Semaine n'a pas été lu. 🔻 Mesures prises avec `Disable cache` coché : non représentatives du cache réel |
+
+### `AUD-52` — état après SE-071
+
+**Famille A (AniList) : ✅ SOLDÉE.** 5/5 migrées. **Zéro spec ne connaît plus l'URL d'AniList.**
+**Famille B (Jikan mort) : 5/10 migrées.** Restent : `calendar-subnav-layout`, `foryou-dedup`,
+`modal-status-gating`, `onboarding-genres`, `week-no-duplicate-period` → `US-DEMOCK-2c`, SE-072.
+**Famille C :** `week-empty-day-cta` (catch-all `**/*`) intacte. `boot-loader` route Firestore —
+**légitime, hors périmètre**, ce n'est pas un mock mort.
+
+**Le rouge `modal-next-episode` est expliqué et clos.** Cause établie par variable unique :
+absence de mock réseau. Deux échecs de nature différente sur un dépôt identique (`not found`
+en SE-070, `detached from DOM` en SE-071) — la spec mesurait l'état du réseau, pas le produit.
+Elle n'a jamais été une régression. **Elle a en revanche révélé `AUD-54`.**
+
+🎓 **Leçon SE-071 — un test capricieux n'est pas un test à réparer, c'est un capteur mal branché.**
+Le réflexe était de le déclarer flaky. Il voyait un comportement réel du produit que personne
+n'avait observé.
