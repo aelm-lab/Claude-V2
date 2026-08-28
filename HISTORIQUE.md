@@ -50,7 +50,9 @@
 | SE-068 | S42 | 5 US mergées (`US-SWEEP-S41`, `US-ADD-EXTRACT`, `US-ADD-TOAST-TRUTH`, `US-ONBOARD-EMPTY`, `US-ONBOARD-TOAST`) · 295 → 315 tests · sweep E2E rejoué 52/52 · `AUD-33` fermé sur preuve, `AUD-45` requalifié non-constat, `AUD-06` soldé, `AUD-23` caduc, `AUD-42` observé · `AUD-46` ouvert · `DEC-171` → `DEC-175` · `AP-METHOD-1` créé |
 | SE-069 | S42 | Clôture S42. Diagnostic AUD-46 résolu par lecture (`position: static` annulait tout z-index). 6 US Gemini mergées au premier coup + 2 micro-patchs. 3 constats neufs ouverts par lecture de code (AUD-47, AUD-49, AUD-50). 331 tests / 38 fichiers. |
 | **SE-071** | S43 | Rouge `modal-next-episode` **instruit et clos** : cause = absence de mock réseau, établie par variable unique. A révélé `AUD-54` (vue Semaine qui reconstruit ses cartes en synchro, confirmé à l'œil en 3G, requalifié 🟠 — le tap reste juste). 5 US MERGE : `US-DEMOCK-HELPER` (`MediaSeed` sait produire `studioName` et `startDate`), `US-DEMOCK-1d`, `US-DEMOCK-1b/c`, `US-DEMOCK-2a`, `US-DEMOCK-2b`. **Famille A d'`AUD-52` soldée : zéro spec ne connaît plus l'URL d'AniList.** 10 specs sur le helper unique. Les 6 patchs documentaires hérités de SE-070 appliqués. Zéro sollicitation de Gemini (2ᵉ session consécutive) |
-
+| SE-072 | S43 | Clôture S43. `US-HEADER-ICONS` (1re US Gemini en 3 sessions) + `US-HEADER-TINT`
++ `US-DEMOCK-2c` (5 specs). `AUD-52` soldé. `AUD-55` diagnostiqué et corrigé (`DEC-187`).
+`DEC-188` (R4-ter). Sweep 55/55, 43 specs. |
 ---
 
 ## 📦 Versions
@@ -70,3 +72,5 @@
 | **v0.34.0** | **S40** | Migration AniList `J09`→`J11b` — **Jikan intégralement retiré** — + `J12` harnais E2E AniList |
 |v0.35.0|	S41|	Ce que j'ajoute reste — la persistance cesse de mentir	9e3923e	295 tests / 32 fichiers · 178 modules · 368,90 kB	10 US + 4 micro-patchs. Gain de fiabilité visible : la bibliothèque survit au logout, revient à la connexion, tient 500 titres, et le réseau ne gèle plus l'application. Zéro fonctionnalité ajoutée|
 | v0.36.0 | S42 | **On peut nous faire confiance.** L'écran cesse de mentir sur l'état réel : le message d'ajout annonce l'onglet où l'anime a réellement atterri, la recherche est lisible et range au bon endroit, un anime déjà suivi disparaît de This Season sans rechargement, un second appareil annonce le compte retrouvé au lieu de rejouer l'inscription à l'aveugle. |
+| v0.37.0 | S43 — « Rien ne casse en douce » | 10/10 slots | Gate : gain ressenti — icônes SVG
+stables, cibles 44 px, thème sombre réparé. Filet : 0 mock mort, 43 specs, sweep 55/55 |
