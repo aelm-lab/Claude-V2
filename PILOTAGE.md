@@ -193,3 +193,11 @@ Le coût réel d'un doublon n'est pas le stockage : c'est **l'éviction**. Chaqu
 | `BENCHMARK.md` | Comparatif concurrentiel trié | Claude |
 
 Les instructions personnalisées du projet ne vivent pas dans le dépôt : elles se collent dans la configuration du projet Claude Chat.
+
+
+**Élagage du contexte de conversation (SE-071).** Le PO peut éditer un message déjà envoyé pour
+en retirer le volume devenu inutile : le texte supprimé ne revient pas dans le contexte, ce qui
+en fait le levier de capacité le plus efficace disponible. **Condition :** ce qui est retiré est
+remplacé par sa version compressée **et** par les sorties brutes qui prouvent le résultat — une
+sortie de terminal ne s'élague jamais, elle seule fait foi. **Limite :** l'élagage allège la
+session courante, il ne transmet rien à la suivante. Il ne remplace ni le handoff ni `STATE.md`.
