@@ -11,11 +11,11 @@
 
 | | |
 |---|---|
-| Session | **SE-071** — poursuite S43 |
-| Sprint | **S43 EN COURS** — « Rien ne casse en douce » — 5 slots pleins + slot 6 aux ⅔ |
-| Version | **v0.36.0** — inchangée, le sprint n'est pas clos |
-| Commit main | `4ae0624` |
-| Prochaine session | **SE-072** — poursuite S43 |
+| Session | **SE-072** — clôture de S43 |
+| Sprint | **S43 CLOS** — « Rien ne casse en douce » — **10/10 slots** |
+| Version | **v0.37.0** — bumpée à la clôture (code applicatif livré) |
+| Commit main | 🔻 **à relever** — `db9c258` + le commit du correctif `logout-modal-position` |
+| Prochaine session | **SE-073** — ouverture de **S44** |
 
 ---
 
@@ -23,12 +23,12 @@
 
 | Métrique | Valeur | Fraîcheur |
 |---|---|---|
-| Tests unitaires | **331** / 38 fichiers | **SE-071 — rejoué, vert** |
-| Build | **179 modules**, `index` 369,28 kB (gzip 108,39) | SE-069 — 🔻 chiffres non relevés depuis, mais build **vert** en SE-071 |
-| Sweep E2E | ✅ **52 / 52** | **SE-071** — 🔻 les 5 batchs verts au cours de la session, **pas en un sweep continu** |
-| Specs E2E | 42 sur disque / 42 enregistrées, mapping 1:1 | SE-071 — inchangé, aucune spec créée ni supprimée |
-| Specs sur helper unique | **10** | **SE-071** |
-| Specs à mock mort restant | **5** (famille B, Jikan) + 1 catch-all (famille C) | **SE-071** |
+| Tests unitaires | **331** / 38 fichiers | **SE-072 — rejoué 3×, vert** |
+| Build | **180 modules**, `index.js` 371,75 kB (gzip 108,84) · `index.css` **65,20 kB** (gzip 12,38) | **SE-072 — relevé** |
+| Sweep E2E | ✅ **55 / 55** sur 5 batchs | **SE-072** — 🔻 batch4 vert **après correctif, sortie brute non collée** |
+| Specs E2E | **43** sur disque / **43** enregistrées, mapping 1:1 | **SE-072** — `header-icons` créée et enregistrée |
+| Specs sur helper unique | **15** | **SE-072** |
+| Specs à mock mort restant | **0** (famille B soldée) + **1 catch-all** (famille C, `week-empty-day-cta`) | **SE-072** |
 | ESLint | ❌ **jamais exécuté** — « zéro `any` » vérifié par aucun outil | — |
 
 > `vue-tsc --noEmit` est embarqué dans `npm run build`, lui-même embarqué dans le `webServer`
@@ -43,37 +43,41 @@
 |---|---|
 | Corpus | **15 documents** (10 en ordre de lecture + 5 satellites) |
 | Documents au-dessus du plafond H7 | **0** |
-| Patchs documentaires en dette | ✅ **0** — les 6 hérités de SE-070 appliqués en SE-071 |
-| Dernier `AUD-xx` | **AUD-54** |
-| Dernier `DEC-xxx` | **DEC-186** |
+| Patchs documentaires en dette | 🔻 **le lot de clôture SE-072** — à appliquer en ouverture de SE-073 |
+| Dernier `AUD-xx` | **AUD-56** |
+| Dernier `DEC-xxx` | **DEC-188** |
 
 ---
 
-## 📋 Kanban — S43 · SE-071
+## 📋 Kanban — S43 CLOS · SE-072
 
-### ✅ Done — 5 slots pleins + slot 6 aux ⅔
+### ✅ Done — 10/10 slots
 
 | US | Impact utilisateur livré |
 |---|---|
 | `US-SWEEP-S42` 🟢 | Aucun — sweep rejoué |
-| `US-SEASON-TOKENS` 🟢 | Bouton « Retry » au violet de l'app ; cartes homogènes ; **dernière rangée atteignable** |
+| `US-SEASON-TOKENS` 🟢 | Bouton « Retry » au violet de l'app ; dernière rangée de cartes atteignable |
 | `US-DEMOCK-1a` 🟢 | Aucun — pilote du helper unique |
 | `US-DEMOCK-HELPER` 🟠 | Aucun — le helper sait produire un studio et une date |
-| `US-DEMOCK-1d` 🟠 | Aucun — la ligne `2023 · ★ 8.9 · MAPPA` est enfin protégée par un test hors réseau |
+| `US-DEMOCK-1d` 🟠 | Aucun — la ligne `2023 · ★ 8.9 · MAPPA` protégée hors réseau |
 | `US-DEMOCK-1b/c` 🟢 | Aucun — famille A soldée |
 | `US-DEMOCK-2a` 🟠 | Aucun — 3 specs Jikan mortes rebranchées |
-| `US-DEMOCK-2b` 🟠 | Aucun — la tenue en 387 px est de nouveau mesurée pour de vrai |
+| `US-DEMOCK-2b` 🟠 | Aucun — la tenue en 387 px de nouveau mesurée |
+| `US-DEMOCK-2c` (1+2+3) 🟢🟠 | Aucun — **famille B soldée, 5 dernières specs migrées, zéro bug révélé** |
+| `US-HEADER-ICONS` 🟠 + `US-HEADER-TINT` 🟢 | **Icônes SVG identiques sur tous les téléphones · boutons 40 → 44 px · pastilles colorées · `aria-label` anglais · thème sombre réparé** |
 
-**Gemini : 0 US en SE-070 et SE-071.** Streak inchangée à 23. 12 micro-patchs `DEC-128` sur deux
-sessions. ⚠️ **Signal :** deux sessions pleines sans agent d'implémentation. Conforme à `DEC-183`
-sur un chantier 100 % test, mais le sprint n'a encore produit **aucune ligne de code applicatif**.
+**Gemini : 1 US en SE-072** (`US-HEADER-ICONS`) — fin de la traversée à zéro. Streak → 24.
+4 micro-patchs `DEC-128` dans la session.
 
 ### 🔄 In Progress
 Aucune.
 
-### 📝 To Do — S43
-`US-DEMOCK-2c` (5 specs Jikan) · `US-HEADER-ICONS` · flex : `US-ESLINT-CI-1`, `AUD-54`,
-1 slot bêta. Composition → **`ROADMAP.md §2`**.
+### 📝 To Do — S44 (à composer en SE-073)
+`AUD-56` audit pixel complet (demande PO, priorité 1) · `AUD-54` · `US-ESLINT-CI-1` ·
+refonte chrome mobile (option A + icônes nues option B) · `US-MORELIKETHIS-FIX` ·
+`US-STALE-SIGNAL` · `J10e-a/b/c` · `US-SYNC-FINALLY` · `US-CARD-CONVERGE-B` ·
+`US-DEMOCK-3` (catch-all) · renommage des tests de `modal-status-gating`.
+Composition → **`ROADMAP.md §2`**.
 
 ### 🗂️ Backlog
 Cap S43 → S50 : **`ROADMAP.md`**.
@@ -84,17 +88,23 @@ Cap S43 → S50 : **`ROADMAP.md`**.
 
 | Fait | État | Dernière mesure |
 |---|---|---|
-| AniList `graphql.anilist.co` | ✅ Opérationnel, ~3 s de réponse en 3G simulée | **SE-071** |
-| Service worker de production | ❌ **Passe-plat, zéro cache** — reconfirmé par F5 hors ligne (`ERR_FAILED`, 0 kB servi) | **SE-071**, méthode indépendante |
-| PWA hors ligne | ❌ **Inexistante** — l'app ne s'ouvre pas sans réseau. Pas une régression : jamais implémentée. Cap S49 | **SE-071** |
-| Multi-appareil (`AUD-42`) | 🔻 **Non revérifié** — bande de rattrapage livrée, comportement réel jamais observé | SE-06x |
+| AniList `graphql.anilist.co` | ✅ Opérationnel | SE-071 — 🔻 **non remesuré en SE-072, écart validé par le PO** (aucune US du jour n'en dépendait) |
+| Service worker de production | ❌ **Passe-plat, zéro cache** | SE-071 |
+| PWA hors ligne | ❌ **Inexistante** — cap S49 | SE-071 |
+| Multi-appareil (`AUD-42`) | 🔻 **Non revérifié** | SE-06x |
+
+🔴 **Remesure obligatoire en ouverture de SE-073** (`PILOTAGE §6`) — deux sessions d'écart cumulé.
 
 ---
 
 ## 🕳️ Trous ouverts
 
-1. **`AUD-54`** — vue Semaine qui reconstruit ses cartes en synchro. 🟠, cause non établie, composant non lu.
-2. **Chiffres de build** — 179 modules / 369,28 kB datent de SE-069. Le build est vert, sa taille est inconnue.
-3. **Sweep non continu** — 52/52 obtenus batch par batch au fil de SE-071, jamais en une passe.
-4. **`AGENTS.md §6` — règle du seed mono-jour non vérifiée.** `modal-next-episode` seede un seul jour et sa carte **était visible**. La règle gravée dit l'inverse. 🔻 Ni confirmée ni infirmée : un seul jour de test, sur une seule vue.
-5. **Bêta non ouverte** — décision PO. 25+ US livrées depuis S41, zéro observation utilisateur.
+1. **`AUD-56`** — audit pixel complet (Library, modales, toutes pages, clair **et** sombre). Demande PO explicite, à ouvrir en tête de S44. Aucune mesure faite.
+2. **`AUD-54`** — vue Semaine qui reconstruit ses cartes en synchro (~7 s d'agitation). 🟠, cause non établie, composant non lu. **Seul constat de S43 touchant l'expérience réelle.**
+3. **Batch4 non reprouvé par sortie brute** — vert sur parole du PO après le correctif `logout-modal-position`.
+4. **Commit `HEAD` non relevé** après le correctif logout.
+5. **`AGENTS.md §6` — règle du seed mono-jour non vérifiée** (Trou hérité SE-071). Ni confirmée ni infirmée.
+6. **Famille C d'`AUD-52`** — `week-empty-day-cta` route `**/*`, fonctionne par accident.
+7. **Titres mensongers dans `modal-status-gating`** — « TEST 1 ROUGE (avant fix) » et « TEST 2 VERT (après fix) » testent la même chose. À renommer en S44.
+8. **Aucun token de couleur hors `--accent`** — les 5 teintes de l'en-tête sont en dur (`AUD-56` famille tokens).
+9. **Bêta non ouverte** — décision PO reconduite. 27+ US livrées depuis S41, zéro observation utilisateur.
