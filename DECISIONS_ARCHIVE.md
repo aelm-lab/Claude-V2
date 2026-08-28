@@ -68,7 +68,7 @@ L'app ne consomme plus qu'AniList. Ces décisions portaient sur la source préc�
 | DEC-118 | Interdiction de corriger le mapping au motif qu'une US future le réécrirait | ⛔ **SUPERSEDED PAR DEC-124** — la prémisse (donnée de diffusion absente) était fausse. *Leçon : une décision « ne corrigez pas ici » doit citer la mesure qui la fonde, sinon elle survit à sa prémisse* |
 | DEC-125 | Échéance de fermeture de l'ancienne API (octobre 2026), qui a transformé la réparation de la recherche en **full switch** de toutes les lectures externes | **neutralisée** — migration terminée, aucune ligne du dépôt ne l'appelle |
 | DEC-130 | `US-MODAL-OPEN-SEED-KEY` **annulée — sans objet** : la migration de clés legacy au boot recopie l'ancienne clé avant lecture, la spec n'a jamais été rouge. **DEC-85 reste actif** : tout nouveau seed écrit sur `aanime_calendar` | clos — 1ʳᵉ US annulée dont la cause est une inférence de Claude inscrite en Knowledge |
-
+| **DEC-181** | `US-CARD-CONVERGE-B` ne couvre que **Coming Soon**. *Completed* et *Plan to Watch* font l'objet d'une **US produit distincte, post-bêta** | Ces deux écrans affichent des animes **déjà en bibliothèque** : le bouton n'y est pas « Add » mais « Rewatch », « Start watching », ou rien. Ce n'est pas de la convergence technique, c'est un arbitrage produit que ni le PO ni moi ne pouvons trancher sans usage réel  | ⛔ SUPERSEDED DEC 183
 ## 4. Découpage de la migration AniList (DEC-134 → DEC-148)
 
 Décisions de **découpage de travaux**, sans portée technique résiduelle. Les règles techniques issues de la migration (formes de requête, disjoncteur, normalisation) vivent dans `DECISIONS.md §3-§5`.
@@ -84,8 +84,6 @@ Décisions de **découpage de travaux**, sans portée technique résiduelle. Les
 
 
 | **DEC-151** | `AUD-05` (signal de fraîcheur visible) exige un **DEC d'arbitrage préalable** sur la source unique du signal `stale`, et passe 🟠 | Deux signaux `stale` concurrents et morts coexistent → violerait DEC-52 | DEC-151 est superseded par DEC-158
-
-
 
 
 ---
