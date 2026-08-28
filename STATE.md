@@ -45,7 +45,7 @@
 | Documents au-dessus du plafond H7 | **0** |
 | Patchs documentaires en dette | 🔻 **le lot de clôture SE-072** — à appliquer en ouverture de SE-073 |
 | Dernier `AUD-xx` | **AUD-56** |
-| Dernier `DEC-xxx` | **DEC-188** |
+| Dernier `DEC-xxx` | **DEC-186** |
 
 ---
 
