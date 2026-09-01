@@ -53,6 +53,10 @@
 | SE-072 | S43 | Clôture S43. `US-HEADER-ICONS` (1re US Gemini en 3 sessions) + `US-HEADER-TINT`
 + `US-DEMOCK-2c` (5 specs). `AUD-52` soldé. `AUD-55` diagnostiqué et corrigé (`DEC-187`).
 `DEC-188` (R4-ter). Sweep 55/55, 43 specs. |
+| SE-073 | S44 | Ouverture de S44. Backlog priorisé avec colonne impact bêta. `US-MORELIKETHIS-FIX`
+(`AUD-16`) + `US-MLT-REAL` (`AUD-58`) livrées par Gemini. `AUD-57` découvert et soldé (helper de
+mock incapable de produire une relation). `DEC-187` (fixture ↔ champs filtrés), `DEC-188` (format
+de réponse au PO). 2 specs E2E créées, 45 au registre. Bêta : note aux testeurs rédigée. |
 ---
 
 ## 📦 Versions
@@ -74,7 +78,4 @@
 | v0.36.0 | S42 | **On peut nous faire confiance.** L'écran cesse de mentir sur l'état réel : le message d'ajout annonce l'onglet où l'anime a réellement atterri, la recherche est lisible et range au bon endroit, un anime déjà suivi disparaît de This Season sans rechargement, un second appareil annonce le compte retrouvé au lieu de rejouer l'inscription à l'aveugle. |
 | v0.37.0 | S43 — « Rien ne casse en douce » | 10/10 slots | Gate : gain ressenti — icônes SVG
 stables, cibles 44 px, thème sombre réparé. Filet : 0 mock mort, 43 specs, sweep 55/55 |
-| SE-073 | S44 | Ouverture de S44. Backlog priorisé avec colonne impact bêta. `US-MORELIKETHIS-FIX`
-(`AUD-16`) + `US-MLT-REAL` (`AUD-58`) livrées par Gemini. `AUD-57` découvert et soldé (helper de
-mock incapable de produire une relation). `DEC-187` (fixture ↔ champs filtrés), `DEC-188` (format
-de réponse au PO). 2 specs E2E créées, 45 au registre. Bêta : note aux testeurs rédigée. |
+
