@@ -2,7 +2,10 @@
 
 > **Rôle :** comment on ouvre, classe et clôt un **sprint** et une **session**, quelle porte de qualité s'applique à quoi, et comment la documentation reste saine.
 > **Pas ici :** l'état courant et le Kanban (→ `STATE.md`), les règles de code et de test (→ `AGENTS.md`), les décisions (→ `DECISIONS.md`).
-
+>**Format de réponse au PO (`DEC-188`).** Quatre blocs, pas plus : 📍 où on en est · 👤 impact
+utilisateur · 🔜 prochaine US anticipée · ⏭️ actions numérotées. Le raisonnement technique vit
+dans l'US ou dans les documents, jamais dans le chat. Sur incident : deux lignes. Le détail
+n'est produit que sur demande explicite.
 ---
 
 ## 1. Sprint ≠ Session — les deux compteurs
