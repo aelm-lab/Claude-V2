@@ -124,23 +124,24 @@ sans signal terrain.
 **Déjà planifié :**
 
 | US | Risque | Effort | Impact utilisateur |
-|---|---|---|---|
-| `J10e-a/b/c` (repli orphelins MAL titre+année, `DEC-145`) | 🟠 | M ×3 | Les animes sans `idMal` cessent de disparaître silencieusement |
-| `US-MORELIKETHIS-FIX` (absorbe `AUD-16`) | 🔴 | S | « More like this » revit : une relation ouvre une modale avec jaquette, score et synopsis au lieu du vide |
-| `US-STALE-SIGNAL` (`AUD-05`, `DEC-158`) | 🟠 | M | L'utilisateur voit quand ses données sont périmées au lieu de croire à un calendrier faux |
-| `US-SYNC-FINALLY` (`AUD-44`) | 🟠 | M | Aucun direct — `isSyncing` sans `try/finally`, ~90 lignes réindentées. **Seule, jamais en marge** |
-| `US-PERF-BASELINE` → `US-PERF-GATE` | 🟢 M / 🟠 S | Aucun puis : un ralentissement futur devient une spec rouge bloquée au merge. **Ordre imposé** |
-| `US-CARD-CONVERGE-B` (Coming Soon seul, `DEC-181` annulé — voir §3) | 🟠 | S | Coming Soon : 1 tap pour ajouter, carte identique à This Season |
-| `US-STATUS-UNKNOWN` (`AUD-15`) | 🟢 | XS | Un anime au statut inconnu ne s'affiche plus « Finished » |
-| `US-ADD-DIRECT` | 🟠 | XS | Fin des ~10 s où « Added to On Air » ment sur For You |
-| `US-SHOW-FALSE` (`AUD-10`) | 🟠 | S | Un anime présent avec un `day` renseigné cesse de disparaître de la semaine |
-| `US-LOGO-INTERNAL` (`BM-09` partiel) | 🟢 | S | ~3 cartes visibles à l'ouverture de Library au lieu de 2,5 |
-| `US-SYNOPSIS-VERSIONTOP` | 🟢 | S | Le synopsis apparaît en recherche — on sait ce qu'on ajoute |
-| `US-MODAL-NEXTEP-HIERARCHY` | 🟢 | S | La modale hiérarchise prochain épisode / compteur / +1 |
-| `US-REMOVE-DANGER` | 🟢 | XS | « Remove from list » cesse de ressembler à un lien anodin |
-| `US-DARK-HEADER` (`B-04`) | 🟢 | XS | Fin du bandeau incohérent en mode sombre (logo à 1,47:1) |
-| `US-ESLINT-CI-2` | 🟢 | M | Aucun — purge des violations de typage |
-| `US-TOUCH-A`, `US-ONBOARD-FALLBACK` | — | — | Flex |
+Composition arrêtée (7 planifiées + 3 flex, DEC-155) :
+
+#	US	Risque	État	Impact utilisateur
+1	US-MORELIKETHIS-FIX (AUD-16)	🔴	✅ MERGE (SE-073)	Cliquer une relation ouvre une vraie fiche : jaquette, note, studio, genres
+2	US-MLT-REAL (AUD-58)	🟠	✅ MERGE (SE-073)	« MORE LIKE THIS » propose des titres non possédés au lieu de la bibliothèque de l'utilisateur
+3	J10e-a	🟠	📝 À faire	Les animes sans idMal cessent de disparaître silencieusement
+4	J10e-b	🟠	📝 À faire	idem, suite
+5	J10e-c	🟠	📝 À faire	idem, suite
+6	Chrome mobile option A	🟠	📝 À faire	Rangée unique logo + recherche + menu ⋯
+7	US-STALE-SIGNAL (AUD-05)	🟠	📝 À faire — ⚠️ DEC d'arbitrage requis d'abord	L'utilisateur voit quand ses données sont périmées au lieu de croire un calendrier faux
+
+Flex (3) : 1 slot réservé aux retours bêta · chrome mobile option B · dette de vérité « We'll sync it later ».
+
+Sorties de périmètre décidées en SE-073 : AUD-54 ↦ S45 (remplacé par US-MLT-REAL) · US-ESLINT-CI-1 ↦ S45 · US-DEMOCK-3 ↦ S45 · renommage modal-status-gating ↦ S45 · lot polish (US-LOGO-INTERNAL, US-SYNOPSIS-VERSIONTOP, US-MODAL-NEXTEP-HIERARCHY, US-REMOVE-DANGER) ↦ S45, à trancher sur retours bêta.
+
+US non prévue entrée en cours : US-MLT-REAL (née du constat AUD-58, découvert à la lecture de US-MORELIKETHIS-FIX).
+
+🔻 US-DARK-HEADER (B-04) — à greper avant toute rédaction, probablement soldé par DEC-185 en SE-072. Trois US ont déjà été planifiées par le passé alors qu'elles étaient en production.
 
 > 🔴 **S44 est sur-souscrit à 16+.** Ce n'est pas tenable. La recomposition sur retours bêta
 > n'est pas une option de confort, c'est la seule sortie : elle donnera un critère objectif pour
