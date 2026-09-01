@@ -197,13 +197,13 @@ Deux corollaires :
 
 🔴 **Chemin complet obligatoire.** Chaque entrée s'écrit `tests/e2e/<nom>.spec.ts`, jamais le nom nu : Playwright interprète l'argument comme une **regex de sous-chaîne**, et l'entrée nue `modal-position` captait aussi `logout-modal-position.spec.ts`. **Slashes avant (`/`) uniquement** — sous Windows les `\` cassent le matching et produisent « No tests found » sans erreur explicite.
 
-**État de référence : 43 specs sur disque / 43 enregistrées, mapping 1:1 vérifié.**
+**État de référence : 45 specs sur disque / 45 enregistrées, mapping 1:1 vérifié.**
 
 - **batch1** (9) : `auto-vault-toast` · `boot-loader` · `calendar-subnav-layout` · `discover-season-dedup` · `foryou-dedup` · `login-styled` · `modal-add-appears-on-week` · `modal-add-feedback` · `modal-add-removes-from-discover`
 - **batch2** (9) : `modal-content-centered-mobile` · `modal-open` · `modal-position` · `modal-status-gating` · `month-layout` · `nav-active-state` · `onair-subnav` · `reccard-add` · `reccard-click-dismiss`
-- **batch3** (8) : `modal-next-episode` · `search-dedup` · `smoke` · `snap-to-today` · `toast-labels` · `toast-visible-mobile` · `week-no-duplicate-period` · `week-progress-bar`
+- **batch3** (8) : `modal-next-episode` · `search-dedup` · `smoke` · `snap-to-today` · `toast-labels` · `toast-visible-mobile` · `week-no-duplicate-period` · `week-progress-bar`· `mlt-real-recommendations.spec.ts`
 - **batch4** (9) : `logout-modal-position` · `nav-scroll-hide` · `onboarding-fullscreen` · `onboarding-genres` · `onboarding-seed` · `onboarding-toast` · `onboarding-welcome` · `search-enriched` · `search-hides-nav`
-- **batch5** (8) : `search-quick-add` · `week-empty-day-cta` · `more-like-this-modal` · `no-horizontal-overflow` · `grid-two-columns` · `onboarding-toast-destination` · `day-guard-plan-to-watch` · `header-icons`
+- **batch5** (8) : `search-quick-add` · `week-empty-day-cta` · `more-like-this-modal` · `no-horizontal-overflow` · `grid-two-columns` · `onboarding-toast-destination` · `day-guard-plan-to-watch` · `header-icons`· `modal-navigate-enriched.spec.ts`
 
 ### 🔴 Mock réseau : `installAniListMock`, jamais `page.route()` sur une URL d'API
 
