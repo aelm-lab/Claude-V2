@@ -563,3 +563,24 @@ depuis 5 sprints » est **infirmée**, pas « non testée ».
 🎓 **Leçon SE-072 — un test vert peut être détruit par une US qui ne le concerne pas.**
 Aucune spec n'asserte une couleur, aucune ne protège un emoji. Le filet couvre le comportement,
 pas l'apparence. C'est structurel, et ça fonde `AUD-56`.
+
+## SE-073 — deux constats, deux soldés dans la session
+
+| ID | Constat | Impact utilisateur | Destination |
+|---|---|---|---|
+| **AUD-57** | 🟢 **CLOS.** `relationsBody` du helper `installAniListMock` omettait `type: 'ANIME'`, filtré par `useAniListApi.ts:446`. **Le helper n'a jamais pu produire une relation depuis sa création.** Vérifié : aucune spec existante ne configurait `relations`, donc aucun faux-vert historique | Aucun — le code de production lit un vrai `type` d'AniList. Impact projet : le filet ne couvrait pas les relations | Soldé en SE-073, micro-patch `DEC-128` (`DEC-187`) |
+| **AUD-58** | 🟢 **CLOS.** `ModalMoreLikeThis.vue` lisait `store.animeCalendarData` — la bibliothèque de l'utilisateur — et n'émettait aucun appel réseau. La section « MORE LIKE THIS » triait par genres partagés les animes **déjà ajoutés** | L'utilisateur ouvrait une fiche pour découvrir et voyait sa propre liste. Le libellé promettait de la découverte, le code faisait de la redite | Soldé par `US-MLT-REAL` (SE-073) |
+
+### `AUD-16` — SOLDÉ, et corrigé dans sa localisation
+
+🔻 **Correction :** le constat citait `AnimeModal.vue:179`. La ligne réelle est **169**, et le
+fichier vit dans **`src/components/ui/`**, pas `src/components/`. Constat par ailleurs exact :
+`ui.openModal({ mal_id, id, title } as AnimeEntry)` rouvrait la modale avec 3 champs sur ~20.
+
+Soldé par `US-MORELIKETHIS-FIX`. Preuve rouge obtenue par restauration de l'état antérieur
+(`git checkout <hash> -- <fichier>`), Gemini ayant livré avant le lancement de la spec.
+
+🎓 **Leçon SE-073 — le cast désarme la seule barrière qui restait.** Ni `vue-tsc`, ni les 331
+tests unitaires, ni le build ne voyaient l'objet à 3 champs. Seule une spec E2E assertant un
+champ **absent de l'objet tronqué** (les badges de genre) pouvait le révéler. Corollaire à
+retenir : sur un `as`, chercher ce qui n'est **pas** dans l'objet, jamais ce qui y est.
