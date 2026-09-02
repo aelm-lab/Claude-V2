@@ -2,9 +2,7 @@
 
 > **Emplacement canonique :** écrit dans `aelm-lab/Claude-V2`, **déployé à la racine de `aelm-lab/A-Anime`**. Jamais édité à la destination.
 > **Vérification côté Gemini :** ce fichier doit apparaître sous **Environment → Sources** dans ta session AI Studio. S'il n'y est pas, il n'est pas réellement chargé.
-> **Tu n'as pas accès à la Knowledge du projet.** Chaque US t'est fournie autoportante : tout le contexte, tous les types, tous les tests sont dedans. Les chiffres de ce document sont en dur pour cette raison.
-
----
+> **Tu n'as pas accès à la Knowledge du projet.** Chaque US t'est fournie autoportante : tout le contexte, tous les types, tous les tests sont dedans. **Aucun compteur n'est figé dans ce document** — un chiffre gelé ici devient faux au sprint suivant sans que personne ne le voie.
 
 ## 1. Principe
 
@@ -16,20 +14,11 @@ Tu génères le code des User Stories fournies par le Tech Lead. Tu ne prends **
 
 ## 2. Règles de livraison — NON NÉGOCIABLES
 
-**R-LIVRAISON-1 — Contenu intégral.**
-Toute réponse livrant du code inclut le contenu **intégral** de chaque fichier créé ou modifié, du premier au dernier caractère. Un diff seul, un « show all diff », ou un récapitulatif sans le contenu = livraison rejetée.
-*Exception tolérée* pour un très gros fichier (ex. `style.css`) uniquement si une preuve de substitution complète est fournie : diff exact + `grep -c` prouvant 0 occurrence résiduelle.
+**R-LIVRAISON-1 — Contenu intégral.** Toute réponse livrant du code inclut le contenu **intégral** de chaque fichier créé ou modifié, du premier au dernier caractère. Un diff seul, un « show all diff », ou un récapitulatif sans le contenu = livraison rejetée. *Exception tolérée* pour un très gros fichier (ex. `style.css`) si une preuve de substitution complète est fournie : diff exact + `grep -c` prouvant 0 occurrence résiduelle.
 
-**R-LIVRAISON-2 — Sortie terminale littérale.**
-Toute commande exécutée est prouvée par sa session terminale brute : le prompt `$`, la commande, et la sortie réelle (même vide). Jamais de paraphrase, jamais de `# Command completed successfully`, jamais de résumé. Format attendu, exactement :
+**R-LIVRAISON-2 — Sortie terminale littérale.** Toute commande exécutée est prouvée par sa session terminale brute : le prompt `$`, la commande, et la sortie réelle (même vide). Jamais de paraphrase, jamais de `# Command completed successfully`, jamais de résumé.
 
-```
-$ npm run type-check
-$
-```
-
-**R-LIVRAISON-3 (= R1) — Triple preuve verte.**
-Aucune livraison n'est « prête à merger » sans les **trois sorties brutes séparées** :
+**R-LIVRAISON-3 (= R1) — Triple preuve verte.** Aucune livraison n'est « prête à merger » sans les **trois sorties brutes séparées** :
 
 ```
 npm run type-check      (vue-tsc --noEmit, zéro erreur)
@@ -38,11 +27,10 @@ npm run build           (build prod réussi)
 ```
 
 - **Jamais chaînées avec `&&`.** Trois blocs distincts, auditables séparément.
-- **Jamais via `npx`.** Les scripts npm embarquent des options de configuration que le bypass masque. Seules commandes valides : `npm run type-check`, `npm run test:run`, `npm run build`.
-- La CI (`.github/workflows/ci.yml`) rejoue ces trois étapes à chaque push.
-- Si le sandbox tronque la sortie de build : `npm run build 2>&1 | tail -40`.
+- **Jamais via `npx`.** Les scripts npm embarquent des options que le bypass masque. Seules commandes valides : les trois ci-dessus.
+- La CI (`.github/workflows/ci.yml`) rejoue ces trois étapes à chaque push. Si le sandbox tronque la sortie : `npm run build 2>&1 | tail -40`.
 
-> **Tes preuves ne sont pas recevables comme verdict.** Le PO rejoue la porte sur sa machine ; seule sa sortie fait foi. Un « 156 passed » collé par toi ne vaut rien s'il est structurellement impossible (cas déjà constaté : test livré avec une variable non déclarée et une fonction jamais appelée, reporté « 81 passed »).
+> **Tes preuves ne sont pas recevables comme verdict.** Le PO rejoue la porte sur sa machine ; seule sa sortie fait foi. Un « 156 passed » collé par toi ne vaut rien s'il est structurellement impossible (cas constaté : test livré avec une variable non déclarée et une fonction jamais appelée, reporté « 81 passed »). **Ton `node_modules` diverge du nôtre** — noms de chunks structurellement différents, écart de build reproductible de 71 kB sur 3 livraisons : ton `vue-tsc` lui-même peut tourner sur un autre TypeScript.
 
 ---
 
@@ -69,7 +57,7 @@ Si l'US en demande plus, le Tech Lead l'aura annoncé **en gras dans le titre de
 **R-CODE-1 — Zéro `any`.** Aucun `any` implicite ou explicite, aucun `as any`, aucun `@ts-ignore`. Tout type vient du contrat fourni dans l'US.
 `eslint-disable-next-line` **ne corrige pas** `TS6133` (variable inutilisée) : retirer la variable ou la préfixer `_`.
 
-**R-CODE-2 — Fixtures de test typées.** Jamais `as unknown as T`, jamais `as AnimeEntry` pour une fixture de production. Le helper `makeAnime()` **n'existe plus** — ne pas le réintroduire. Une fixture `AnimeEntry` s'écrit en littéral complet, tous champs obligatoires renseignés ; le Tech Lead la fournit dans l'US. Si un type fourni dans l'US est refusé par `vue-tsc`, **STOP et signale-le** : ne jamais affaiblir un type de production pour faire compiler un test.
+**R-CODE-2 — Fixtures de test typées.** Jamais `as unknown as T`, jamais `as AnimeEntry` pour une fixture de production. Une fixture `AnimeEntry` s'écrit en **littéral complet**, tous champs obligatoires renseignés ; le Tech Lead la fournit dans l'US. **Aucune factory ne doit masquer un cast** — l'ancien helper `makeAnime()` était écrit `(over) => over as AnimeEntry`, ce qui rendait les tests incapables de détecter une entité incomplète. Une factory locale n'est acceptable que si elle construit un objet **entièrement typé, sans `as`**. Si un type fourni dans l'US est refusé par `vue-tsc`, **STOP et signale-le** : ne jamais affaiblir un type de production pour faire compiler un test.
 
 **R-CODE-3 — Séparation des responsabilités.**
 - Composant `.vue` : UI + réactivité locale uniquement. **Jamais** de `fetch`, de `localStorage`/IndexedDB, ni de logique métier lourde.
@@ -114,19 +102,11 @@ Tout correctif issu d'un audit UX, et toute fonctionnalité touchant l'écran, l
 🔴 **Tu n'exécutes jamais Playwright.** Les specs E2E sont rédigées par le Tech Lead et exécutées par le PO. Ton rôle sur une US E2E se limite au code de production. Les deux sorties brutes rouge/verte sont produites par le PO, pas par toi.
 
 **R4-bis — Gating ↔ E2E.** Tout `v-if` ou gating conditionnel ajouté sur un **élément interactif** (bouton, lien, carte cliquable) déclenche, dans la **MÊME US**, un grep des specs E2E qui ouvrent ou cliquent cet élément. Si une spec cliquait l'élément désormais gaté, elle deviendra rouge **au sweep, pas au merge**. Vérifier et réaligner AVANT de livrer.
-**R4-ter — Contenu ↔ E2E.** Tout changement du **contenu textuel** d'un élément interactif
-(emoji, glyphe, libellé, `aria-label`) déclenche, dans la MÊME US, un `findstr` de `tests/e2e/`
-sur l'ancienne chaîne. Une spec qui ciblait l'ancien contenu deviendra rouge **au sweep, pas au
-merge**. Vérifier et réaligner AVANT de livrer. Une spec cible un élément par son `aria-label`,
-jamais par son emoji.
-**R5 — Tester l'impact, pas l'univers.**
-- *Pendant un epic :* chaque US ne livre qu'**UN** test ciblé sur ce qu'elle change.
-- *Fin d'epic :* grand check complet — `npm run test:run`, `npm run build`, suite E2E entière.
-- *Cumulatif :* les specs `tests/e2e/**` **enregistrées au registre §7** ne sont JAMAIS supprimées. Un test cumulé rouge au grand check est une régression à corriger, pas un test à retirer. *(Un fichier `debug-*.spec.ts` jamais enregistré n'a aucune valeur de preuve et doit être supprimé.)*
+**R4-ter — Contenu ↔ E2E.** Tout changement du **contenu textuel** d'un élément interactif (emoji, glyphe, libellé, `aria-label`) déclenche, dans la MÊME US, un `findstr /c:` de `tests/e2e/` sur l'ancienne chaîne. Une spec qui ciblait l'ancien contenu deviendra rouge **au sweep, pas au merge**. Une spec cible un élément par son `aria-label`, jamais par son emoji.
 
-**R7 — L'auteur du test ≠ l'auteur du code. AUCUNE EXCEPTION.**
-Tu ne rédiges **jamais** toi-même le test qui valide ton propre correctif, ni en rouge ni en vert — même pour un test visuel jugé « simple » (position, centrage). Le Tech Lead fournit le test de fidélité ; tu le fais passer **sans le modifier**, et tu ne mets jamais à jour un snapshot en autonomie.
-*Une violation constatée (test E2E auto-écrit pour valider un correctif de centrage) a été écartée intégralement, sans aucune valeur de preuve, malgré un code par ailleurs correct.*
+**R5 — Tester l'impact, pas l'univers.** *Pendant un epic :* chaque US ne livre qu'**UN** test ciblé sur ce qu'elle change. *Fin d'epic :* grand check complet — `test:run`, `build`, suite E2E entière. *Cumulatif :* les specs enregistrées dans `package.json` ne sont **JAMAIS** supprimées ; un test cumulé rouge est une régression à corriger, pas un test à retirer. *(Un `debug-*.spec.ts` jamais enregistré n'a aucune valeur de preuve et doit être supprimé.)*
+
+**R7 — L'auteur du test ≠ l'auteur du code. AUCUNE EXCEPTION** sur tout ce qui touche un écran ou la persistance. Tu ne rédiges **jamais** toi-même le test qui valide ton propre correctif, ni en rouge ni en vert — même pour un test visuel jugé « simple ». Le Tech Lead fournit le test de fidélité ; tu le fais passer **sans le modifier**. *Une violation constatée (test E2E auto-écrit pour un correctif de centrage) a été écartée intégralement, sans valeur de preuve, malgré un code par ailleurs correct.*
 
 ---
 
@@ -143,7 +123,7 @@ Tu ne rédiges **jamais** toi-même le test qui valide ton propre correctif, ni 
 
 ### Seed standardisé
 
-🔴 **Clé localStorage réelle : `aanime_calendar`.** Toutes les clés du projet sont préfixées `aanime_`. L'ancienne clé `'animeCalendar'` fonctionne encore *indirectement* via une migration de compatibilité au boot, mais **tout nouveau seed doit utiliser `aanime_calendar`**.
+🔴 **Clé réelle : `aanime_calendar`** — toutes les clés du projet sont préfixées `aanime_`. L'ancienne clé `'animeCalendar'` ne fonctionne qu'*indirectement*, via une migration de compatibilité au boot : **tout nouveau seed utilise `aanime_calendar`**.
 
 ```ts
 const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
@@ -167,10 +147,7 @@ Deux pièges gravés :
 
 ### Assertion de position
 
-Quand le **placement ou le centrage** est l'enjeu, asserter `boundingBox()` ou `getComputedStyle().position` — **jamais `toBeVisible()` seul**. Un élément hors écran peut être « visible » au sens DOM.
-Deux corollaires :
-- Un test de centrage n'a de sens qu'accompagné d'une assertion `document.documentElement.scrollWidth <= window.innerWidth`. Une modale `position: fixed` correctement centrée paraît décalée si le **document** déborde.
-- Un conteneur `display: grid` **sans enfant** a une hauteur de 0 px → Playwright le juge invisible même quand le CSS est correct. Pour tester une propriété de conteneur, vérifier l'existence avec `toHaveCount` puis lire `getComputedStyle`.
+Quand le **placement ou le centrage** est l'enjeu, asserter `boundingBox()` ou `getComputedStyle().position` — **jamais `toBeVisible()` seul** : un élément hors écran peut être « visible » au sens DOM. Deux corollaires : un test de centrage exige aussi `document.documentElement.scrollWidth <= window.innerWidth` (une modale `position: fixed` correctement centrée paraît décalée si le **document** déborde) ; un conteneur `display: grid` **sans enfant** a une hauteur de 0 px et paraît invisible même avec un CSS correct → `toHaveCount` puis `getComputedStyle`.
 
 ### Sélecteurs réels
 
@@ -184,8 +161,7 @@ Deux corollaires :
 | Toast | `.toast-notification` |
 | Bouton add modal | libellé `+ Add` |
 | Carte semaine | `.rowcard` (bouton ✓ `.rc-mark-done`, progression `.rc-progress` / `.rc-progress-fill`) |
-| Grille de cartes | `.aa-card-grid` (classe partagée, 2/3/4 colonnes selon breakpoint) |
-| Jour courant | `.day-hdr.today` |
+| Grille de cartes | `.aa-card-grid` (2/3/4 colonnes selon breakpoint) · Jour courant `.day-hdr.today` |
 | Navs | `.secondary-tab` / `.tab-item` / `.active` |
 | Login | `.login-brand` |
 
@@ -193,17 +169,16 @@ Deux corollaires :
 
 ## 7. Registre des batchs E2E
 
-> Le découpage `test:e2e:batch1..5` est **FIGÉ EN DUR** dans `package.json`. Toute nouvelle spec DOIT être ajoutée à un batch **ET** listée ici, sinon elle ne tourne jamais au sweep, **silencieusement**. Garder chaque batch ≤ 9 fichiers.
+> 🔴 **Le registre EST `package.json`.** Le découpage `test:e2e:batch1..5` y est figé en dur ;
+> c'est la **seule source exécutable**, et donc la seule qui fasse foi. Toute nouvelle spec DOIT
+> y être ajoutée, sinon elle ne tourne **jamais** au sweep, **silencieusement**.
+> *(Un registre recopié dans ce document a divergé de `package.json` en SE-073 sans que personne
+> ne le voie : deux batchs annoncés à 8 fichiers en contenaient 9.)*
 
-🔴 **Chemin complet obligatoire.** Chaque entrée s'écrit `tests/e2e/<nom>.spec.ts`, jamais le nom nu : Playwright interprète l'argument comme une **regex de sous-chaîne**, et l'entrée nue `modal-position` captait aussi `logout-modal-position.spec.ts`. **Slashes avant (`/`) uniquement** — sous Windows les `\` cassent le matching et produisent « No tests found » sans erreur explicite.
-
-**État de référence : 45 specs sur disque / 45 enregistrées, mapping 1:1 vérifié.**
-
-- **batch1** (9) : `auto-vault-toast` · `boot-loader` · `calendar-subnav-layout` · `discover-season-dedup` · `foryou-dedup` · `login-styled` · `modal-add-appears-on-week` · `modal-add-feedback` · `modal-add-removes-from-discover`
-- **batch2** (9) : `modal-content-centered-mobile` · `modal-open` · `modal-position` · `modal-status-gating` · `month-layout` · `nav-active-state` · `onair-subnav` · `reccard-add` · `reccard-click-dismiss`
-- **batch3** (8) : `modal-next-episode` · `search-dedup` · `smoke` · `snap-to-today` · `toast-labels` · `toast-visible-mobile` · `week-no-duplicate-period` · `week-progress-bar`· `mlt-real-recommendations.spec.ts`
-- **batch4** (9) : `logout-modal-position` · `nav-scroll-hide` · `onboarding-fullscreen` · `onboarding-genres` · `onboarding-seed` · `onboarding-toast` · `onboarding-welcome` · `search-enriched` · `search-hides-nav`
-- **batch5** (8) : `search-quick-add` · `week-empty-day-cta` · `more-like-this-modal` · `no-horizontal-overflow` · `grid-two-columns` · `onboarding-toast-destination` · `day-guard-plan-to-watch` · `header-icons`· `modal-navigate-enriched.spec.ts`
+**Règles opposables du registre :**
+- Garder chaque batch **≤ 9 fichiers**.
+- 🔴 **Chemin complet obligatoire** : `tests/e2e/<nom>.spec.ts`, jamais le nom nu. Playwright interprète l'argument comme une **regex de sous-chaîne** — l'entrée nue `modal-position` captait aussi `logout-modal-position.spec.ts`. **Slashes avant (`/`) uniquement** : sous Windows, les `\` cassent le matching et produisent « No tests found » sans erreur.
+- Les compteurs (specs sur disque, dernier sweep) vivent dans `STATE.md`, jamais ici.
 
 ### 🔴 Mock réseau : `installAniListMock`, jamais `page.route()` sur une URL d'API
 
@@ -230,7 +205,7 @@ await installAniListMock(page, {
 
 ⚠️ **Ne lance jamais `test:e2e:sweep`** : il chaîne les batches en `&&` et s'arrête au premier rouge. Les 5 batches se lancent séparément.
 
-**Dernier sweep complet : 52 / 52 verts. Aucun rouge connu.** Si un rouge apparaît, c'est une régression — pas une dette héritée. Ne retire jamais une spec d'un batch pour faire passer le sweep.
+**Le sweep de référence est vert.** Si un rouge apparaît, c'est une **régression** — pas une dette héritée. Ne retire jamais une spec d'un batch pour faire passer le sweep. *(Le compteur exact vit dans `STATE.md` ; il n'est pas figé ici, parce qu'un chiffre figé ici devient faux au sprint suivant sans que personne ne le voie.)*
 
 ---
 
@@ -240,13 +215,9 @@ await installAniListMock(page, {
 - ❌ Asserter un état de store → asserter le DOM visible.
 - ❌ Livrer un E2E réparateur sans sa sortie **ROUGE** pré-fix. Une preuve rouge = un état figé unique, jamais rejouée dans un état différent et présentée comme la même.
 - ❌ Deviner un sélecteur ou une clé localStorage. La clé est `aanime_calendar`, **jamais** `'animeCalendar'`.
-- ❌ Supprimer ou désactiver une spec enregistrée pour faire passer le grand check.
-- ❌ Écrire une nouvelle spec sans l'ajouter au batch **ET** au §7.
-- ❌ Mock partiel (laisser une requête fuir) → flaky.
-- ❌ `toBeVisible()` seul quand la position est l'enjeu.
-- ❌ **Écrire soi-même le test qui valide son propre correctif — aucune exception.**
+- ❌ Supprimer ou désactiver une spec enregistrée pour faire passer le grand check · écrire une spec sans l'ajouter à un batch de `package.json` · mock partiel (une requête qui fuit → flaky) · `toBeVisible()` seul quand la position est l'enjeu.
+- ❌ **Écrire soi-même le test qui valide son propre correctif — aucune exception.** Ni le réécrire : un test du Tech Lead est figé, ROUGE → VERT sans y toucher.
 - ❌ **Injecter du code de production conscient du contexte de test** pour faire passer un test au vert sans corriger la vraie cause. Inadmissible, sans discussion.
-- ❌ Réécrire un test rédigé par le Tech Lead. Il est figé : ROUGE → VERT sans y toucher.
 - ❌ Mettre à jour des snapshots en autonomie (`vitest run -u`) sans annoncer le `.snap` comme fichier modifié.
 
 ---

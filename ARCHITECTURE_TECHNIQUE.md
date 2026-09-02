@@ -1,9 +1,7 @@
 # ARCHITECTURE_TECHNIQUE.md — Vue technique
 
-> **Rôle :** l'architecture technique **réellement implémentée** — couches, modules, boot, réseau, registre des clés. Pendant fonctionnel : `ARCHITECTURE_FONCTIONNELLE.md`.
-> **Pas ici :** aucun compteur, aucune dette, aucun bug ouvert (→ `STATE.md`) · aucune règle opposable (→ `AGENTS.md`).
-
----
+> **Rôle :** l'architecture **réellement implémentée** — couches, modules, boot, réseau, registre des clés. Pendant fonctionnel : `ARCHITECTURE_FONCTIONNELLE.md`.
+> **Pas ici :** aucun compteur ni dette (→ `STATE.md`, `AUDIT.md`) · aucune règle opposable (→ `AGENTS.md`).
 
 ## 1. Stack
 
@@ -62,11 +60,7 @@ UTILS (.ts purs)       calculs purs, testables
 TYPES (.ts)            contrat, zéro logique
 ```
 
-**Dépendance descendante uniquement.** Les règles opposables (`R-CODE-3` à `R-CODE-8`) vivent dans `AGENTS.md` ; ce document décrit la structure, il ne la duplique pas.
-
-Deux conséquences souvent oubliées :
-- **Le store ne fait aucun I/O.** La persistance est un `watch` externe dans `usePersistence` (DEC-26).
-- **Aucun `<style scoped>`.** Tous les styles vivent dans `style.css` — une classe en `<style scoped>` est invisible depuis les autres composants (DEC-111).
+**Dépendance descendante uniquement.** Les règles opposables (`R-CODE-3` à `R-CODE-8`) vivent dans `AGENTS.md` ; ce document décrit la structure, il ne la duplique pas. Deux conséquences souvent oubliées : **le store ne fait aucun I/O** — la persistance est un `watch` externe dans `usePersistence` (DEC-26) ; **aucun `<style scoped>`** — tous les styles vivent dans `style.css`, une classe en `<style scoped>` étant invisible depuis les autres composants (DEC-111).
 
 ---
 
@@ -128,9 +122,9 @@ Deux conséquences souvent oubliées :
 
 ### 4.5 Composants (`src/components/`)
 
-- **layout/** : `AppLayout.vue` (header + navs + `<KeepAlive><router-view>`), `AuthLayout.vue`
-- **pages/** : 1 par route — `CalendarWeekPage`, `CalendarMonthPage`, `DiscoverExplorePage`, `DiscoverSeasonPage`, `DiscoverComingUpPage`, `LibraryExplorePage`, `LibraryPlanToWatchPage`, `LibraryCompletedPage`, `LoginPage`, `StatsPage`, `OnboardingPage`, + stub `CalendarListPage`
-- **ui/** : composants atomiques (cards, navs, modals, sheets, toast). Trois modales partagent `.modal-backdrop` : `AnimeModal`, `LogoutConfirmModal`, `RecEngineModal`
+**layout/** : `AppLayout.vue` (header + navs + `<KeepAlive><router-view>`), `AuthLayout.vue` ·
+**pages/** : 1 par route — `CalendarWeekPage`, `CalendarMonthPage`, `DiscoverExplorePage`, `DiscoverSeasonPage`, `DiscoverComingUpPage`, `LibraryExplorePage`, `LibraryPlanToWatchPage`, `LibraryCompletedPage`, `LoginPage`, `StatsPage`, `OnboardingPage`, + stub `CalendarListPage` ·
+**ui/** : composants atomiques (cards, navs, modals, sheets, toast, `AppHeader`). Trois modales partagent `.modal-backdrop` : `AnimeModal`, `LogoutConfirmModal`, `RecEngineModal`
 
 ---
 
@@ -245,14 +239,12 @@ Aucun bus DOM : tout passe par Pinia, `emit` ou `@vueuse`.
 ```
 
 Le pool `incoming` est construit sur **2 appels** (saison courante + suivante, `perPage:50`) — DEC-143.
-
 **Onboarding (`utils/onboardingFilter.ts`)** : `selectOnboardingSuggestions` produit **8 suggestions** scorées sur les genres choisis ; `buildSeedEntry` retourne `{ ...anime, id, state }`. Il ne pose pas `day` lui-même : l'entrée hérite du `day` posé à la normalisation (DEC-124 / DEC-131). ⚠️ Signature exacte non contractualisée → `TYPES_CONTRACT.md §9`.
 
 ---
 
 ## 10. Qualité & CI
 
-`ci.yml` rejoue à chaque push : `npm ci` → `vue-tsc --noEmit` → `vitest run` → `build`.
-Filet de régression du boot : `src/App.spec.ts` monte `App` et asserte que les fonctions d'orchestration sont appelées.
+`ci.yml` rejoue à chaque push : `npm ci` → `vue-tsc --noEmit` → `vitest run` → `build`. Filet de régression du boot : `src/App.spec.ts` monte `App` et asserte que les fonctions d'orchestration sont appelées. 🔴 **Aucun script `lint` n'existe** : ESLint n'a jamais tourné (`AUD-08`, `DEC-02`). Le volet Playwright est absent de la CI.
 
 Compteurs, état de la suite E2E et dette ouverte → `STATE.md`. Règles de test opposables → `AGENTS.md`.

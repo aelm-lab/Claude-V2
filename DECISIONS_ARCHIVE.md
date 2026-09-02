@@ -88,6 +88,19 @@ Décisions de **découpage de travaux**, sans portée technique résiduelle. Les
 
 ---
 
+## Clôtures SE-075
+
+| ID | Décision | Sort |
+|---|---|---|
+| **DEC-146** | `STATE.md` régénéré **intégralement à chaque session** + tous les autres documents patchés à chaque clôture de session, jamais batchés au sprint | ⛔ **SUPERSEDED PAR `DEC-190`.** Motif chiffré : sur SE-064 → SE-073, cette cadence a produit **2 366 lignes de patchs pour 31 US**, dont 79 % sur `STATE.md` et `ROADMAP.md` seuls. `STATE.md` fait 80 lignes et a été réécrit 15 fois son volume en 10 sessions. La création d'`HISTORIQUE.md` (append-only) par cette même décision est **conservée** et étendue par `DEC-190` (§Tampon) |
+| **DEC-171** | `US-SEASON-1TAP` supprimée, absorbée par `US-CARD-CONVERGE-A` — les deux décrivaient le même livrable, `ROADMAP.md` leur allouait deux slots | ✅ **Clos** — `US-CARD-CONVERGE-A` livrée en SE-068. Décision de composition, sans valeur opposable une fois le sprint clos |
+| **DEC-182** | `S42` clos en `v0.36.0`, 10/10 slots, sur réponse « gain de fiabilité visible » à la Sprint Outcome Gate ; `US-HEADER-ICONS` non prise glisse en S43 | ✅ **Clos** — trace conservée dans `HISTORIQUE §3 Versions`. Une clôture de sprint est un fait historique, pas une décision active |
+
+> 🔻 **`DEC-135` n'existe dans aucun des deux fichiers.** Numéro attribué entre `DEC-134` et
+> `DEC-136` (SE-059, planning S40) mais jamais écrit. Constaté en SE-075. **Ne pas réattribuer.**
+
+---
+
 ## Leçons extraites — vivent ailleurs, ne pas les rejouer ici
 
 | Leçon | Document propriétaire |

@@ -5,6 +5,11 @@
 
 **Règle absolue :** on n'invente **jamais** un type. Si un type manque, on crée d'abord une US « types » pour l'ajouter ici, **puis** on l'utilise.
 
+> 🔻 **Seule exception nommée au plafond de 250 lignes (`PILOTAGE §7 H6`).** Ce document est
+> mono-intention, à titres stables, et n'a bougé que de 8 lignes en 4 sprints. Le couper
+> rouvrirait l'invention de types dans une US autoportante — le mode d'échec le plus coûteux de
+> la rédaction (`AUD-34` : une US 🔴 livrée rouge sur la foi d'une signature fausse du contrat).
+
 ---
 
 ## 0. Faits gravés — ne jamais réintroduire
