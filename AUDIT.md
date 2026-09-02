@@ -551,6 +551,20 @@ n'avait observé.
 
 ### `AUD-52` — SOLDÉ
 
+
+## SE-074 — un constat
+
+### 🔴 P0
+
+| ID | Constat | Localisation | Impact utilisateur |
+|---|---|---|---|
+| **AUD-59** | `saveToDatabase` **ne rejette jamais** sur échec Firestore : son `try/catch` interne avale l'erreur et affiche son propre toast. Le `localStorage.setItem` est **hors** du `try`. Le `catch` de `finishWithSeed` n'est donc atteignable **que** sur panne de stockage local — et il y affiche « Saved on this device » | `usePersistence.ts:116-135` (source) · `OnboardingPage.vue:109,123` (symptôme) · chaîne assertée en `OnboardingPage.persist.spec.ts:112` | **Le message de succès local s'affiche exactement quand rien n'a été sauvegardé localement.** Sur panne Firestore, deux toasts contradictoires dont un en français — le seul de l'app. Et `saveError` n'est relu par personne : aucun réessai n'est ordonnancé, la bibliothèque peut rester locale indéfiniment (surface `AUD-42`) |
+
+> ⚠️ **Ne se corrige pas en micro-patch.** La chaîne exacte est assertée en spec : toute
+> reformulation touche 2 fichiers, donc US 🟠 avec test de fidélité réécrit par Claude (R7).
+>
+> Famille `AUD-02` — « un bug qui confirme un succès inexistant coûte la confiance ».
+
 **Famille A (AniList) : 5/5.** **Famille B (Jikan mort) : 10/10** — les 5 dernières migrées en SE-072
 (`calendar-subnav-layout`, `week-no-duplicate-period`, `onboarding-genres`, `foryou-dedup`,
 `modal-status-gating`). **Zéro spec ne connaît plus une URL d'API.**
