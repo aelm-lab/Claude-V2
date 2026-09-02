@@ -57,6 +57,7 @@
 (`AUD-16`) + `US-MLT-REAL` (`AUD-58`) livrées par Gemini. `AUD-57` découvert et soldé (helper de
 mock incapable de produire une relation). `DEC-187` (fixture ↔ champs filtrés), `DEC-188` (format
 de réponse au PO). 2 specs E2E créées, 45 au registre. Bêta : note aux testeurs rédigée. |
+| **SE-074** | S44 | `US-HEADER-MOBILE-B` mergée (en-tête mobile 181 → 128 px). Sweep complet 58/58. `AUD-42` fermé sur observation second appareil — bêta ouverte. `DEC-189` (maquette obligatoire). `AUD-59` ouvert (onboarding : message de succès sur échec local). `J10e` gelée faute de spécification et de mesure. Chrome mobile A reportée (casse 2 specs). 4 patchs documentaires reportés à SE-075 sur arbitrage PO |
 ---
 
 ## 📦 Versions
