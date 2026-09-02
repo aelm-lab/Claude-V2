@@ -215,3 +215,20 @@ parcours utilisateur.
 *Occurrence : `AUD-30` a résisté à trois hypothèses ; il est tombé en 30 s avec
 « `localStorage` vidé à la main + `F5` sans se déconnecter » — page chargée en état connecté
 avec un cache vierge. En dev, le cache est toujours chaud.*
+
+
+  **Occurrences SE-074 (3) :** « le message le plus vu de la semaine » affirmé avant lecture —
+  le message ne s'affiche en réalité que sur panne Firestore pendant l'onboarding · seuil de
+  125 px posé dans un test de fidélité par calcul mental au lieu d'un tableau (mesure réelle :
+  128 px, test rouge sur du code correct) · `J10e-a` planifiée 3 sessions durant sans que sa
+  spécification existe dans aucun document.
+  - ❌ **`AP-METHOD-2` — écrire un chemin de fichier sans l'avoir lu.** 2 occurrences :
+  `AUD-16` localisé dans `src/components/` au lieu de `src/components/ui/` (SE-073) ;
+  `US-HEADER-MOBILE-B` livrée avec le même chemin faux (SE-074). L'agent corrige
+  silencieusement, ce qui produit un **faux signal `R-SCOPE-1`** contre lui en review.
+  ✅ **Contre-mesure :** tout chemin écrit dans une US provient d'un `findstr` ou d'un `type`
+  de la même session, jamais de mémoire.
+  - ❌ **Envoyer une US 🟠/🔴 avant d'avoir obtenu la preuve ROUGE de son test de fidélité.**
+  2 occurrences (SE-073, SE-074). Rattrapable par `git checkout <commit-avant> -- <fichier>`,
+  mais la preuve rouge d'un état reconstruit vaut moins qu'une preuve rouge native.
+  ✅ **Ordre opposable :** créer la spec → lancer → constater le rouge → **puis** envoyer l'US.
