@@ -1,107 +1,107 @@
 # ANTIPATTERNS.md — Pièges récurrents
 
-> **Rôle :** les erreurs qui se sont **répétées**. Claude en réinjecte les entrées pertinentes dans la section « Anti-patterns à éviter » de chaque US.
-> **Pas ici :** les règles opposables (→ `AGENTS.md`), les récidives de l'agent d'implémentation (→ `AGENTS.md §9`), la dette ouverte (→ `STATE.md`), les pièges de seed E2E (→ `AGENTS.md §6`).
-
-**Règle d'entrée : un piège s'écrit à la 2ᵉ occurrence, jamais à la 1ʳᵉ.** Une erreur unique vit dans le handoff. **Organisé par thème, jamais par session.**
+> **Rôle :** les erreurs qui se sont **répétées**. Claude en réinjecte les entrées pertinentes
+> dans la section « Anti-patterns à éviter » de chaque US.
+> **Pas ici :** les règles opposables de code (→ `AGENTS.md §4`, lu par Gemini) · les récidives
+> de l'agent (→ `AGENTS.md §9`) · les pièges de seed E2E (→ `AGENTS.md §6`) · la dette ouverte
+> (→ `AUDIT.md`).
+>
+> **Règle d'entrée : un piège s'écrit à la 2ᵉ occurrence, jamais à la 1ʳᵉ.** Une occurrence unique
+> vit dans `HISTORIQUE §2 Tampon`. **Organisé par thème, jamais par session.**
+>
+> **Mise à jour : une fois par sprint**, en append dans le `§8 Sprint courant` (`DEC-190`).
+> Les identifiants `AP-xx` sont **abandonnés** (SE-075) : ces pièges sont cités par leur titre.
 
 ---
 
 ## 1. Architecture & couches
 
-- ❌ **Logique métier ou `fetch` dans un composant `.vue`** → composable.
-- ❌ **Accès DOM direct** (`getElementById`, `querySelector`, `appendChild`) dans du code Vue → `ref` / `v-if` / `v-for`.
-  *Nuances validées :* `DOMParser` + `querySelector` sur une string XML est pur ; `createElement('a')` + `.click()` pour un download Blob aussi ; `getElementById('boot-loader').remove()` agit sur un élément d'`index.html`, hors scope Vue.
-- ❌ **Recréer un bus d'événements** avec `dispatchEvent` / `CustomEvent` → store Pinia ou `emit`.
-- ❌ **État ou handler sur `window`** → `onMounted` / `onUnmounted` + `@vueuse/core`.
-- ❌ **Manipuler `document.body.classList`** ou injecter un bandeau dans le `<body>` → état réactif + composant.
+> Les interdits de base (DOM direct, bus d'événements, état sur `window`, `<style scoped>`,
+> logique métier dans un `.vue`) vivent dans `AGENTS.md §4` et ne sont pas redits ici.
+
 - ❌ **`initializeApp` / `getAuth` dans un composable** → réinitialisation. Singleton dans `lib/firebase.ts`.
 - ❌ **`onAuthStateChanged` branché dans le corps de `useXxx()`** → listeners empilés à chaque appel. Le brancher **au niveau module**.
-- ❌ **`watchDebounced` branché sans flag de module** → même symptôme.
-- ❌ **`useFirebaseAuth()` appelé dans un guard Vue Router** → hors contexte `setup`. Utiliser le singleton `auth` + `await auth.authStateReady()` ; ne jamais lire `auth.currentUser` avant ce `await` (il est `null` pendant l'init).
+- ❌ **`watchDebounced` branché sans flag de module** → même symptôme. `usePersistence` porte `watchInitialized` pour ça.
+- ❌ **`useFirebaseAuth()` appelé dans un guard Vue Router** → hors contexte `setup`. Utiliser le singleton `auth` + `await auth.authStateReady()` ; ne jamais lire `auth.currentUser` avant ce `await`.
+- ❌ **Manipuler `document.body.classList`** ou injecter un bandeau dans le `<body>` → état réactif + composant.
 - ❌ **Couche de persistance qui mute le store hors action et porte des toasts.**
-- ❌ **Dupliquer une règle métier à deux endroits avec deux seuils** (cas fondateur : hiatus à 14 j d'un côté, 21 j de l'autre) → une seule source computed.
+- ❌ **Dupliquer une règle métier à deux endroits avec deux seuils** — cas fondateur : hiatus à 14 j d'un côté, 21 j de l'autre. Une seule source `computed`.
 - ❌ **Écrire un champ que personne ne lit.** Code mort : supprimer.
 
 ## 2. TypeScript & contrat
 
-- ❌ **`any`, `as any`, `@ts-ignore`** → typer depuis `TYPES_CONTRACT.md`. `eslint-disable-next-line` **ne silencie pas** TypeScript : `TS6133` se corrige en retirant la variable ou en la préfixant `_`.
-- ❌ **Inventer une interface qui existe déjà** dans le contrat.
-- ❌ **Fixtures via `as unknown as T`** → factory `makeAnime(Partial<AnimeEntry>)`.
+- ❌ **Inventer une interface qui existe déjà** dans `TYPES_CONTRACT.md`.
+- ❌ **Fixture de production écrite par cast.** Une fixture `AnimeEntry` s'écrit en **littéral complet**, tous champs obligatoires renseignés, fournie par le Tech Lead dans l'US. 🔻 *La remédiation historique « → factory `makeAnime()` » est morte : la factory était elle-même un cast (`AUD-14`). `AUD-35` suit sa réapparition dans les specs.*
 - ❌ **Cast brut sans normalisation sur un chemin de chargement.** Un cache local corrompu produit des cartes incomplètes ou un écran blanc. Garde runtime + normalisation obligatoires.
-- ❌ **Membre d'union jamais mappé dans un `switch` ou une chaîne de `if`.** `getCardStatus` ne gérait pas `'Continuing'` (pourtant dans l'union, injecté par la persistance) → un show en cours s'affichait « Finished ». **Quand une union gagne une valeur, grep tous ses consommateurs.**
+- ❌ **Membre d'union jamais mappé dans un `switch` ou une chaîne de `if`.** `getCardStatus` ne gérait pas `'Continuing'` → un show en cours s'affichait « Finished ». **Quand une union gagne une valeur, grep tous ses consommateurs.**
 - ❌ **Champ optionnel traité comme garanti** (oublier `?.` ou le cas `null`).
 - ❌ **Export nommé depuis `<script setup>`** — impossible. Double bloc `<script>` + `<script setup>`.
 - ❌ **`inject(key)` sans fallback** quand la clé est typée → `inject(isBootingKey, ref(false))`.
+- ❌ **`as unknown as` posé sans qu'aucune erreur de compilation ne l'exige.** Un double cast n'est légitime qu'en réponse à une erreur `vue-tsc` **citée dans le rapport de livraison**. Sans citation : à retirer.
 
 ## 3. Gestion d'erreur
 
-- ❌ **`async` sans `try/catch`**, particulièrement sur un I/O cloud. `saveToDatabase` appelait `saveSchedule` sans garde → rejet Firestore **silencieux**, l'utilisateur croyait avoir sauvegardé.
-- ❌ **Avaler une erreur** (`catch {}`) sans log ni état réactif.
-- ❌ **Ignorer le 429** et son backoff. ⚠️ Corollaire AniList : un **429 n'est pas une panne** et n'incrémente jamais le compteur du disjoncteur (DEC-126).
+- ❌ **Renseigner un état d'erreur sans jamais l'afficher.** Le cache de saison périmé est servi et `error.value` est rempli — que rien n'affiche. Sans cache et sans réseau, la liste est vide **sans explication**.
 - ❌ **Laisser remonter le `throw` de `handleFirestoreError`** → attraper localement, exposer un `error` réactif.
-- ❌ **Renseigner un état d'erreur sans jamais l'afficher.** Le cache de saison périmé est servi en cas d'échec et `error.value` est rempli — que rien n'affiche. Sans cache et sans réseau, la liste est vide **sans explication**.
 
-### AP-CATCH-1 — un `catch` qui renvoie un tableau vide
+### Un `catch` qui renvoie un tableau vide
 
-Il est *indistinguable* d'un résultat vide légitime : aucune erreur, aucun test rouge, et l'écran affiche « rien à voir » au lieu de « ça n'a pas marché ».
-**7 occurrences sur le seul sprint S40**, dont la bande SEQUELS & RELATED, morte pour tous les utilisateurs pendant des semaines sur un échec silencieux.
+Il est *indistinguable* d'un résultat vide légitime : aucune erreur, aucun test rouge, et l'écran
+affiche « rien à voir » au lieu de « ça n'a pas marché ». **7 occurrences sur le seul sprint S40**,
+dont la bande SEQUELS & RELATED, morte pour tous les utilisateurs pendant des semaines.
 
-**Parade structurelle : contrat `{ data, failed }` par défaut sur toute fonction réseau.** Une fonction réseau qui ne peut pas dire qu'elle a échoué est un bug en attente.
-*Corollaire mesuré : un `200` servi depuis un cache expiré est plus dangereux qu'une erreur franche — l'erreur déclenche `failed`, le 200 périmé passe pour un succès.*
+**Parade structurelle : contrat `{ data, failed }` par défaut sur toute fonction réseau.** Une
+fonction réseau qui ne peut pas dire qu'elle a échoué est un bug en attente.
+*Corollaire mesuré : un `200` servi depuis un cache expiré est plus dangereux qu'une erreur
+franche — l'erreur déclenche `failed`, le 200 périmé passe pour un succès.*
 
 ## 4. Composants & feedback UI
 
-- ❌ **Émettre un event sous un nom et l'écouter sous un autre.** Le piège n°1 du projet : aucune erreur console, la fonctionnalité est simplement morte. **Le composant définit son contrat d'emit ; les consommateurs s'alignent.** Quand un composant est réutilisé par N consommateurs (y compris des wrappers à 2 niveaux), **vérifier les N alignements** — un grep `defineEmits` vs `@event` les révèle tous d'un coup.
+- ❌ **Émettre un event sous un nom et l'écouter sous un autre.** Piège n°1 du projet : aucune erreur console, la fonctionnalité est simplement morte. Quand un composant est réutilisé par N consommateurs (y compris des wrappers à 2 niveaux), **vérifier les N alignements** — un grep `defineEmits` vs `@event` les révèle tous d'un coup.
 - ❌ **Emit orphelin « sans parent ».** Une page routée sous `<router-view>` qui déclare `defineEmits` : vue-router ne propage pas les emits custom.
 - ❌ **Action utilisateur sans feedback visible.** Indistinguable de « rien ne s'est passé ».
 - ❌ **Toast en jargon interne.** « Added to Radar », « Moved to Vault » : ces mots n'apparaissent nulle part dans l'UI. Nommer **l'onglet réel**.
-- ❌ **Message de confirmation non conditionné à une vérification d'affichage.** `finishWithSeed` annonce « N shows added to your calendar » sans que rien ne garantisse que ces animes soient visibles dans la vue cible. **L'app certifie un succès que l'écran suivant dément.** Un message porte sur ce que l'utilisateur **va voir**, pas sur ce que le code vient d'exécuter.
+- ❌ **Message de confirmation non conditionné à une vérification d'affichage.** `finishWithSeed` annonce « N shows added to your calendar » sans que rien ne garantisse leur visibilité. **L'app certifie un succès que l'écran suivant dément.** Un message porte sur ce que l'utilisateur **va voir**, pas sur ce que le code vient d'exécuter.
 - ❌ **`new Image()` pour un lazy-load** → `<img style="display:none" @load @error>`.
 - ❌ **`imgState` initialisé à `'loaded'`** quand `cover_url` est `null`.
 - ❌ **`setTimeout` pour une animation de dismiss** → `<Transition @after-leave>`.
 - ❌ **`<form @submit.prevent>`** → `@click` sur le bouton.
-- ❌ **`v-html` inconditionnel** → derrière `v-if="isHtml"` (XSS).
 - ❌ **`router.push` au lieu de `router.replace`** après authentification.
 
 ## 5. CSS & layout
 
 - ❌ **Le markup référence une classe CSS qui n'existe pas.** Déjà rencontré 4 fois (`weekday-headers`, `secondary-tab--active`, `.modal-backdrop`, `.toast-notification`). **Grep la classe dans `style.css` avant de l'utiliser.**
-- ❌ **Classe définie dans un `<style scoped>` et consommée ailleurs.** Elle n'est jamais appliquée, silencieusement. Cause racine réelle d'une grille en 1 colonne au lieu de 2.
-- ❌ **`width:100%` + `padding` sans `box-sizing:border-box`.** Produit un élément plus large que son conteneur (417 px dans 387 px). 🔴 **Piège aggravant : le symptôme apparaît loin de la cause** — ici, des modales `position:fixed` paraissant décentrées alors que leur CSS était correct. **Devant un décentrage, mesurer d'abord `document.documentElement.scrollWidth` vs `window.innerWidth`.**
+- ❌ **Classe définie dans un `<style scoped>` et consommée ailleurs.** Jamais appliquée, silencieusement. Cause racine réelle d'une grille en 1 colonne au lieu de 2.
+- ❌ **`width:100%` + `padding` sans `box-sizing:border-box`.** Produit un élément plus large que son conteneur (417 px dans 387 px). 🔴 **Le symptôme apparaît loin de la cause** — ici, des modales `position:fixed` paraissant décentrées alors que leur CSS était correct. **Devant un décentrage, mesurer d'abord `document.documentElement.scrollWidth` vs `window.innerWidth`.**
 - ❌ **Grille en `minmax()` sans marge de sécurité.** `minmax(160px,1fr)` + padding + gap réclamait 344 px sur 339 px utiles → bascule en 1 colonne **pour 5 px**.
 - ❌ **Redéclarer une couleur en dur** au lieu de réutiliser un token existant.
-### AP-CSS-1 — Poser un `z-index` sans vérifier que l'élément est positionné
+
+### Poser un `z-index` sans vérifier que l'élément est positionné
 
 **Symptôme :** un élément reste derrière un autre malgré un `z-index` élevé. On augmente la
 valeur. Rien ne change. On l'augmente encore.
 
-**Cause :** `z-index` est **ignoré** sur un élément en `position: static`. Aucune valeur, si
-grande soit-elle, ne produira le moindre effet. Le piège est aggravé quand la règle imposant
-`static` vit dans une **feuille non scopée d'un composant parent** : elle gagne l'arbitrage de
-spécificité contre le style scoped de l'élément lui-même, et reste invisible à qui ne lit que
-le composant concerné.
+**Cause :** `z-index` est **ignoré** sur un élément en `position: static`. Le piège est aggravé
+quand la règle imposant `static` vit dans une **feuille non scopée d'un composant parent** : elle
+gagne l'arbitrage de spécificité et reste invisible à qui ne lit que le composant concerné.
 
 **Aggravant fréquent :** `backdrop-filter`, `filter`, `transform` et `opacity < 1` créent un
-contexte d'empilement **même en `position: static`**. Un enfant, quel que soit son `z-index`,
-est alors plafonné à l'intérieur de cet ancêtre.
+contexte d'empilement **même en `position: static`**. Un enfant y est alors plafonné.
 
-**Contre-mesure :** avant de toucher une valeur de `z-index`, lire la chaîne d'ancêtres et
-répondre à deux questions — (1) l'élément est-il positionné ? (2) un ancêtre crée-t-il un
-contexte d'empilement ? Sans ces deux réponses, toute valeur proposée est un tir à l'aveugle.
+**Contre-mesure :** avant de toucher un `z-index`, lire la chaîne d'ancêtres et répondre à deux
+questions — (1) l'élément est-il positionné ? (2) un ancêtre crée-t-il un contexte d'empilement ?
+Sans ces deux réponses, toute valeur proposée est un tir à l'aveugle.
+**Coût constaté :** 3 hypothèses fausses, 1 patch mort commité puis révoqué, 2 sessions. La
+lecture qui a tranché a pris 30 secondes.
 
-**Coût constaté :** 3 hypothèses fausses, 1 patch mort commité en `main` puis révoqué,
-2 sessions. La lecture qui a tranché a pris 30 secondes.
 ## 6. Test E2E — la famille des faux-verts
 
-> Ces bugs ont tous passé `vue-tsc` + tous les tests + le build **au vert**. C'est la raison d'être de R4.
-> Les pièges de **seed** (mono-jour, auto-vault, clé localStorage) vivent dans `AGENTS.md §6`, lu par l'agent d'implémentation.
+> Ces bugs ont tous passé `vue-tsc` + tous les tests + le build **au vert**. C'est la raison
+> d'être de `R4`. Les pièges de **seed** vivent dans `AGENTS.md §6`.
 
-- ❌ **`AP-TEST-5` — mock réseau dupliqué, adhérent à l'URL du fournisseur.** 11 specs portaient chacune leur propre `page.route()` sur les chemins REST de l'ancienne API. Au changement de fournisseur, les 11 sont devenues muettes **en même temps** — et pas au merge, **au sweep**, trois US plus tard, quand la cause était déjà noyée dans l'historique.
-  Deux symptômes, un seul bug : soit la fixture n'arrive jamais (écran vide), soit du contenu réel s'affiche à sa place (compteur inattendu). **Le second est le plus vicieux : le test échoue sur un nombre, ce qui fait chercher un bug de rendu.**
-  **Parade : un helper de mock unique par fournisseur.** Une spec ne connaît jamais l'URL d'une API.
+- ❌ **Mock réseau dupliqué, adhérent à l'URL du fournisseur.** 11 specs portaient chacune leur `page.route()` sur les chemins REST de l'ancienne API. Au changement de fournisseur, les 11 sont devenues muettes **en même temps** — et pas au merge, **au sweep**, trois US plus tard. Deux symptômes, un seul bug : soit la fixture n'arrive jamais (écran vide), soit du contenu réel s'affiche à sa place (compteur inattendu). **Le second est le plus vicieux : le test échoue sur un nombre, ce qui fait chercher un bug de rendu.** Parade : un helper de mock unique par fournisseur.
 - ❌ **Asserter l'état d'un store, ou le layout desktop, au lieu du DOM visible en viewport mobile.** Faux-vert n°1 du projet, récidivant.
-- ❌ **`toBeVisible()` seul quand la position est l'enjeu.** Un élément hors écran est « visible » au sens DOM. Asserter `boundingBox()` ou `getComputedStyle().position`. *Récidive : un test de centrage assertait `max-height`/`overflow-y` alors que le placement était le sujet.*
+- ❌ **`toBeVisible()` seul quand la position est l'enjeu.** Un élément hors écran est « visible » au sens DOM. Asserter `boundingBox()` ou `getComputedStyle().position`.
 - ❌ **`toBeVisible()` sur un conteneur de grille aux données mockées vides.** Un `display:grid` sans enfant a une hauteur de 0 px → `toHaveCount` puis `getComputedStyle`.
 - ❌ **Test de centrage sans assertion d'overflow** (`scrollWidth <= clientWidth`) : vert sur une modale visiblement décalée.
 - ❌ **E2E réparateur livré sans sa sortie ROUGE pré-fix.** Une preuve rouge = **un état figé unique**, jamais rejouée dans un état différent.
@@ -111,124 +111,90 @@ contexte d'empilement ? Sans ces deux réponses, toute valeur proposée est un t
 - ❌ **Spec écrite mais non enregistrée dans un batch** → elle ne tourne **jamais** au sweep, sans erreur ni signal.
 - ❌ **Argument de batch écrit en nom nu.** Playwright l'interprète comme une **regex de sous-chaîne** : `modal-position` capte aussi `logout-modal-position.spec.ts`. Chemin complet, slashes avant.
 - ❌ **Gating ↔ E2E, l'angle mort.** Tout `v-if` ajouté sur un élément interactif casse **en silence** une spec qui le clique — et ça ne se voit **qu'au sweep, pas au merge**. Grep des specs concernées **dans la même US**.
-- ❌ **US 🟠/🔴 dont le critère E2E est décrit en langage naturel** au lieu d'être fourni en `.spec.ts` complet et verbatim. Cela laisse une ouverture pour que l'agent écrive lui-même le test — violation de l'invariant auteur-test.
-- ❌ **Modifier le code de production pour faire passer une spec périmée.** Cas fondateur : ajout d'une classe dans un composant pour satisfaire un sélecteur E2E obsolète, glissé dans une US sans rapport.
-- ❌ **`addInitScript()` rejoue à chaque navigation.** Un `localStorage.clear()` non gardé efface l'état entre deux `goto` d'une même spec → sentinelle `sessionStorage` + point de synchro (toast visible) avant navigation.
+- ❌ **US 🟠/🔴 dont le critère E2E est décrit en langage naturel** au lieu d'être fourni en `.spec.ts` complet et verbatim. Cela laisse une ouverture pour que l'agent écrive lui-même le test.
+- ❌ **Modifier le code de production pour faire passer une spec périmée.** Cas fondateur : ajout d'une classe pour satisfaire un sélecteur obsolète, glissé dans une US sans rapport.
+- ❌ **`addInitScript()` rejoue à chaque navigation.** Un `localStorage.clear()` non gardé efface l'état entre deux `goto` → sentinelle `sessionStorage` + point de synchro avant navigation.
 - ❌ **Spécifier une US sans avoir lu la spec E2E qui doit la prouver.** Une spec dont le mock est dépourvu de la donnée corrigée ne peut pas passer au vert.
+- ❌ **Envoyer une US 🟠/🔴 avant d'avoir obtenu la preuve ROUGE de son test de fidélité.** 2 occurrences (SE-073, SE-074). Rattrapable par `git checkout <commit-avant> -- <fichier>` → lancer → observer le rouge → `git checkout HEAD -- <fichier>` → relancer, **sans toucher au test entre les deux runs**. Mais une preuve rouge reconstruite vaut moins qu'une preuve rouge native. ✅ **Ordre opposable : créer la spec → lancer → constater le rouge → PUIS envoyer l'US.**
 
-### AP-TEST-x — un test qui ne peut pas échouer pour la bonne raison
+### Un test qui ne peut pas échouer pour la bonne raison
 
-**Le motif :** une spec continue de tourner (verte ou rouge) longtemps après que son sujet a disparu. Elle n'atteste plus rien, mais sa présence au registre fait croire à une couverture.
+**Le motif :** une spec continue de tourner (verte ou rouge) longtemps après que son sujet a
+disparu. Elle n'atteste plus rien, mais sa présence au registre fait croire à une couverture.
 
-**Occurrences :** `snap-to-today` sème un calendrier complet mais n'asserte qu'un en-tête de jour — **elle passerait avec un store vide**. `discover-season-dedup` ciblait une classe renommée deux sprints plus tôt et mockait une pagination supprimée : **rouge sans que personne le sache**, et le dédoublonnage qu'elle prétendait couvrir n'a jamais été testé.
+**Occurrences :** `snap-to-today` sème un calendrier complet mais n'asserte qu'un en-tête de jour
+— **elle passerait avec un store vide**. `discover-season-dedup` ciblait une classe renommée deux
+sprints plus tôt et mockait une pagination supprimée : **rouge sans que personne le sache**.
 
-**Règle :** toute US qui renomme une classe CSS, change une route réseau ou supprime un mécanisme (pagination, cache, endpoint) **liste les specs E2E qui en dépendent** dans sa section « fichiers », ou déclare explicitement qu'aucune n'en dépend.
+**Règle :** toute US qui renomme une classe CSS, change une route réseau ou supprime un mécanisme
+**liste les specs E2E qui en dépendent** dans sa section « fichiers », ou déclare explicitement
+qu'aucune n'en dépend.
+**Corollaire :** un test dont on ne peut pas décrire *le scénario exact qui le ferait passer au
+rouge* n'est pas un filet.
 
-**Corollaire :** un test dont on ne peut pas décrire *le scénario exact qui le ferait passer au rouge* n'est pas un filet.
+## 7. Méthode et diagnostic — vaut pour Claude d'abord
 
-## 7. Diagnostic — vaut pour Claude autant que pour l'agent
+> Le zéro-confiance s'applique **d'abord à soi**. Ces entrées viennent majoritairement de mauvais
+> diagnostics de Claude.
 
-> Le zéro-confiance s'applique **d'abord à soi**. Ces entrées viennent majoritairement de mauvais diagnostics de Claude.
-
-- ⚠️ **Proposer un fix avant d'avoir lu le code qui fonctionne déjà.** **Quand un test échoue et qu'un test similaire passe, lire le test qui passe EN PREMIER.**
-- ⚠️ **Bâtir un diagnostic sur une hypothèse jamais grep-ée.** Trois occurrences : une `inject` supposée ratée (c'était un placement), un `syncAnimeUpdates` supposé écraser le store (c'était un seed mono-jour), une classe supposée absente (elle existait). **Grep d'abord, hypothèse ensuite.**
+- ⚠️ **Énoncer une cause sur du code non lu.** Occurrences répétées sur trois sessions : `AUD-33` déclaré soldé sans mesure · comparaison de hash de chunk entre deux environnements de build, **non falsifiable par construction** · service worker déclaré bloquant avant lecture du fichier — il ne cachait rien · `backdrop-filter` désigné comme cause unique d'`AUD-46`, patch sans effet · « le message le plus vu de la semaine » affirmé avant lecture — il ne s'affiche en réalité que sur panne Firestore pendant l'onboarding · seuil de 125 px posé dans un test de fidélité par calcul mental au lieu d'une mesure (réel : 128 px, test rouge sur du code correct) · `J10e-a` planifiée 3 sessions durant sans que sa spécification existe dans aucun document.
+  ✅ **Contre-mesure :** avant d'énoncer une cause, demander la lecture qui tranche. Une commande `type` coûte un aller-retour ; une hypothèse fausse en coûte trois et brûle un patch.
+- ⚠️ **Écrire un chemin de fichier sans l'avoir lu.** 2 occurrences : `AUD-16` localisé dans `src/components/` au lieu de `src/components/ui/` (SE-073) ; `US-HEADER-MOBILE-B` livrée avec le même chemin faux (SE-074). L'agent corrige silencieusement, ce qui produit un **faux signal `R-SCOPE-1`** contre lui en review.
+  ✅ **Contre-mesure :** tout chemin écrit dans une US provient d'un `findstr` ou d'un `type` de la même session, jamais de mémoire.
+- ⚠️ **Proposer un fix avant d'avoir lu le code qui fonctionne déjà.** Quand un test échoue et qu'un test similaire passe, **lire le test qui passe EN PREMIER**.
+- ⚠️ **Bâtir un diagnostic sur une hypothèse jamais grep-ée.** Trois occurrences : une `inject` supposée ratée (c'était un placement), un `syncAnimeUpdates` supposé écraser le store (c'était un seed mono-jour), une classe supposée absente (elle existait).
 - ⚠️ **Théoriser une cause racine en changeant deux variables à la fois.** **Une mesure = une variable.** Aucune cause racine n'est gravée avant qu'une hypothèse n'explique 100 % des mesures.
-- ⚠️ **Diagnostiquer une panne externe sans la remesurer.** Une panne a été portée **5 sprints** sur la foi d'un unique curl, gelant 2 items du backlog. Toute panne externe en standby se remesure à l'ouverture de session, **avec la requête exacte du code**.
-- ⚠️ **Inférer l'état d'un service depuis des requêtes vers un autre domaine.** Les jaquettes viennent d'un CDN, pas de l'API de données, et leurs URLs sont en cache local : une page pleine de posters en 200 n'indique **rien** sur la santé de l'API.
-- ⚠️ **Confondre le cache HTTP du navigateur et le localStorage applicatif.** « Disable cache » ne touche **jamais** au localStorage. **Vérifier l'existence d'un flag par grep avant de raisonner dessus.**
+- ⚠️ **Diagnostiquer une panne externe sans la remesurer.** Une panne portée **5 sprints** sur la foi d'un unique curl, gelant 2 items du backlog.
+- ⚠️ **Inférer l'état d'un service depuis des requêtes vers un autre domaine.** Les jaquettes viennent d'un CDN, et leurs URLs sont en cache local : une page pleine de posters en 200 n'indique **rien** sur la santé de l'API.
+- ⚠️ **Confondre le cache HTTP du navigateur et le `localStorage` applicatif.** « Disable cache » ne touche **jamais** au `localStorage`.
 - ⚠️ **Traiter un handoff comme une source primaire.** Un handoff a affirmé l'existence de trois symboles **tous inexistants**. **Le code réel tranche.**
-- ⚠️ **Planifier depuis un backlog jamais confronté au code.** Trois US ont été planifiées « à faire » alors qu'elles étaient en production. **Toute US sortant du backlog démarre par un grep.**
+- ⚠️ **Planifier depuis un backlog jamais confronté au code.** Trois US planifiées « à faire » alors qu'elles étaient en production.
 - ⚠️ **Prendre le diagnostic du PO pour une cause.** Le PO décrit un **symptôme** ; vérifier avant de spécifier.
-- ⚠️ **Extrapoler une clôture d'audit à un cas voisin.**
-- ⚠️ **`findstr` : un vide n'est une preuve d'absence que si la syntaxe est vérifiée.** Le OU s'écrit avec des **mots séparés par des espaces** (détail → `CLAUDE.md §6`). Deux fausses conclusions ont déjà été tirées de vides syntaxiques.
+- ⚠️ **Extrapoler une clôture d'audit à un cas voisin.** Deux constats (`AUD-13`, `AUD-17`) ont été fermés à tort : **un constat portant sur N éléments ne se ferme qu'après vérification des N.**
+- ⚠️ **`findstr` : un vide n'est une preuve d'absence que si la syntaxe est vérifiée.** Chaîne littérale → `/c:"…"`. OU logique → mots séparés par des espaces. Détail → `CLAUDE.md §4`. Deux fausses conclusions déjà tirées de vides syntaxiques, et ~800 lignes déversées en SE-074 faute de `/c:`.
+
+### Chercher l'état impossible, pas rejouer le parcours
+
+Un bug qui survit des dizaines de sprints se cache dans une combinaison d'états que le
+développement ne produit jamais. **Construire l'état artificiellement bat le fait de rejouer le
+parcours utilisateur.** *Occurrence : `AUD-30` a résisté à trois hypothèses ; il est tombé en 30 s
+avec « `localStorage` vidé à la main + `F5` sans se déconnecter » — page chargée en état connecté
+avec un cache vierge. En dev, le cache est toujours chaud.*
+
+### Un test de fidélité vert ne prouve pas que la spec vise la bonne branche
+
+La porte verte prouve que le code fait ce que le test dit. Elle ne prouve **jamais** que le test
+dit la bonne chose. Sur une US 🔴 d'orchestration, l'assertion doit porter sur la **séquence
+réelle** (quelle navigation, depuis quel état, déclenchée par quoi), pas sur la condition telle
+qu'on l'imagine. *Occurrence : `US-PERSIST-P0a` mergée 270/270 verte, zéro effet — spec et test
+visaient tous deux une branche jamais atteinte.* **Remède : `DEC-162`.**
 
 ## 8. Process & hygiène de livraison
 
-| ID | Piège | Gravité | Parade |
-|---|---|---|---|
-| **AP-HYGIENE-1** | **Fichiers de travail commités** (`wait.txt`, fichiers de debug, `*_out.txt`, `test-*.cjs`) | 🟠 | Le débogage reste local. Le PO vérifie `git status` avant la gate ; tout fichier hors périmètre déclaré = correction mineure d'office. Vérifier par `git show --name-only HEAD`, **jamais** `git diff` (après un `pull` l'arbre est propre et ne prouve rien) |
-| **AP-TS-1** | **`as unknown as` posé sans qu'aucune erreur de compilation ne l'exige** | 🟠 | Un double cast n'est légitime qu'en réponse à une erreur `vue-tsc` **citée dans le rapport de livraison**. Sans citation : à retirer |
-| **AP-PROCESS-2** | **Inférence promue en fait par son entrée dans un document.** Un test déclaré « rouge qualifié » sur la seule lecture de son code — il était vert. Un chemin de fichier déduit d'un handoff au lieu d'être lu | 🟠 | **Un test n'est rouge que sur sa sortie d'exécution.** Sans sortie collée par le PO : « suspecté », jamais « qualifié ». **Un chemin de fichier se lit, ne se déduit pas.** Le mot choisi dans `STATE.md` engage : il sera lu comme un fait mesuré à la session suivante |
-| **AP-PROCESS-3** | **Modification documentaire non isolée → faux signal de dérive de périmètre.** Deux occurrences : patch doc envoyé dans le même message qu'une US, puis déploiement d'`AGENTS.md` non commité, embarqué par le commit suivant de l'agent | 🟠 | Le déploiement d'`AGENTS.md` se **commite seul, en clôture de session, avant toute nouvelle US**. Un `git status` vide est **condition d'ouverture** d'une livraison. Un fichier inattendu dans un diffstat se **lit** avant d'être imputé |
-| — | **Sortie de test d'un run antérieur présentée comme fraîche** (2 occurrences) | 🟠 | Seule la machine PO fait foi (R1) |
-**AP-PROCESS-4 — Jamais d'US non envoyable.** Un bloc `## [US-XXX]` n'est produit que s'il est
-collable à Gemini immédiatement : test de fidélité inclus, types vérifiés contre le code source.
-S'il manque un fichier, on demande le fichier — on ne rédige pas un squelette.
-*Origine : une US livrée sans son test de fidélité a coûté un tour de conversation entier.*
-
-## 9. Fidélité fonctionnelle
-
-- ❌ **Simplifier une règle métier subtile** : calcul d'épisode, transitions de state, conversion de fuseau. Le comportement de référence est reproduit, quirks inclus.
-- ❌ **Changer une clé localStorage ou Firestore sans US dédiée** — avec migration.
-- ❌ **Scorer ou filtrer dans une fonction de fetch de saison** : cela appartient à `useRecommendations`.
-- ❌ **Créer une entrée `state:'calendar'` sans se demander qui posera son `day`.** Sans `day`, l'anime est stocké mais **invisible partout**.
+- ❌ **Fichiers de travail commités** (`wait.txt`, `*_out.txt`, `test-*.cjs`, fichiers de debug). Le débogage reste local. Vérifier par `git show --name-only HEAD`, **jamais** `git diff` (après un `pull` l'arbre est propre et ne prouve rien).
+- ❌ **Inférence promue en fait par son entrée dans un document.** Un test déclaré « rouge qualifié » sur la seule lecture de son code — il était vert. **Un test n'est rouge que sur sa sortie d'exécution.** Sans sortie collée par le PO : « suspecté », jamais « qualifié ». Le mot choisi dans un document engage : il sera lu comme un fait mesuré à la session suivante.
+- ❌ **Modification documentaire non isolée → faux signal de dérive de périmètre.** Deux occurrences : patch doc envoyé dans le même message qu'une US, puis déploiement d'`AGENTS.md` non commité, embarqué par le commit suivant de l'agent. **Le déploiement d'`AGENTS.md` se commite seul, avant toute nouvelle US.** Un `git status` vide est **condition d'ouverture** d'une livraison.
+- ❌ **Sortie de test d'un run antérieur présentée comme fraîche** (2 occurrences). Seule la machine PO fait foi (`R1`).
+- ❌ **Jamais d'US non envoyable.** Un bloc `## [US-XXX]` n'est produit que s'il est **immédiatement collable à Gemini** : test de fidélité inclus, types vérifiés contre le code source. Pas de brouillon, pas de « test à suivre », pas de placeholder. S'il manque un fichier : demander le fichier, ne rien écrire. *Occurrence : une US livrée sans son `.spec.ts`, une conversation entière perdue.*
 
 ---
 
-## 9. Méthode d'analyse (Claude)
-
-- ❌ **`AP-METHOD-1` — énoncer une cause sur du code non lu.** Trois occurrences sur deux sessions
-  consécutives : `AUD-33` déclaré soldé sans mesure (SE-067) ; comparaison de hash de chunk entre
-  deux environnements de build, **non falsifiable par construction** (SE-068) ; service worker
-  déclaré bloquant bêta avant lecture du fichier — il ne cachait rien (SE-068) ; `backdrop-filter`
-  désigné comme cause unique d'`AUD-46`, patch sans effet (SE-068).
-  **Coût mesuré :** deux des trois se sont réglées par un `type` de fichier qui aurait pu être
-  demandé d'emblée ; la troisième a produit un patch mort commité en `main`.
-  ✅ **Contre-mesure :** avant d'énoncer une cause, demander la lecture qui tranche. Une commande
-  `type` coûte un aller-retour ; une hypothèse fausse en coûte trois et brûle un patch.
-  Corollaire de `PILOTAGE §6` (« toute US sortant du backlog démarre par un grep »), étendu au
-  **diagnostic**, pas seulement à la rédaction d'US.
-----
-
 ## 🎓 Les 3 leçons de méthode les plus chères
 
-1. **Le vert ne prouve rien sur l'utilisabilité.** Type-check + tests + build au vert ≠ application fonctionnelle ≠ application utilisable. Quatre bugs runtime et toute la famille des events désalignés sont passés au vert intégral. D'où R2, R3, R4 et l'audit live du PO.
+1. **Le vert ne prouve rien sur l'utilisabilité.** Type-check + tests + build au vert ≠ application fonctionnelle ≠ application utilisable. Quatre bugs runtime et toute la famille des events désalignés sont passés au vert intégral. D'où `R2`, `R4` et l'audit live du PO.
 2. **Un cadre d'audit identique révèle les angles morts.** Un dual audit (deux auditeurs, mêmes axes, même barème, même format) a montré que **chacun avait raté le finding n°1 de l'autre**. Sans cadre commun strict, on ne compare que du bruit.
 3. **Les incidents les plus coûteux ne sont pas des défauts de code, mais de fraîcheur de fait.** Une panne externe jamais remesurée (5 sprints gelés) et un backlog jamais confronté au code (3 US planifiées sur du déjà livré) ont coûté plus que tous les bugs de typage réunis.
- **Application positive, SE-069.** `AUD-46` a été résolu à la première lecture demandée, sans
-proposer aucune hypothèse préalable. Deux constats supplémentaires (`AUD-47`, `AUD-50`) ont été
-trouvés dans ces mêmes lectures — dont un qui aurait cassé l'US suivante s'il n'avait pas été
-vu. **Corollaire :** la lecture préalable n'est pas un coût de vérification, c'est une source
-de constats. Elle rapporte plus qu'elle ne coûte.
-### AP-PROCESS-4 — Une US incomplète ne s'écrit pas
 
-Un bloc `## [US-XXX]` n'est produit que s'il est **immédiatement envoyable à Gemini**. Pas de
-brouillon, pas de « test de fidélité à suivre », pas de placeholder. S'il manque un fichier
-pour rédiger : demander le fichier, ne rien écrire.
-*Occurrence : SE-065, une US livrée sans son `.spec.ts`, capacité de conversation perdue.*
+> **Application positive, SE-069.** `AUD-46` a été résolu à la première lecture demandée, sans
+> aucune hypothèse préalable. Deux constats supplémentaires (`AUD-47`, `AUD-50`) sont sortis de
+> ces mêmes lectures — dont un qui aurait cassé l'US suivante. **La lecture préalable n'est pas un
+> coût de vérification, c'est une source de constats. Elle rapporte plus qu'elle ne coûte.**
 
-### AP-PROCESS-5 — Un test de fidélité vert ne prouve pas que la spec vise la bonne branche
+---
 
-La porte verte prouve que le code fait ce que le test dit. Elle ne prouve **jamais** que le
-test dit la bonne chose. Sur une US 🔴 d'orchestration, l'assertion doit porter sur la
-**séquence réelle** (quelle navigation, depuis quel état, déclenchée par quoi), pas sur la
-condition telle qu'on l'imagine.
-*Occurrence : SE-065, `US-PERSIST-P0a` mergée 270/270 verte, zéro effet — spec et test visaient
-tous deux `to.meta.guestOnly && isLoggedIn`, branche jamais atteinte pendant une connexion.*
-**Remède : DEC-161.**
+## 9. 🔄 Sprint courant
 
-### AP-DIAG-3 — Chercher l'état impossible, pas rejouer le parcours
+> Les pièges du sprint en cours s'ajoutent **ici, à la fin**, une fois par sprint, depuis
+> `HISTORIQUE §2 Tampon`. À la purge H8, ils rejoignent leur section thématique.
 
-Un bug qui survit des dizaines de sprints se cache dans une combinaison d'états que le
-développement ne produit jamais. Construire l'état artificiellement bat le fait de rejouer le
-parcours utilisateur.
-*Occurrence : `AUD-30` a résisté à trois hypothèses ; il est tombé en 30 s avec
-« `localStorage` vidé à la main + `F5` sans se déconnecter » — page chargée en état connecté
-avec un cache vierge. En dev, le cache est toujours chaud.*
-
-
-  **Occurrences SE-074 (3) :** « le message le plus vu de la semaine » affirmé avant lecture —
-  le message ne s'affiche en réalité que sur panne Firestore pendant l'onboarding · seuil de
-  125 px posé dans un test de fidélité par calcul mental au lieu d'un tableau (mesure réelle :
-  128 px, test rouge sur du code correct) · `J10e-a` planifiée 3 sessions durant sans que sa
-  spécification existe dans aucun document.
-  - ❌ **`AP-METHOD-2` — écrire un chemin de fichier sans l'avoir lu.** 2 occurrences :
-  `AUD-16` localisé dans `src/components/` au lieu de `src/components/ui/` (SE-073) ;
-  `US-HEADER-MOBILE-B` livrée avec le même chemin faux (SE-074). L'agent corrige
-  silencieusement, ce qui produit un **faux signal `R-SCOPE-1`** contre lui en review.
-  ✅ **Contre-mesure :** tout chemin écrit dans une US provient d'un `findstr` ou d'un `type`
-  de la même session, jamais de mémoire.
-  - ❌ **Envoyer une US 🟠/🔴 avant d'avoir obtenu la preuve ROUGE de son test de fidélité.**
-  2 occurrences (SE-073, SE-074). Rattrapable par `git checkout <commit-avant> -- <fichier>`,
-  mais la preuve rouge d'un état reconstruit vaut moins qu'une preuve rouge native.
-  ✅ **Ordre opposable :** créer la spec → lancer → constater le rouge → **puis** envoyer l'US.
+*(vide)*
