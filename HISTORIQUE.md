@@ -80,3 +80,25 @@
 | v0.35.0 | S41 | **« Ce que j'ajoute reste »** — la persistance cesse de mentir. `9e3923e` · 295 tests / 32 fichiers · 178 modules · 368,90 kB · 10 US + 4 micro-patchs. Gate : gain de fiabilité visible — la bibliothèque survit au logout, revient à la connexion, tient 500 titres, et le réseau ne gèle plus l'application. Zéro fonctionnalité ajoutée |
 | v0.36.0 | S42 | **« On peut nous faire confiance »** — l'écran cesse de mentir sur l'état réel : le message d'ajout annonce l'onglet où l'anime a réellement atterri, la recherche est lisible et range au bon endroit, un anime déjà suivi disparaît de This Season sans rechargement, un second appareil annonce le compte retrouvé au lieu de rejouer l'inscription à l'aveugle. 10/10 slots |
 | v0.37.0 | S43 | **« Rien ne casse en douce »** — 10/10 slots. Gate : gain ressenti — icônes SVG stables, cibles 44 px, thème sombre réparé. Filet : 0 mock mort, 43 specs, sweep 55/55 |
+
+
+### §1 Sessions
+- **SE-076** (S44) — Retour bêta PO qualifié et arbitré : double chemin à l'entrée corrigé
+  (`US-ONBOARD-EXCLUSIVE` mergée, 331/331) et plafond de 50 titres sur Current Season
+  découpé en 2 US prêtes (`US-SEASON-PAGE-A` / `-B`, non envoyées). AniList remesuré :
+  opérationnel. Cadence de preuve changée : la preuve rouge devient rétroactive (`DEC-192`),
+  première application concluante le jour même.
+
+### §2 Tampon
+- **DEC-192** — La preuve ROUGE devient **rétroactive** : l'US part avec son test de fidélité,
+  le merge a lieu, puis `git checkout <commit-avant> -- <fichier de prod>` → run → rouge
+  constaté → `git checkout HEAD -- <fichier>` → run → vert. Supersede l'ordre opposable
+  « spec rouge AVANT envoi ». `R7` reste entier : le test est écrit par le Tech Lead, jamais
+  par l'agent. Motif : supprime un aller-retour par US sans perdre la falsifiabilité.
+- **DEC-193** — Current Season passe en pagination à **geste explicite** (bouton `Load more`
+  + compteur « N of TOTAL »), pas en scroll infini : un `IntersectionObserver` n'est pas
+  prouvable en jsdom et l'agent n'a pas de navigateur. Cache saison versionné `_v2` pour
+  porter `total` et `hasNextPage`.
+- **Piège** — `AniListSeasonResult` était consommé via le wrapper `fetchCurrentSeason()` qui
+  `throw`. Toute US qui bascule un écran vers la variante `WithMeta` casse les mocks des specs
+  existantes de cet écran : lister la spec du composant dans les fichiers de l'US, toujours.
